@@ -21,6 +21,8 @@ export interface UpdateBusinessOutreachRequest {
   /** @nullable */
   assignedArtist?: string | null;
   /** @nullable */
+  assignedArtistSource?: string | null;
+  /** @nullable */
   avatarType?: string | null;
   /** @nullable */
   targetMarket?: string | null;

@@ -133,6 +133,8 @@ export interface BusinessOutreach {
   /** @nullable */
   assignedArtist?: string | null;
   /** @nullable */
+  assignedArtistSource?: string | null;
+  /** @nullable */
   avatarType?: string | null;
   /** @nullable */
   targetMarket?: string | null;
@@ -157,6 +159,8 @@ export interface UpdateBusinessOutreachRequest {
   nextActionDate?: string | null;
   /** @nullable */
   assignedArtist?: string | null;
+  /** @nullable */
+  assignedArtistSource?: string | null;
   /** @nullable */
   avatarType?: string | null;
   /** @nullable */
@@ -216,6 +220,8 @@ export interface OutreachPipelineItem {
   lastContactDate?: string | null;
   /** @nullable */
   assignedArtist?: string | null;
+  /** @nullable */
+  assignedArtistSource?: string | null;
   /** @nullable */
   avatarType?: string | null;
   /** @nullable */

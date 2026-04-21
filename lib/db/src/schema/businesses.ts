@@ -45,6 +45,7 @@ export const businessesTable = pgTable(
     lastContactDate: date("last_contact_date", { mode: "string" }),
     nextActionDate: date("next_action_date", { mode: "string" }),
     assignedArtist: text("assigned_artist"),
+    assignedArtistSource: text("assigned_artist_source"),
     avatarType: text("avatar_type"),
     targetMarket: text("target_market"),
     notes: text("notes"),

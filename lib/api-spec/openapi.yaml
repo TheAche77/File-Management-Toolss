@@ -631,6 +631,8 @@ components:
           type: ["string", "null"]
         assignedArtist:
           type: ["string", "null"]
+        assignedArtistSource:
+          type: ["string", "null"]
         avatarType:
           type: ["string", "null"]
         targetMarket:
@@ -662,6 +664,8 @@ components:
         nextActionDate:
           type: ["string", "null"]
         assignedArtist:
+          type: ["string", "null"]
+        assignedArtistSource:
           type: ["string", "null"]
         avatarType:
           type: ["string", "null"]
@@ -779,6 +783,8 @@ components:
         lastContactDate:
           type: ["string", "null"]
         assignedArtist:
+          type: ["string", "null"]
+        assignedArtistSource:
           type: ["string", "null"]
         avatarType:
           type: ["string", "null"]

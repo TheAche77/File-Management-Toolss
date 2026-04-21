@@ -5,6 +5,16 @@ export type ArtistRecommendation = {
   score: number;
 };
 
+export type AvatarRecommendation = {
+  avatarType:
+    | "gallery_director"
+    | "hotel_art_curator"
+    | "festival"
+    | "museum_shop"
+    | "institution";
+  reason: string;
+};
+
 type RecommendationInput = {
   avatarType?: string | null;
   targetMarket?: string | null;
@@ -24,6 +34,58 @@ const CATEGORY_TAGS = {
   museum: new Set(["museum", "art_museum", "arts_centre"]),
   institution: new Set(["cultural_institute"]),
 };
+
+export function getAvatarTypeRecommendation(
+  categorySlug?: string | null,
+): AvatarRecommendation | null {
+  if (!categorySlug) {
+    return null;
+  }
+
+  if (hasCategoryTag(categorySlug, CATEGORY_TAGS.hotel)) {
+    return {
+      avatarType: "hotel_art_curator",
+      reason: "category suggests boutique hotel or hospitality outreach",
+    };
+  }
+
+  if (categorySlug === "urban_art_gallery") {
+    return {
+      avatarType: "gallery_director",
+      reason: "category maps directly to urban art gallery outreach",
+    };
+  }
+
+  if (categorySlug === "art_museum") {
+    return {
+      avatarType: "museum_shop",
+      reason: "category suggests museum or arts-centre buyer outreach",
+    };
+  }
+
+  if (hasCategoryTag(categorySlug, CATEGORY_TAGS.institution)) {
+    return {
+      avatarType: "institution",
+      reason: "category maps to cultural institute or institutional outreach",
+    };
+  }
+
+  if (hasCategoryTag(categorySlug, CATEGORY_TAGS.gallery)) {
+    return {
+      avatarType: "gallery_director",
+      reason: "category aligns with gallery outreach by default",
+    };
+  }
+
+  if (hasCategoryTag(categorySlug, CATEGORY_TAGS.museum)) {
+    return {
+      avatarType: "museum_shop",
+      reason: "category aligns with museum or arts-centre outreach",
+    };
+  }
+
+  return null;
+}
 
 function hasCategoryTag(categorySlug: string | null | undefined, values: Set<string>) {
   return Boolean(categorySlug && values.has(categorySlug));

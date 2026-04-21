@@ -20,6 +20,7 @@ const OUTREACH_STATUSES = new Set([
   "closed_lost",
 ]);
 const ASSIGNED_ARTISTS = new Set(["Ache77", "Exit Enter", "Nian", "Kraita317"]);
+const ASSIGNED_ARTIST_SOURCES = new Set(["auto", "manual"]);
 const AVATAR_TYPES = new Set([
   "gallery_director",
   "hotel_art_curator",
@@ -178,6 +179,7 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
   const lastContactDate = normalizeNullableDateString(body["lastContactDate"]);
   const nextActionDate = normalizeNullableDateString(body["nextActionDate"]);
   const assignedArtist = normalizeNullableString(body["assignedArtist"]);
+  const assignedArtistSource = normalizeNullableString(body["assignedArtistSource"]);
   const avatarType = normalizeNullableString(body["avatarType"]);
   const targetMarket = normalizeNullableString(body["targetMarket"]);
   const notes = normalizeNullableString(body["notes"]);
@@ -190,6 +192,11 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
 
   if (body["assignedArtist"] !== undefined && assignedArtist !== null && (!assignedArtist || !ASSIGNED_ARTISTS.has(assignedArtist))) {
     res.status(400).json({ error: "Invalid assignedArtist" });
+    return;
+  }
+
+  if (body["assignedArtistSource"] !== undefined && assignedArtistSource !== null && (!assignedArtistSource || !ASSIGNED_ARTIST_SOURCES.has(assignedArtistSource))) {
+    res.status(400).json({ error: "Invalid assignedArtistSource" });
     return;
   }
 
@@ -222,6 +229,12 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
       lastContactDate,
       nextActionDate,
       assignedArtist,
+      assignedArtistSource:
+        body["assignedArtistSource"] !== undefined || body["assignedArtist"] !== undefined
+          ? assignedArtist
+            ? assignedArtistSource ?? undefined
+            : null
+          : undefined,
       avatarType,
       targetMarket,
       notes,
@@ -639,6 +652,7 @@ function serializeBusinessOutreach(r: Record<string, unknown>) {
     lastContactDate: r["lastContactDate"] ?? null,
     nextActionDate: r["nextActionDate"] ?? null,
     assignedArtist: r["assignedArtist"] ?? null,
+    assignedArtistSource: r["assignedArtistSource"] ?? null,
     avatarType: r["avatarType"] ?? null,
     targetMarket: r["targetMarket"] ?? null,
     notes: r["notes"] ?? null,
@@ -688,6 +702,7 @@ async function getOutreachRows() {
       nextActionDate: businessesTable.nextActionDate,
       lastContactDate: businessesTable.lastContactDate,
       assignedArtist: businessesTable.assignedArtist,
+      assignedArtistSource: businessesTable.assignedArtistSource,
       avatarType: businessesTable.avatarType,
       targetMarket: businessesTable.targetMarket,
       contactName: businessesTable.contactName,
@@ -774,6 +789,7 @@ function buildOutreachPipelineItems(
         nextActionDate: nextActionDate ?? null,
         lastContactDate: row.lastContactDate ?? null,
         assignedArtist: row.assignedArtist ?? null,
+        assignedArtistSource: row.assignedArtistSource ?? null,
         avatarType: row.avatarType ?? null,
         targetMarket: row.targetMarket ?? null,
         contactName: row.contactName ?? null,

@@ -52,7 +52,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { getArtistRecommendation } from "@/lib/artist-recommendation";
+import {
+  getArtistRecommendation,
+  getAvatarTypeRecommendation,
+} from "@/lib/artist-recommendation";
 import { getStoredAdminToken } from "@/lib/admin-auth";
 
 const OUTREACH_STATUS_OPTIONS = [
@@ -85,6 +88,7 @@ type OutreachFormState = {
   lastContactDate: string;
   nextActionDate: string;
   assignedArtist: string;
+  assignedArtistSource: string;
   avatarType: string;
   targetMarket: string;
   warmConnection: string;
@@ -138,12 +142,30 @@ function buildOutreachFormState(
     lastContactDate?: string | null;
     nextActionDate?: string | null;
     assignedArtist?: string | null;
+    assignedArtistSource?: string | null;
     avatarType?: string | null;
     targetMarket?: string | null;
     warmConnection?: string | null;
     notes?: string | null;
   } | null,
+  categorySlug?: string | null,
 ): OutreachFormState {
+  const avatarSuggestion = getAvatarTypeRecommendation(categorySlug);
+  const avatarType = outreach?.avatarType ?? avatarSuggestion?.avatarType ?? "";
+  const artistRecommendation = getArtistRecommendation({
+    avatarType,
+    targetMarket: outreach?.targetMarket ?? null,
+    categorySlug,
+  });
+  const assignedArtist = outreach?.assignedArtist ?? artistRecommendation?.suggestedArtist ?? "";
+  const assignedArtistSource =
+    assignedArtist === ""
+      ? ""
+      : outreach?.assignedArtistSource ??
+        (artistRecommendation && assignedArtist === artistRecommendation.suggestedArtist
+          ? "auto"
+          : "manual");
+
   return {
     outreachStatus: outreach?.outreachStatus ?? "not_contacted",
     contactName: outreach?.contactName ?? "",
@@ -151,8 +173,9 @@ function buildOutreachFormState(
     contactEmail: outreach?.contactEmail ?? "",
     lastContactDate: outreach?.lastContactDate ?? "",
     nextActionDate: outreach?.nextActionDate ?? "",
-    assignedArtist: outreach?.assignedArtist ?? "",
-    avatarType: outreach?.avatarType ?? "",
+    assignedArtist,
+    assignedArtistSource,
+    avatarType,
     targetMarket: outreach?.targetMarket ?? "",
     warmConnection: outreach?.warmConnection ?? "",
     notes: outreach?.notes ?? "",
@@ -167,6 +190,10 @@ function getAssignedArtistMode(
   form: OutreachFormState,
   categorySlug?: string | null,
 ): "auto" | "manual" {
+  if (form.assignedArtistSource === "manual") {
+    return "manual";
+  }
+
   const recommendation = getArtistRecommendation({
     avatarType: form.avatarType,
     targetMarket: form.targetMarket,
@@ -290,7 +317,10 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (outreachQuery.data) {
-      const nextForm = buildOutreachFormState(outreachQuery.data);
+      const nextForm = buildOutreachFormState(
+        outreachQuery.data,
+        businessQuery.data?.categorySlug ?? null,
+      );
 
       setOutreachForm(nextForm);
       setAssignedArtistMode(getAssignedArtistMode(nextForm, businessQuery.data?.categorySlug ?? null));
@@ -309,7 +339,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
         queryClient.invalidateQueries({
           queryKey: getGetOutreachPipelineQueryKey({ horizonDays: 7, limit: 60 }),
         });
-        setOutreachForm(buildOutreachFormState(data));
+        setOutreachForm(buildOutreachFormState(data, businessQuery.data?.categorySlug ?? null));
         toast({
           title: "Outreach updated",
           description: "The outreach pipeline fields have been saved.",
@@ -355,6 +385,9 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     targetMarket: outreachForm.targetMarket,
     categorySlug: businessQuery.data?.categorySlug ?? null,
   });
+  const liveAvatarRecommendation = getAvatarTypeRecommendation(
+    businessQuery.data?.categorySlug ?? null,
+  );
 
   useEffect(() => {
     if (assignedArtistMode !== "auto") {
@@ -370,6 +403,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
       return {
         ...current,
         assignedArtist: suggestedArtist,
+        assignedArtistSource: suggestedArtist ? "auto" : "",
       };
     });
   }, [liveArtistRecommendation?.suggestedArtist, assignedArtistMode]);
@@ -419,7 +453,8 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const outreach = outreachQuery.data;
   const contactCandidates = contactCandidatesQuery.data ?? [];
   const artistRecommendation = liveArtistRecommendation;
-  const persistedOutreachForm = buildOutreachFormState(outreach);
+  const avatarRecommendation = liveAvatarRecommendation;
+  const persistedOutreachForm = buildOutreachFormState(outreach, business.categorySlug);
   const isOutreachDirty =
     serializeOutreachFormState(outreachForm) !== serializeOutreachFormState(persistedOutreachForm);
 
@@ -430,27 +465,13 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     setOutreachForm((current) => ({ ...current, [key]: value }));
   }
 
-  useEffect(() => {
-    if (assignedArtistMode !== "auto") {
-      return;
-    }
-
-    const suggestedArtist = artistRecommendation?.suggestedArtist ?? "";
-    setOutreachForm((current) => {
-      if (current.assignedArtist === suggestedArtist) {
-        return current;
-      }
-
-      return {
-        ...current,
-        assignedArtist: suggestedArtist,
-      };
-    });
-  }, [artistRecommendation?.suggestedArtist, assignedArtistMode]);
-
   function updateAssignedArtist(value: string, mode: "auto" | "manual") {
     setAssignedArtistMode(mode);
-    updateOutreachField("assignedArtist", value);
+    setOutreachForm((current) => ({
+      ...current,
+      assignedArtist: value,
+      assignedArtistSource: value ? mode : "",
+    }));
   }
 
   function resetOutreachForm() {
@@ -469,6 +490,8 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
         lastContactDate: outreachForm.lastContactDate || null,
         nextActionDate: outreachForm.nextActionDate || null,
         assignedArtist: outreachForm.assignedArtist || null,
+        assignedArtistSource:
+          outreachForm.assignedArtist ? outreachForm.assignedArtistSource || "manual" : null,
         avatarType: outreachForm.avatarType || null,
         targetMarket: outreachForm.targetMarket || null,
         warmConnection: outreachForm.warmConnection.trim() || null,
@@ -604,9 +627,16 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                     </div>
                     <div className="rounded-lg border p-4">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">Assigned Artist</p>
-                      <p className="mt-2 text-sm font-medium">
-                        {outreach?.assignedArtist || outreachForm.assignedArtist || "Not assigned"}
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium">
+                          {outreach?.assignedArtist || outreachForm.assignedArtist || "Not assigned"}
+                        </p>
+                        {(outreach?.assignedArtistSource || outreachForm.assignedArtistSource) && (
+                          <Badge variant="outline" className="capitalize">
+                            {outreach?.assignedArtistSource || outreachForm.assignedArtistSource}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="rounded-lg border p-4">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">Next Action</p>
@@ -672,10 +702,14 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                               <Badge variant="outline" className="capitalize">
                                 {artistRecommendation.confidence}
                               </Badge>
-                              {assignedArtistMode === "manual" &&
+                              {outreachForm.assignedArtistSource === "manual" &&
                                 outreachForm.assignedArtist &&
                                 outreachForm.assignedArtist !== artistRecommendation.suggestedArtist && (
                                   <Badge variant="secondary">Manual override</Badge>
+                                )}
+                              {outreachForm.assignedArtistSource === "auto" &&
+                                outreachForm.assignedArtist === artistRecommendation.suggestedArtist && (
+                                  <Badge variant="outline">Auto assigned</Badge>
                                 )}
                             </div>
                             <p>{artistRecommendation.reason}</p>
@@ -720,6 +754,35 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                           ))}
                         </SelectContent>
                       </Select>
+                      <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                        {avatarRecommendation ? (
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium text-foreground">
+                                Suggested: {formatPipelineValue(avatarRecommendation.avatarType)}
+                              </span>
+                              {outreachForm.avatarType === avatarRecommendation.avatarType && (
+                                <Badge variant="outline">Category default</Badge>
+                              )}
+                            </div>
+                            <p>{avatarRecommendation.reason}</p>
+                            {outreachForm.avatarType !== avatarRecommendation.avatarType && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  updateOutreachField("avatarType", avatarRecommendation.avatarType)
+                                }
+                              >
+                                Apply suggestion
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <p>No avatar suggestion available for this category yet.</p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">

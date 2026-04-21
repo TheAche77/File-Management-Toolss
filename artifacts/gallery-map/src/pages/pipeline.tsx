@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getArtistRecommendation } from "@/lib/artist-recommendation";
 import { getStoredAdminToken } from "@/lib/admin-auth";
 
 function formatPipelineValue(value?: string | null) {
@@ -208,6 +209,11 @@ export default function PipelinePage() {
               ) : (
                 items.map((item) => {
                   const mailtoLink = buildMailtoLink(item);
+                  const recommendation = getArtistRecommendation({
+                    avatarType: item.avatarType,
+                    targetMarket: item.targetMarket,
+                    categorySlug: item.categorySlug,
+                  });
 
                   return (
                     <div
@@ -223,6 +229,11 @@ export default function PipelinePage() {
                           {item.assignedArtist && (
                             <Badge variant="outline" className="bg-primary/5 text-primary">
                               {item.assignedArtist}
+                            </Badge>
+                          )}
+                          {item.assignedArtistSource && (
+                            <Badge variant="outline" className="capitalize">
+                              {item.assignedArtistSource}
                             </Badge>
                           )}
                         </div>
@@ -263,6 +274,18 @@ export default function PipelinePage() {
                             )}
                             {item.warmConnection && <p>Warm intro: {item.warmConnection}</p>}
                             {item.notes && <p>{item.notes}</p>}
+                          </div>
+                        )}
+
+                        {recommendation && (
+                          <div className="rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground">
+                            <p>
+                              <span className="font-medium text-foreground">
+                                Suggested artist: {recommendation.suggestedArtist}
+                              </span>
+                              <span className="ml-2 capitalize">({recommendation.confidence})</span>
+                            </p>
+                            <p>{recommendation.reason}</p>
                           </div>
                         )}
                       </div>
