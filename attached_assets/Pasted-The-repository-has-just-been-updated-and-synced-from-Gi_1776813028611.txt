@@ -1,0 +1,242 @@
+The repository has just been updated and synced from GitHub after recent changes made externally with Codex.
+
+Your task is NOT to merely describe the codebase.
+Your task is to perform a deep technical review, reconcile the newly added parts with the full existing architecture, and integrate everything into the main app as coherently and powerfully as possible.
+
+Do not stay in planning mode.
+Do not give a superficial review only.
+Do not stop after identifying issues.
+Do not rewrite the whole app unless strictly necessary.
+Do not discard recent additions just because they differ in style.
+Do not preserve broken legacy patterns just because they were there first.
+Do not create parallel implementations of the same feature.
+Do not leave the system fragmented.
+
+Your job is to:
+
+1. inspect the full current repo after sync
+2. identify all relevant newly added or changed parts
+3. compare them against the total architecture of the application
+4. evaluate whether each new part should be:
+
+   * kept as-is
+   * refactored
+   * merged into an existing subsystem
+   * replaced
+   * removed
+5. produce and execute a clean integration path
+6. make the app more functional, coherent, and complete than before
+
+## PRIMARY GOAL
+
+Bring the entire application into a more unified, stable, and high-functioning state after the latest synced changes.
+
+This means:
+
+* architectural review
+* integration review
+* dependency review
+* duplicated logic review
+* route/page/component consistency review
+* backend/frontend data flow review
+* database/schema alignment review
+* shared types/contracts review
+* end-to-end functionality review
+
+Then implement the needed fixes and integrations directly in the repo.
+
+## WHAT “SUCCESS” MEANS
+
+Success means:
+
+* the new additions are properly understood
+* they are integrated into the main architecture
+* duplicated or conflicting implementations are resolved
+* dead code is removed or isolated
+* shared contracts are aligned
+* backend and frontend are connected end-to-end
+* the app runs correctly
+* the overall system is stronger than before the sync
+
+Do not treat this as a passive code audit.
+Treat this as an active integration and optimization task.
+
+## REVIEW AND INTEGRATION PRINCIPLES
+
+Use these principles:
+
+### 1. Preserve value, not accidents
+
+If Codex-added code is good, keep it and integrate it.
+If legacy code is better, preserve that instead.
+If both contain value, merge intelligently.
+Do not blindly favor old or new code.
+
+### 2. Prefer one strong implementation over multiple weak ones
+
+If there are now two versions of the same feature, consolidate them.
+Avoid duplicated routes, duplicated components, duplicated utilities, duplicated schemas, duplicated services.
+
+### 3. Follow the main architecture
+
+The application should feel like one coherent system, not stitched-together islands.
+
+### 4. Favor end-to-end working flows
+
+A feature is only complete if:
+
+* schema/types are correct
+* backend logic works
+* frontend consumes it correctly
+* the user can actually use it
+
+### 5. Prefer working integration over theoretical perfection
+
+If needed, choose the strongest practical architecture and implement it now.
+
+## REQUIRED TASKS
+
+Perform all of the following:
+
+### A. REPO-WIDE CHANGE REVIEW
+
+Inspect the current synced codebase and identify:
+
+* newly added files
+* modified files
+* new modules/subsystems
+* changed routes/pages/components
+* changed database/schema logic
+* changed API contracts
+* added dependencies
+* possible broken imports or references
+* possible duplicated implementations
+
+Do not just list them; evaluate their role in the app.
+
+### B. ARCHITECTURAL FIT REVIEW
+
+For each major new or changed part, determine:
+
+* what problem it solves
+* where it belongs in the architecture
+* whether it overlaps with an existing subsystem
+* whether it introduces technical debt
+* whether it should be merged/refactored/extracted/removed
+
+### C. INTEGRATION PLAN
+
+Produce a concrete integration plan based on the actual repo state, not generic theory.
+
+The plan should resolve:
+
+* duplicated features
+* fractured data flow
+* inconsistent naming
+* inconsistent folder ownership
+* mismatched DTOs/types
+* broken or partial UI/backend connections
+* orphaned utilities/modules
+* schema drift
+
+Then implement that plan directly.
+
+### D. IMPLEMENT THE INTEGRATION
+
+Modify files directly to:
+
+* merge duplicated logic
+* connect missing backend/frontend pieces
+* unify naming and contracts
+* fix import/export issues
+* align schema/types/routes/components
+* remove or isolate obsolete code
+* restore build/run stability
+* maximize feature completeness
+
+### E. FUNCTIONAL MAXIMIZATION
+
+After integration, improve the app so it becomes as functional as possible within the existing design direction.
+
+This includes:
+
+* enabling unfinished flows where possible
+* wiring real data into static UI
+* connecting admin actions to real backend actions
+* exposing missing useful endpoin...
+
+Implement, review, and integrate now.
+
+The repo was just synced from GitHub after external Codex changes.
+Your task is to inspect the real updated codebase, identify the new/changed parts, and integrate them into the main application architecture.
+
+Do not remain in planning mode.
+Do not stop after code review.
+Do not produce a passive audit only.
+Do not keep duplicate implementations alive.
+Do not leave the app fragmented.
+
+Your mission:
+
+review the synced changes
+compare them to the existing architecture
+decide what to keep, merge, refactor, replace, or remove
+implement the integration directly
+make the whole app more coherent, more functional, and more complete
+Focus on:
+
+backend/frontend contract alignment
+schema consistency
+route/page consistency
+duplicated features
+orphaned modules
+shared types
+import/export issues
+end-to-end flow completion
+Rules:
+
+keep value, remove redundancy
+prefer one strong implementation over multiple weak ones
+prefer working end-to-end flows over disconnected code
+prefer reusable architecture over hardcoded islands
+if a new Codex part is useful but incomplete, finish it or integrate it cleanly
+if legacy code conflicts with better new code, replace legacy code
+if both are valuable, merge intelligently
+Required execution order:
+
+inspect changed/new files
+map current architecture
+identify overlaps/conflicts/gaps
+choose best integration direction
+modify files directly
+fix type/build/runtime issues
+complete missing connections
+verify the app runs coherently
+At the end report:
+
+files changed
+what was integrated
+what was merged
+what was removed
+what now works
+what remains optional
+A feature is not complete unless schema, backend, and frontend are connected end-to-end.
+
+Proceed now and modify the repo directly.
+Do not build static UI shells disconnected from live backend data.
+Do not preserve old code just because it already existed.
+Do not discard new code just because it was generated externally.
+Unify the system around the strongest architecture actually present in the repo.
+Do not repeatedly re-analyze the same folders once the architecture is already identified.
+Do not ask for confirmation unless there is a hard blocker.
+Prefer a working integrated solution over an overengineered partial refactor.
+If two implementations overlap, consolidate them instead of keeping both alive.
+Before finishing, do one final pass specifically for integration quality:
+
+remove dead imports
+fix broken references
+align shared types
+verify route-to-page connections
+verify admin actions trigger real backend logic
+verify the main user flows are actually usable
+Your final goal is not to preserve the repo exactly as it is, but to evolve it into the strongest coherent version of itself after the sync.

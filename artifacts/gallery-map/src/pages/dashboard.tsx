@@ -1,5 +1,8 @@
 import { Link } from "wouter";
-import { useGetOutreachDashboard } from "@workspace/api-client-react";
+import {
+  getGetOutreachDashboardQueryKey,
+  useGetOutreachDashboard,
+} from "@workspace/api-client-react";
 import {
   ArrowRight,
   Flame,
@@ -58,6 +61,7 @@ export default function Dashboard() {
   const hasAdminToken = Boolean(getStoredAdminToken());
   const { data, isLoading, isError } = useGetOutreachDashboard({
     query: {
+      queryKey: getGetOutreachDashboardQueryKey(),
       enabled: hasAdminToken,
     },
   });

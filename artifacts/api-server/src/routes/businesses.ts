@@ -135,7 +135,7 @@ router.get("/businesses/review-queue", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/businesses/:id", async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const rows = await db.select().from(businessesTable).where(eq(businessesTable.id, id)).limit(1);
@@ -144,7 +144,7 @@ router.get("/businesses/:id", async (req, res) => {
 });
 
 router.get("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -165,7 +165,7 @@ router.get("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
 });
 
 router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -265,7 +265,7 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/businesses/:id/sources", async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -303,7 +303,7 @@ router.get("/businesses/:id/sources", async (req, res) => {
 });
 
 router.get("/businesses/:id/contact-candidates", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -327,8 +327,8 @@ router.get("/businesses/:id/contact-candidates", requireAdminAuth, async (req, r
 });
 
 router.patch("/businesses/:id/contact-candidates/:candidateId", requireAdminAuth, async (req, res) => {
-  const businessId = parseInt(req.params["id"] ?? "0", 10);
-  const candidateId = parseInt(req.params["candidateId"] ?? "0", 10);
+  const businessId = parseInt(String(req.params["id"] ?? "0"), 10);
+  const candidateId = parseInt(String(req.params["candidateId"] ?? "0"), 10);
 
   if (!businessId || isNaN(businessId) || !candidateId || isNaN(candidateId)) {
     res.status(400).json({ error: "Invalid contact candidate identifier" });
@@ -560,7 +560,7 @@ router.get("/imports/runs", requireAdminAuth, async (_req, res) => {
 });
 
 router.get("/imports/runs/:id", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid run ID" });
     return;
@@ -589,7 +589,16 @@ router.get("/export/businesses.csv", async (req, res) => {
 
   const rows = await db.select().from(businessesTable).where(where).orderBy(businessesTable.name);
 
-  const headers = ["id", "category", "name", "city", "address", "postal_code", "latitude", "longitude", "website", "phone", "osm_id", "rating", "enrichment_status", "created_at"];
+  const headers = [
+    "id", "categoria", "nome", "citta", "indirizzo", "cap", "latitudine", "longitudine",
+    "sito_web", "telefono", "osm_id", "rating", "valutazioni_totali",
+    "stato_arricchimento", "ha_sito_web", "ha_telefono",
+    "stato_outreach", "contatto_nome", "contatto_ruolo", "contatto_email",
+    "ultima_data_contatto", "prossima_azione",
+    "artista_assegnato", "fonte_assegnazione_artista",
+    "tipo_avatar", "mercato_target", "connessione_calda", "note",
+    "creato_il", "aggiornato_il",
+  ];
 
   const esc = (v: unknown): string => {
     if (v == null) return "";
@@ -597,14 +606,27 @@ router.get("/export/businesses.csv", async (req, res) => {
     return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
   };
 
+  // UTF-8 BOM for Excel compatibility
+  const BOM = "\uFEFF";
+
   const lines = [
     headers.join(","),
-    ...rows.map((r) => [r.id, esc(r.categorySlug), esc(r.name), esc(r.city), esc(r.addressLine), esc(r.postalCode), esc(r.latitude), esc(r.longitude), esc(r.website), esc(r.phone), esc(r.osmId), esc(r.rating), esc(r.enrichmentStatus), r.createdAt.toISOString()].join(",")),
+    ...rows.map((r) => [
+      r.id, esc(r.categorySlug), esc(r.name), esc(r.city), esc(r.addressLine), esc(r.postalCode),
+      esc(r.latitude), esc(r.longitude), esc(r.website), esc(r.phone), esc(r.osmId),
+      esc(r.rating), esc(r.userRatingsTotal),
+      esc(r.enrichmentStatus), r.hasWebsite ? "sì" : "no", r.hasPhone ? "sì" : "no",
+      esc(r.outreachStatus), esc(r.contactName), esc(r.contactRole), esc(r.contactEmail),
+      esc(r.lastContactDate), esc(r.nextActionDate),
+      esc(r.assignedArtist), esc(r.assignedArtistSource),
+      esc(r.avatarType), esc(r.targetMarket), esc(r.warmConnection), esc(r.notes),
+      r.createdAt.toISOString(), r.updatedAt.toISOString(),
+    ].join(",")),
   ];
 
-  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="businesses.csv"');
-  res.send(lines.join("\n"));
+  res.send(BOM + lines.join("\n"));
 });
 
 // Legacy redirect - galleries was the old path

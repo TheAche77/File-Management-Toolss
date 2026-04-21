@@ -5,6 +5,7 @@ import {
   useGetImportRunById,
   useGetReviewQueue,
   getGetImportRunsQueryKey,
+  getGetImportRunByIdQueryKey,
   getGetReviewQueueQueryKey,
   useGetCategories,
   getGetCategoriesQueryKey
@@ -54,6 +55,7 @@ export default function Admin() {
 
   const { data: activeRun, error: activeRunError } = useGetImportRunById(activeRunId ?? 0, {
     query: {
+      queryKey: getGetImportRunByIdQueryKey(activeRunId ?? 0),
       enabled: isAdminUnlocked && !!activeRunId,
       refetchInterval: activeRunId ? 2000 : false,
     }

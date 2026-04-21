@@ -91,7 +91,7 @@ function hasCategoryTag(categorySlug: string | null | undefined, values: Set<str
   return Boolean(categorySlug && values.has(categorySlug));
 }
 
-function buildConfidence(score: number, hasMarketMatch: boolean, hasAvatarMatch: boolean) {
+function buildConfidence(score: number, hasMarketMatch: boolean, hasAvatarMatch: boolean): ArtistRecommendation["confidence"] {
   if (score >= 7 && hasMarketMatch && hasAvatarMatch) return "high";
   if (score >= 4) return "medium";
   return "low";
