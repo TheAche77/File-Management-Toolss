@@ -52,6 +52,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { getArtistRecommendation } from "@/lib/artist-recommendation";
 import { getStoredAdminToken } from "@/lib/admin-auth";
 
 const OUTREACH_STATUS_OPTIONS = [
@@ -162,6 +163,23 @@ function serializeOutreachFormState(form: OutreachFormState) {
   return JSON.stringify(form);
 }
 
+function getAssignedArtistMode(
+  form: OutreachFormState,
+  categorySlug?: string | null,
+): "auto" | "manual" {
+  const recommendation = getArtistRecommendation({
+    avatarType: form.avatarType,
+    targetMarket: form.targetMarket,
+    categorySlug,
+  });
+
+  return form.assignedArtist &&
+    recommendation &&
+    form.assignedArtist !== recommendation.suggestedArtist
+    ? "manual"
+    : "auto";
+}
+
 function InfoRow({
   icon: Icon,
   label,
@@ -240,6 +258,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const businessId = Number(params.id);
   const hasAdminToken = Boolean(getStoredAdminToken());
   const [outreachForm, setOutreachForm] = useState<OutreachFormState>(() => buildOutreachFormState());
+  const [assignedArtistMode, setAssignedArtistMode] = useState<"auto" | "manual">("auto");
 
   const businessQuery = useGetBusinessById(businessId, {
     query: {
@@ -271,9 +290,12 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (outreachQuery.data) {
-      setOutreachForm(buildOutreachFormState(outreachQuery.data));
+      const nextForm = buildOutreachFormState(outreachQuery.data);
+
+      setOutreachForm(nextForm);
+      setAssignedArtistMode(getAssignedArtistMode(nextForm, businessQuery.data?.categorySlug ?? null));
     }
-  }, [outreachQuery.data]);
+  }, [outreachQuery.data, businessQuery.data?.categorySlug]);
 
   const updateOutreachMutation = useUpdateBusinessOutreach({
     mutation: {
@@ -328,6 +350,30 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     },
   });
 
+  const liveArtistRecommendation = getArtistRecommendation({
+    avatarType: outreachForm.avatarType,
+    targetMarket: outreachForm.targetMarket,
+    categorySlug: businessQuery.data?.categorySlug ?? null,
+  });
+
+  useEffect(() => {
+    if (assignedArtistMode !== "auto") {
+      return;
+    }
+
+    const suggestedArtist = liveArtistRecommendation?.suggestedArtist ?? "";
+    setOutreachForm((current) => {
+      if (current.assignedArtist === suggestedArtist) {
+        return current;
+      }
+
+      return {
+        ...current,
+        assignedArtist: suggestedArtist,
+      };
+    });
+  }, [liveArtistRecommendation?.suggestedArtist, assignedArtistMode]);
+
   if (!Number.isFinite(businessId) || businessId <= 0) {
     return (
     <div className="space-y-4">
@@ -372,6 +418,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const sources = sourcesQuery.data ?? [];
   const outreach = outreachQuery.data;
   const contactCandidates = contactCandidatesQuery.data ?? [];
+  const artistRecommendation = liveArtistRecommendation;
   const persistedOutreachForm = buildOutreachFormState(outreach);
   const isOutreachDirty =
     serializeOutreachFormState(outreachForm) !== serializeOutreachFormState(persistedOutreachForm);
@@ -383,8 +430,32 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     setOutreachForm((current) => ({ ...current, [key]: value }));
   }
 
+  useEffect(() => {
+    if (assignedArtistMode !== "auto") {
+      return;
+    }
+
+    const suggestedArtist = artistRecommendation?.suggestedArtist ?? "";
+    setOutreachForm((current) => {
+      if (current.assignedArtist === suggestedArtist) {
+        return current;
+      }
+
+      return {
+        ...current,
+        assignedArtist: suggestedArtist,
+      };
+    });
+  }, [artistRecommendation?.suggestedArtist, assignedArtistMode]);
+
+  function updateAssignedArtist(value: string, mode: "auto" | "manual") {
+    setAssignedArtistMode(mode);
+    updateOutreachField("assignedArtist", value);
+  }
+
   function resetOutreachForm() {
-    setOutreachForm(buildOutreachFormState(outreach));
+    setOutreachForm(persistedOutreachForm);
+    setAssignedArtistMode(getAssignedArtistMode(persistedOutreachForm, business.categorySlug));
   }
 
   function saveOutreach() {
@@ -576,7 +647,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                       <Select
                         value={outreachForm.assignedArtist || "__none__"}
                         onValueChange={(value) =>
-                          updateOutreachField("assignedArtist", value === "__none__" ? "" : value)
+                          updateAssignedArtist(value === "__none__" ? "" : value, "manual")
                         }
                       >
                         <SelectTrigger id="assigned-artist">
@@ -591,6 +662,42 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                           ))}
                         </SelectContent>
                       </Select>
+                      <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                        {artistRecommendation ? (
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium text-foreground">
+                                Suggested: {artistRecommendation.suggestedArtist}
+                              </span>
+                              <Badge variant="outline" className="capitalize">
+                                {artistRecommendation.confidence}
+                              </Badge>
+                              {assignedArtistMode === "manual" &&
+                                outreachForm.assignedArtist &&
+                                outreachForm.assignedArtist !== artistRecommendation.suggestedArtist && (
+                                  <Badge variant="secondary">Manual override</Badge>
+                                )}
+                            </div>
+                            <p>{artistRecommendation.reason}</p>
+                            {outreachForm.assignedArtist !== artistRecommendation.suggestedArtist && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  updateAssignedArtist(artistRecommendation.suggestedArtist, "auto")
+                                }
+                              >
+                                Apply suggestion
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <p>
+                            Set `avatar type` and `target market` to unlock an artist suggestion.
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">
