@@ -1,0 +1,194 @@
+# Scopri Italia
+
+Local business discovery and enrichment platform for Italy.
+
+The app is built as a `pnpm` monorepo with:
+
+- `artifacts/api-server`: Express API
+- `artifacts/gallery-map`: React frontend
+- `lib/db`: Drizzle schema and database client
+- `lib/api-spec`: OpenAPI source of truth
+- `lib/api-client-react`: generated React Query hooks
+
+## What It Does
+
+The current branch supports:
+
+- category and city based business discovery
+- async imports from OpenStreetMap Overpass
+- bulk-aware merge and dedupe
+- source tracking with `business_sources`
+- review queue for incomplete or suspicious records
+- contact candidates with manual review actions
+- generic email extraction from official websites only
+- minimal admin protection via `ADMIN_API_TOKEN`
+
+The enrichment model is intentionally conservative:
+
+- official websites and official website pages are allowed
+- generic business emails such as `info@`, `contact@`, `hello@` are allowed
+- personal LinkedIn scraping is not part of the product
+
+## Workspace Layout
+
+| Path | Purpose |
+|---|---|
+| `artifacts/api-server` | Express API, import pipeline, enrichment services |
+| `artifacts/gallery-map` | React UI, dashboard, directory, map, admin |
+| `lib/db` | Drizzle schema and DB client |
+| `lib/api-spec` | OpenAPI spec used for generated clients |
+| `lib/api-client-react` | generated API hooks used by the frontend |
+
+## Environment Variables
+
+Copy `.env.example` and adapt it to your environment.
+
+Required for the API:
+
+- `PORT`
+- `DATABASE_URL`
+
+Recommended for production-like local use:
+
+- `ADMIN_API_TOKEN`
+- `LOG_LEVEL`
+
+Optional:
+
+- `GOOGLE_MAPS_API_KEY`
+
+Required for the frontend:
+
+- `PORT`
+- `BASE_PATH`
+
+Notes:
+
+- `ADMIN_API_TOKEN` protects import, review queue, contact candidate review, and import history endpoints.
+- If `ADMIN_API_TOKEN` is not set, the backend currently logs a warning and leaves admin routes open.
+- `BASE_PATH` must match the Vite base path expected by the frontend. In a simple local setup, `/` is usually fine.
+
+## Example Local Setup
+
+API shell:
+
+```bash
+export PORT=8080
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
+export ADMIN_API_TOKEN=change-me-to-a-long-random-string
+export LOG_LEVEL=info
+pnpm --filter @workspace/api-server run build
+pnpm --filter @workspace/api-server run start
+```
+
+Frontend shell:
+
+```bash
+export PORT=19001
+export BASE_PATH=/
+pnpm --filter @workspace/gallery-map run dev
+```
+
+## Main Commands
+
+Typecheck:
+
+```bash
+pnpm run typecheck
+```
+
+Typecheck specific packages:
+
+```bash
+pnpm --filter @workspace/api-server run typecheck
+pnpm --filter @workspace/gallery-map run typecheck
+```
+
+Build API:
+
+```bash
+pnpm --filter @workspace/api-server run build
+```
+
+Run frontend:
+
+```bash
+pnpm --filter @workspace/gallery-map run dev
+```
+
+Regenerate API client after changing `lib/api-spec/openapi.yaml`:
+
+```bash
+pnpm --filter @workspace/api-client-react run codegen
+```
+
+## Current Data Model
+
+Core tables in active use:
+
+- `categories`
+- `businesses`
+- `import_runs`
+- `business_sources`
+- `contact_candidates`
+
+Important functional roles:
+
+- `businesses`: canonical business record
+- `business_sources`: provenance and fetch tracking for source URLs
+- `contact_candidates`: suggested contact paths with confidence and review state
+
+## Protected Admin Features
+
+When `ADMIN_API_TOKEN` is configured:
+
+- open `/admin`
+- paste the token into the unlock form
+- the token is stored in `sessionStorage` for the current browser session only
+- protected API calls are sent with `Authorization: Bearer <token>`
+
+Protected capabilities currently include:
+
+- run imports
+- read import history
+- read review queue
+- read contact candidates
+- approve/reject/set-primary contact candidates
+
+## Data Flow
+
+1. Admin queues an import.
+2. The API fetches raw business candidates from Overpass.
+3. Records are normalized and merged in bulk.
+4. `business_sources` are recorded for provenance.
+5. Base `contact_candidates` are created from known official channels.
+6. Official website pages are fetched conservatively to extract generic emails.
+7. Operators review candidates in the admin/detail workflow.
+
+## Legal / Product Guardrails
+
+The intended operating model is:
+
+- use official business sources first
+- keep provenance for every derived contact path
+- avoid aggressive scraping
+- avoid collecting unnecessary personal data
+- send doubtful records to review instead of treating them as truth
+
+Not in scope:
+
+- automated LinkedIn profile scraping
+- mass collection of personal third-party profile data
+- guessing personal emails from names/domains
+
+## Operational Notes
+
+- The Google Places connector is still a stub even if `GOOGLE_MAPS_API_KEY` is present.
+- The current environment here did not allow running `pnpm`/`npm`, so recent changes were implemented and reviewed but not compiled in this session.
+- Any schema additions such as `business_sources` or `contact_candidates` require the corresponding database schema update in your real environment.
+
+## Roadmap
+
+The higher-level product and engineering roadmap lives in:
+
+- [ROADMAP.md](./ROADMAP.md)
