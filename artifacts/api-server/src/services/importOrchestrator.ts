@@ -5,6 +5,7 @@ import { OverpassConnector } from "../connectors/overpassConnector";
 import { GooglePlacesConnector } from "../connectors/googlePlacesConnector";
 import { bulkMergeBusinesses } from "./dedupeService";
 import { buildBusinessSourcesForRecord, upsertBusinessSources } from "./businessSourceService";
+import { buildContactCandidatesForRecord, upsertContactCandidates } from "./contactCandidateService";
 import { logger } from "../lib/logger";
 import type { ConnectorOptions } from "../connectors/types";
 
@@ -146,6 +147,11 @@ export async function runImport(categorySlug: string, city: string, existingRunI
           buildBusinessSourcesForRecord(record, connector.name),
         );
         await upsertBusinessSources(sourceRecords);
+
+        const contactCandidates = mergeResult.records.flatMap((record) =>
+          buildContactCandidatesForRecord(record),
+        );
+        await upsertContactCandidates(contactCandidates);
       } catch (err) {
         stats.errors += result.items.length;
         logger.warn({ err, connector: connector.name }, "Error bulk merging businesses");

@@ -160,6 +160,37 @@ export const GetBusinessByIdResponse = zod.object({
 });
 
 /**
+ * @summary List contact candidates derived for one business
+ */
+export const GetBusinessContactCandidatesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBusinessContactCandidatesResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  fullName: zod.string().nullish(),
+  role: zod.string().nullish(),
+  contactType: zod.string(),
+  email: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  contactUrl: zod.string().nullish(),
+  sourceUrl: zod.string(),
+  sourceType: zod.string(),
+  confidenceScore: zod.string(),
+  isPrimary: zod.boolean(),
+  isPersonalData: zod.boolean(),
+  lastVerifiedAt: zod.string().nullish(),
+  reviewStatus: zod.string(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetBusinessContactCandidatesResponse = zod.array(
+  GetBusinessContactCandidatesResponseItem,
+);
+
+/**
  * @summary List tracked sources for one business
  */
 export const GetBusinessSourcesParams = zod.object({

@@ -18,6 +18,7 @@ import type {
 
 import type {
   Business,
+  ContactCandidate,
   BusinessSource,
   BusinessesResponse,
   Category,
@@ -459,6 +460,94 @@ export function useGetBusinessById<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetBusinessByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List contact candidates derived for one business
+ */
+export const getGetBusinessContactCandidatesUrl = (id: number) => {
+  return `/api/businesses/${id}/contact-candidates`;
+};
+
+export const getBusinessContactCandidates = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ContactCandidate[]> => {
+  return customFetch<ContactCandidate[]>(getGetBusinessContactCandidatesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBusinessContactCandidatesQueryKey = (id: number) => {
+  return [`/api/businesses/${id}/contact-candidates`] as const;
+};
+
+export const getGetBusinessContactCandidatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBusinessContactCandidates>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessContactCandidates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetBusinessContactCandidatesQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBusinessContactCandidates>>
+  > = ({ signal }) =>
+    getBusinessContactCandidates(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBusinessContactCandidates>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBusinessContactCandidatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBusinessContactCandidates>>
+>;
+export type GetBusinessContactCandidatesQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary List contact candidates derived for one business
+ */
+export function useGetBusinessContactCandidates<
+  TData = Awaited<ReturnType<typeof getBusinessContactCandidates>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessContactCandidates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBusinessContactCandidatesQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -1,13 +1,16 @@
 import { Link } from "wouter";
 import {
+  getGetBusinessContactCandidatesQueryKey,
   getGetBusinessByIdQueryKey,
   getGetBusinessSourcesQueryKey,
+  useGetBusinessContactCandidates,
   useGetBusinessById,
   useGetBusinessSources,
 } from "@workspace/api-client-react";
 import {
   ArrowLeft,
   Building2,
+  Mail,
   type LucideIcon,
   ExternalLink,
   Globe,
@@ -55,6 +58,13 @@ function formatSourceType(type: string) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function formatConfidence(value?: string | null) {
+  if (!value) return "N/A";
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) return value;
+  return `${Math.round(numeric * 100)}%`;
 }
 
 function InfoRow({
@@ -146,6 +156,13 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     },
   });
 
+  const contactCandidatesQuery = useGetBusinessContactCandidates(businessId, {
+    query: {
+      queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
+      enabled: Number.isFinite(businessId) && businessId > 0,
+    },
+  });
+
   if (!Number.isFinite(businessId) || businessId <= 0) {
     return (
     <div className="space-y-4">
@@ -188,6 +205,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
 
   const business = businessQuery.data;
   const sources = sourcesQuery.data ?? [];
+  const contactCandidates = contactCandidatesQuery.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -281,6 +299,83 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                 label="Slug"
                 value={business.slug}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Candidates</CardTitle>
+              <CardDescription>
+                Safe, source-linked contact paths derived from official business data already in the system.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {contactCandidatesQuery.isLoading ? (
+                <>
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </>
+              ) : contactCandidates.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  No contact candidates have been derived yet for this business.
+                </div>
+              ) : (
+                contactCandidates.map((candidate, index) => (
+                  <div key={candidate.id} className="space-y-4">
+                    {index > 0 && <Separator />}
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-2 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">{formatSourceType(candidate.contactType)}</Badge>
+                          <Badge variant="outline" className="capitalize">
+                            {candidate.reviewStatus.replace(/_/g, " ")}
+                          </Badge>
+                          {candidate.isPrimary && (
+                            <Badge variant="outline" className="bg-primary/5 text-primary">
+                              Primary
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          {candidate.contactUrl && (
+                            <a
+                              href={candidate.contactUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <Globe className="h-3 w-3" />
+                              <span className="truncate">{formatDomain(candidate.contactUrl) || candidate.contactUrl}</span>
+                              <ExternalLink className="h-3 w-3 shrink-0" />
+                            </a>
+                          )}
+                          {candidate.phone && (
+                            <div className="flex items-center gap-1 text-foreground">
+                              <Phone className="h-3 w-3 text-muted-foreground" />
+                              {candidate.phone}
+                            </div>
+                          )}
+                          {candidate.email && (
+                            <div className="flex items-center gap-1 text-foreground">
+                              <Mail className="h-3 w-3 text-muted-foreground" />
+                              {candidate.email}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                          <span>Confidence: {formatConfidence(candidate.confidenceScore)}</span>
+                          <span>Source: {formatSourceType(candidate.sourceType)}</span>
+                          <span>Verified: {formatDate(candidate.lastVerifiedAt)}</span>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground max-w-xs">
+                        {candidate.notes || "No notes available."}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 

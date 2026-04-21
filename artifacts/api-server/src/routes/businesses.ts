@@ -4,6 +4,7 @@ import type { ImportRun as DbImportRun } from "@workspace/db";
 import { eq, ilike, and, sql, count, desc, or } from "drizzle-orm";
 import { queueImportRun } from "../services/importJobService";
 import { getBusinessSources } from "../services/businessSourceService";
+import { getContactCandidates } from "../services/contactCandidateService";
 import { getReviewQueue } from "../services/reviewQueueService";
 
 const router = Router();
@@ -139,6 +140,49 @@ router.get("/businesses/:id/sources", async (req, res) => {
       isOfficial: source.isOfficial,
       createdAt: source.createdAt.toISOString(),
       updatedAt: source.updatedAt.toISOString(),
+    })),
+  );
+});
+
+router.get("/businesses/:id/contact-candidates", async (req, res) => {
+  const id = parseInt(req.params["id"] ?? "0", 10);
+  if (!id || isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const business = await db
+    .select({ id: businessesTable.id })
+    .from(businessesTable)
+    .where(eq(businessesTable.id, id))
+    .limit(1);
+
+  if (business.length === 0) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+
+  const contactCandidates = await getContactCandidates(id);
+  res.json(
+    contactCandidates.map((candidate) => ({
+      id: candidate.id,
+      businessId: candidate.businessId,
+      fullName: candidate.fullName ?? null,
+      role: candidate.role ?? null,
+      contactType: candidate.contactType,
+      email: candidate.email ?? null,
+      phone: candidate.phone ?? null,
+      contactUrl: candidate.contactUrl ?? null,
+      sourceUrl: candidate.sourceUrl,
+      sourceType: candidate.sourceType,
+      confidenceScore: candidate.confidenceScore,
+      isPrimary: candidate.isPrimary,
+      isPersonalData: candidate.isPersonalData,
+      lastVerifiedAt: candidate.lastVerifiedAt?.toISOString() ?? null,
+      reviewStatus: candidate.reviewStatus,
+      notes: candidate.notes ?? null,
+      createdAt: candidate.createdAt.toISOString(),
+      updatedAt: candidate.updatedAt.toISOString(),
     })),
   );
 });

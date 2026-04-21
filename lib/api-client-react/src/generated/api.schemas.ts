@@ -89,6 +89,34 @@ export interface BusinessSource {
   updatedAt: string;
 }
 
+export interface ContactCandidate {
+  id: number;
+  businessId: number;
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  role?: string | null;
+  contactType: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  contactUrl?: string | null;
+  sourceUrl: string;
+  sourceType: string;
+  confidenceScore: string;
+  isPrimary: boolean;
+  isPersonalData: boolean;
+  /** @nullable */
+  lastVerifiedAt?: string | null;
+  reviewStatus: string;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ReviewQueueItem {
   business: Business;
   reasons: string[];
