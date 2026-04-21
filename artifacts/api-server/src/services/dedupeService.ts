@@ -1,5 +1,5 @@
 import { db, businessesTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { InsertBusiness, Business } from "@workspace/db";
 import { logger } from "../lib/logger";
 import {
@@ -17,6 +17,16 @@ export interface BulkMergeStats {
   inserted: number;
   updated: number;
   skipped: number;
+}
+
+export interface BulkMergeRecord {
+  id: number;
+  action: DedupeAction | "skip";
+  business: InsertBusiness;
+}
+
+export interface BulkMergeResult extends BulkMergeStats {
+  records: BulkMergeRecord[];
 }
 
 interface ExistingMatch {
@@ -179,9 +189,9 @@ function dedupeIncomingBatch(items: InsertBusiness[]): InsertBusiness[] {
   return Array.from(byIdentity.values());
 }
 
-export async function bulkMergeBusinesses(items: InsertBusiness[]): Promise<BulkMergeStats> {
+export async function bulkMergeBusinesses(items: InsertBusiness[]): Promise<BulkMergeResult> {
   if (items.length === 0) {
-    return { inserted: 0, updated: 0, skipped: 0 };
+    return { inserted: 0, updated: 0, skipped: 0, records: [] };
   }
 
   const normalizedItems = dedupeIncomingBatch(items);
@@ -192,25 +202,30 @@ export async function bulkMergeBusinesses(items: InsertBusiness[]): Promise<Bulk
     .where(inArray(businessesTable.categorySlug, categorySlugs));
 
   const indexes = buildIndexes(existingRecords);
-  const inserts: InsertBusiness[] = [];
+  const inserts: Array<{ item: InsertBusiness; key: string }> = [];
   const updates: Array<{ id: number; values: InsertBusiness }> = [];
+  const records: BulkMergeRecord[] = [];
   let skipped = 0;
 
   for (const item of normalizedItems) {
     const match = findExistingMatch(indexes, item);
 
     if (!match) {
-      const insertValues = {
+      const insertValues: InsertBusiness = {
         ...item,
         lastCheckedAt: new Date(),
       };
-      inserts.push(insertValues);
+      inserts.push({
+        item: insertValues,
+        key: buildSlugKey(item.categorySlug, item.slug),
+      });
       continue;
     }
 
     const merged = mergeBusiness(match.record, item);
     if (!hasMeaningfulChanges(match.record, merged)) {
       skipped++;
+      records.push({ id: match.record.id, action: "skip", business: merged });
       continue;
     }
 
@@ -221,12 +236,39 @@ export async function bulkMergeBusinesses(items: InsertBusiness[]): Promise<Bulk
     if (inserts.length > 0) {
       const inserted = await tx
         .insert(businessesTable)
-        .values(inserts)
+        .values(inserts.map((entry) => entry.item))
         .onConflictDoNothing()
         .returning();
 
+      const insertedByKey = new Map(
+        inserted.map((record) => [buildSlugKey(record.categorySlug, record.slug), record]),
+      );
+
       for (const record of inserted) {
         registerIndexes(indexes, record);
+      }
+
+      for (const entry of inserts) {
+        const insertedRecord = insertedByKey.get(entry.key);
+        if (insertedRecord) {
+          records.push({ id: insertedRecord.id, action: "insert", business: entry.item });
+          continue;
+        }
+
+        const existing = await tx
+          .select()
+          .from(businessesTable)
+          .where(
+            and(
+              eq(businessesTable.categorySlug, entry.item.categorySlug),
+              eq(businessesTable.slug, entry.item.slug),
+            ),
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          records.push({ id: existing[0]!.id, action: "update", business: entry.item });
+        }
       }
     }
 
@@ -239,6 +281,7 @@ export async function bulkMergeBusinesses(items: InsertBusiness[]): Promise<Bulk
 
       if (updatedRecord) {
         registerIndexes(indexes, updatedRecord);
+        records.push({ id: updatedRecord.id, action: "update", business: update.values });
       }
     }
   });
@@ -247,17 +290,18 @@ export async function bulkMergeBusinesses(items: InsertBusiness[]): Promise<Bulk
     {
       input: items.length,
       normalized: normalizedItems.length,
-      inserted: inserts.length,
-      updated: updates.length,
+      inserted: records.filter((record) => record.action === "insert").length,
+      updated: records.filter((record) => record.action === "update").length,
       skipped,
     },
     "Bulk merge completed",
   );
 
   return {
-    inserted: inserts.length,
-    updated: updates.length,
+    inserted: records.filter((record) => record.action === "insert").length,
+    updated: records.filter((record) => record.action === "update").length,
     skipped,
+    records,
   };
 }
 
@@ -265,16 +309,11 @@ export async function upsertBusiness(
   incoming: InsertBusiness,
 ): Promise<{ action: DedupeAction; id: number }> {
   const normalized = normalizeIncomingBusiness(incoming);
-  const stats = await bulkMergeBusinesses([normalized]);
-  const action: DedupeAction = stats.inserted > 0 ? "insert" : "update";
+  const result = await bulkMergeBusinesses([normalized]);
+  const firstRecord = result.records[0];
 
-  const categoryRows = await db
-    .select()
-    .from(businessesTable)
-    .where(eq(businessesTable.categorySlug, normalized.categorySlug));
-
-  const indexes = buildIndexes(categoryRows);
-  const match = findExistingMatch(indexes, normalized);
-
-  return { action, id: match?.record.id ?? 0 };
+  return {
+    action: firstRecord?.action === "insert" ? "insert" : "update",
+    id: firstRecord?.id ?? 0,
+  };
 }

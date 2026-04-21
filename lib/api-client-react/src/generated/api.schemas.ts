@@ -68,6 +68,27 @@ export interface BusinessesResponse {
   totalPages: number;
 }
 
+export interface BusinessSource {
+  id: number;
+  businessId: number;
+  sourceType: string;
+  sourceUrl: string;
+  /** @nullable */
+  sourceDomain?: string | null;
+  /** @nullable */
+  discoveredVia?: string | null;
+  fetchStatus: string;
+  /** @nullable */
+  lastFetchedAt?: string | null;
+  /** @nullable */
+  contentHash?: string | null;
+  /** @nullable */
+  httpStatus?: number | null;
+  isOfficial: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CategoryCount {
   categorySlug: string;
   count: number;

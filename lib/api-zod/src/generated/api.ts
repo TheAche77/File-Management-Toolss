@@ -114,6 +114,30 @@ export const GetBusinessByIdResponse = zod.object({
 });
 
 /**
+ * @summary List tracked sources for one business
+ */
+export const GetBusinessSourcesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBusinessSourcesResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  sourceType: zod.string(),
+  sourceUrl: zod.string(),
+  sourceDomain: zod.string().nullish(),
+  discoveredVia: zod.string().nullish(),
+  fetchStatus: zod.string(),
+  lastFetchedAt: zod.string().nullish(),
+  contentHash: zod.string().nullish(),
+  httpStatus: zod.number().nullish(),
+  isOfficial: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetBusinessSourcesResponse = zod.array(GetBusinessSourcesResponseItem);
+
+/**
  * @summary Dashboard statistics
  */
 export const GetStatsQueryParams = zod.object({

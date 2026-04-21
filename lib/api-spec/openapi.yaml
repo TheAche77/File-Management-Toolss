@@ -118,6 +118,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /businesses/{id}/sources:
+    get:
+      operationId: getBusinessSources
+      tags: [businesses]
+      summary: List tracked sources for one business
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sources for one business
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BusinessSource"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /stats:
     get:
       operationId: getStats
@@ -337,6 +364,45 @@ components:
         totalPages:
           type: integer
       required: [businesses, total, page, pageSize, totalPages]
+
+    BusinessSource:
+      type: object
+      properties:
+        id:
+          type: integer
+        businessId:
+          type: integer
+        sourceType:
+          type: string
+        sourceUrl:
+          type: string
+        sourceDomain:
+          type: ["string", "null"]
+        discoveredVia:
+          type: ["string", "null"]
+        fetchStatus:
+          type: string
+        lastFetchedAt:
+          type: ["string", "null"]
+        contentHash:
+          type: ["string", "null"]
+        httpStatus:
+          type: ["integer", "null"]
+        isOfficial:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - businessId
+        - sourceType
+        - sourceUrl
+        - fetchStatus
+        - isOfficial
+        - createdAt
+        - updatedAt
 
     StatsResponse:
       type: object

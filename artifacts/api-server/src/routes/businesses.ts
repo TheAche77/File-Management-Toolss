@@ -3,6 +3,7 @@ import { db, businessesTable, importRunsTable, categoriesTable } from "@workspac
 import type { ImportRun as DbImportRun } from "@workspace/db";
 import { eq, ilike, and, sql, count, desc, or } from "drizzle-orm";
 import { queueImportRun } from "../services/importJobService";
+import { getBusinessSources } from "../services/businessSourceService";
 
 const router = Router();
 
@@ -76,6 +77,44 @@ router.get("/businesses/:id", async (req, res) => {
   const rows = await db.select().from(businessesTable).where(eq(businessesTable.id, id)).limit(1);
   if (rows.length === 0) { res.status(404).json({ error: "Business not found" }); return; }
   res.json(serializeBusiness(rows[0]!));
+});
+
+router.get("/businesses/:id/sources", async (req, res) => {
+  const id = parseInt(req.params["id"] ?? "0", 10);
+  if (!id || isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const business = await db
+    .select({ id: businessesTable.id })
+    .from(businessesTable)
+    .where(eq(businessesTable.id, id))
+    .limit(1);
+
+  if (business.length === 0) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+
+  const sources = await getBusinessSources(id);
+  res.json(
+    sources.map((source) => ({
+      id: source.id,
+      businessId: source.businessId,
+      sourceType: source.sourceType,
+      sourceUrl: source.sourceUrl,
+      sourceDomain: source.sourceDomain ?? null,
+      discoveredVia: source.discoveredVia ?? null,
+      fetchStatus: source.fetchStatus,
+      lastFetchedAt: source.lastFetchedAt?.toISOString() ?? null,
+      contentHash: source.contentHash ?? null,
+      httpStatus: source.httpStatus ?? null,
+      isOfficial: source.isOfficial,
+      createdAt: source.createdAt.toISOString(),
+      updatedAt: source.updatedAt.toISOString(),
+    })),
+  );
 });
 
 router.get("/stats", async (req, res) => {

@@ -7,6 +7,7 @@
  */
 
 export * from "./business";
+export * from "./businessSource";
 export * from "./businessesResponse";
 export * from "./category";
 export * from "./categoryCount";

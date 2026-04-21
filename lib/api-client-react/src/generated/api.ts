@@ -18,6 +18,7 @@ import type {
 
 import type {
   Business,
+  BusinessSource,
   BusinessesResponse,
   Category,
   ErrorResponse,
@@ -363,6 +364,92 @@ export function useGetBusinessById<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetBusinessByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List tracked sources for one business
+ */
+export const getGetBusinessSourcesUrl = (id: number) => {
+  return `/api/businesses/${id}/sources`;
+};
+
+export const getBusinessSources = async (
+  id: number,
+  options?: RequestInit,
+): Promise<BusinessSource[]> => {
+  return customFetch<BusinessSource[]>(getGetBusinessSourcesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBusinessSourcesQueryKey = (id: number) => {
+  return [`/api/businesses/${id}/sources`] as const;
+};
+
+export const getGetBusinessSourcesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBusinessSources>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessSources>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBusinessSourcesQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getBusinessSources>>> = ({
+    signal,
+  }) => getBusinessSources(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBusinessSources>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBusinessSourcesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBusinessSources>>
+>;
+export type GetBusinessSourcesQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary List tracked sources for one business
+ */
+export function useGetBusinessSources<
+  TData = Awaited<ReturnType<typeof getBusinessSources>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessSources>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBusinessSourcesQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

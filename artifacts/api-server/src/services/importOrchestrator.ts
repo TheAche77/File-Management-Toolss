@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { OverpassConnector } from "../connectors/overpassConnector";
 import { GooglePlacesConnector } from "../connectors/googlePlacesConnector";
 import { bulkMergeBusinesses } from "./dedupeService";
+import { buildBusinessSourcesForRecord, upsertBusinessSources } from "./businessSourceService";
 import { logger } from "../lib/logger";
 import type { ConnectorOptions } from "../connectors/types";
 
@@ -136,10 +137,15 @@ export async function runImport(categorySlug: string, city: string, existingRunI
       }
 
       try {
-        const mergeStats = await bulkMergeBusinesses(result.items);
-        stats.inserted += mergeStats.inserted;
-        stats.updated += mergeStats.updated;
-        stats.skipped += mergeStats.skipped;
+        const mergeResult = await bulkMergeBusinesses(result.items);
+        stats.inserted += mergeResult.inserted;
+        stats.updated += mergeResult.updated;
+        stats.skipped += mergeResult.skipped;
+
+        const sourceRecords = mergeResult.records.flatMap((record) =>
+          buildBusinessSourcesForRecord(record, connector.name),
+        );
+        await upsertBusinessSources(sourceRecords);
       } catch (err) {
         stats.errors += result.items.length;
         logger.warn({ err, connector: connector.name }, "Error bulk merging businesses");
