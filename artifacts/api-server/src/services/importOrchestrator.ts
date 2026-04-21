@@ -6,6 +6,7 @@ import { GooglePlacesConnector } from "../connectors/googlePlacesConnector";
 import { bulkMergeBusinesses } from "./dedupeService";
 import { buildBusinessSourcesForRecord, upsertBusinessSources } from "./businessSourceService";
 import { buildContactCandidatesForRecord, upsertContactCandidates } from "./contactCandidateService";
+import { enrichOfficialWebsiteContacts } from "./officialWebsiteContactService";
 import { logger } from "../lib/logger";
 import type { ConnectorOptions } from "../connectors/types";
 
@@ -152,6 +153,21 @@ export async function runImport(categorySlug: string, city: string, existingRunI
           buildContactCandidatesForRecord(record),
         );
         await upsertContactCandidates(contactCandidates);
+
+        for (const record of mergeResult.records) {
+          if (record.action === "skip" || !record.business.website) continue;
+
+          try {
+            const websiteEnrichment = await enrichOfficialWebsiteContacts(record);
+            await upsertBusinessSources(websiteEnrichment.sourceRecords);
+            await upsertContactCandidates(websiteEnrichment.contactCandidates);
+          } catch (err) {
+            logger.warn(
+              { err, businessId: record.id, website: record.business.website },
+              "Official website contact enrichment failed",
+            );
+          }
+        }
       } catch (err) {
         stats.errors += result.items.length;
         logger.warn({ err, connector: connector.name }, "Error bulk merging businesses");

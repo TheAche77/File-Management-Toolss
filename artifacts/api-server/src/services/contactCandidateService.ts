@@ -93,18 +93,48 @@ export async function upsertContactCandidates(records: InsertContactCandidate[])
 
   await db.transaction(async (tx) => {
     for (const record of records) {
-      const existing = await tx
-        .select({ id: contactCandidatesTable.id })
-        .from(contactCandidatesTable)
-        .where(
-          and(
-            eq(contactCandidatesTable.businessId, record.businessId),
-            eq(contactCandidatesTable.contactType, record.contactType),
-            eq(contactCandidatesTable.sourceType, record.sourceType),
-            eq(contactCandidatesTable.sourceUrl, record.sourceUrl),
-          ),
-        )
-        .limit(1);
+      const existing = await (async () => {
+        if (record.email) {
+          return tx
+            .select({ id: contactCandidatesTable.id })
+            .from(contactCandidatesTable)
+            .where(
+              and(
+                eq(contactCandidatesTable.businessId, record.businessId),
+                eq(contactCandidatesTable.contactType, record.contactType),
+                eq(contactCandidatesTable.email, record.email),
+              ),
+            )
+            .limit(1);
+        }
+
+        if (record.phone) {
+          return tx
+            .select({ id: contactCandidatesTable.id })
+            .from(contactCandidatesTable)
+            .where(
+              and(
+                eq(contactCandidatesTable.businessId, record.businessId),
+                eq(contactCandidatesTable.contactType, record.contactType),
+                eq(contactCandidatesTable.phone, record.phone),
+              ),
+            )
+            .limit(1);
+        }
+
+        return tx
+          .select({ id: contactCandidatesTable.id })
+          .from(contactCandidatesTable)
+          .where(
+            and(
+              eq(contactCandidatesTable.businessId, record.businessId),
+              eq(contactCandidatesTable.contactType, record.contactType),
+              eq(contactCandidatesTable.sourceType, record.sourceType),
+              eq(contactCandidatesTable.sourceUrl, record.sourceUrl),
+            ),
+          )
+          .limit(1);
+      })();
 
       if (existing.length > 0) {
         await tx
