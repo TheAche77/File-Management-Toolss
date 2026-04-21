@@ -10,6 +10,14 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: galleries
+    description: Gallery operations
+  - name: imports
+    description: Import operations
+  - name: export
+    description: Export operations
+  - name: stats
+    description: Statistics operations
 paths:
   /healthz:
     get:
@@ -24,6 +32,125 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /galleries:
+    get:
+      operationId: getGalleries
+      tags: [galleries]
+      summary: List galleries
+      description: Returns paginated list of galleries with optional filters
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: hasWebsite
+          in: query
+          schema:
+            type: boolean
+        - name: hasPhone
+          in: query
+          schema:
+            type: boolean
+        - name: source
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of galleries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleriesResponse"
+
+  /galleries/{id}:
+    get:
+      operationId: getGalleryById
+      tags: [galleries]
+      summary: Get a gallery by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Gallery details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gallery"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsResponse"
+
+  /imports/osm/rome:
+    post:
+      operationId: importOsmRome
+      tags: [imports]
+      summary: Import Rome galleries from OSM
+      description: Fetches galleries from Overpass API for Rome and saves to database
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+        "500":
+          description: Import failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /import-runs:
+    get:
+      operationId: getImportRuns
+      tags: [imports]
+      summary: Get import run history
+      responses:
+        "200":
+          description: List of import runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ImportRun"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +161,196 @@ components:
       required:
         - status
 
+    Gallery:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        latitude:
+          type: string
+        longitude:
+          type: string
+        addressLine:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        postalCode:
+          type: ["string", "null"]
+        region:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        sourcePrimary:
+          type: string
+        osmId:
+          type: ["string", "null"]
+        osmType:
+          type: ["string", "null"]
+        googlePlaceId:
+          type: ["string", "null"]
+        googleMapsUrl:
+          type: ["string", "null"]
+        rating:
+          type: ["string", "null"]
+        userRatingsTotal:
+          type: ["integer", "null"]
+        hasWebsite:
+          type: boolean
+        hasPhone:
+          type: boolean
+        enrichmentStatus:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        lastCheckedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+        - slug
+        - latitude
+        - longitude
+        - sourcePrimary
+        - hasWebsite
+        - hasPhone
+        - enrichmentStatus
+        - createdAt
+        - updatedAt
+
+    GalleriesResponse:
+      type: object
+      properties:
+        galleries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Gallery"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+        - galleries
+        - total
+        - page
+        - pageSize
+        - totalPages
+
+    StatsResponse:
+      type: object
+      properties:
+        totalGalleries:
+          type: integer
+        galleriesWithWebsite:
+          type: integer
+        galleriesWithPhone:
+          type: integer
+        fromOsm:
+          type: integer
+        enriched:
+          type: integer
+        byCityBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/CityCount"
+      required:
+        - totalGalleries
+        - galleriesWithWebsite
+        - galleriesWithPhone
+        - fromOsm
+        - enriched
+        - byCityBreakdown
+
+    CityCount:
+      type: object
+      properties:
+        city:
+          type: ["string", "null"]
+        count:
+          type: integer
+      required:
+        - city
+        - count
+
+    ImportResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        fetched:
+          type: integer
+        inserted:
+          type: integer
+        updated:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: integer
+        message:
+          type: string
+        runId:
+          type: ["integer", "null"]
+      required:
+        - success
+        - fetched
+        - inserted
+        - updated
+        - skipped
+        - errors
+        - message
+
+    ImportRun:
+      type: object
+      properties:
+        id:
+          type: integer
+        source:
+          type: string
+        city:
+          type: string
+        status:
+          type: string
+        fetched:
+          type: ["integer", "null"]
+        inserted:
+          type: ["integer", "null"]
+        updated:
+          type: ["integer", "null"]
+        skipped:
+          type: ["integer", "null"]
+        errors:
+          type: ["integer", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        startedAt:
+          type: string
+        finishedAt:
+          type: ["string", "null"]
+      required:
+        - id
+        - source
+        - city
+        - status
+        - startedAt
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

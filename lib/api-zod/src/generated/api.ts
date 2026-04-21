@@ -14,3 +14,142 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Returns paginated list of galleries with optional filters
+ * @summary List galleries
+ */
+export const getGalleriesQueryPageDefault = 1;
+export const getGalleriesQueryPageSizeDefault = 50;
+
+export const GetGalleriesQueryParams = zod.object({
+  search: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  hasWebsite: zod.coerce.boolean().optional(),
+  hasPhone: zod.coerce.boolean().optional(),
+  source: zod.coerce.string().optional(),
+  page: zod.coerce.number().default(getGalleriesQueryPageDefault),
+  pageSize: zod.coerce.number().default(getGalleriesQueryPageSizeDefault),
+});
+
+export const GetGalleriesResponse = zod.object({
+  galleries: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      slug: zod.string(),
+      latitude: zod.string(),
+      longitude: zod.string(),
+      addressLine: zod.string().nullish(),
+      city: zod.string().nullish(),
+      postalCode: zod.string().nullish(),
+      region: zod.string().nullish(),
+      country: zod.string().nullish(),
+      website: zod.string().nullish(),
+      phone: zod.string().nullish(),
+      sourcePrimary: zod.string(),
+      osmId: zod.string().nullish(),
+      osmType: zod.string().nullish(),
+      googlePlaceId: zod.string().nullish(),
+      googleMapsUrl: zod.string().nullish(),
+      rating: zod.string().nullish(),
+      userRatingsTotal: zod.number().nullish(),
+      hasWebsite: zod.boolean(),
+      hasPhone: zod.boolean(),
+      enrichmentStatus: zod.string(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+      lastCheckedAt: zod.string().nullish(),
+    }),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  pageSize: zod.number(),
+  totalPages: zod.number(),
+});
+
+/**
+ * @summary Get a gallery by ID
+ */
+export const GetGalleryByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetGalleryByIdResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  slug: zod.string(),
+  latitude: zod.string(),
+  longitude: zod.string(),
+  addressLine: zod.string().nullish(),
+  city: zod.string().nullish(),
+  postalCode: zod.string().nullish(),
+  region: zod.string().nullish(),
+  country: zod.string().nullish(),
+  website: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  sourcePrimary: zod.string(),
+  osmId: zod.string().nullish(),
+  osmType: zod.string().nullish(),
+  googlePlaceId: zod.string().nullish(),
+  googleMapsUrl: zod.string().nullish(),
+  rating: zod.string().nullish(),
+  userRatingsTotal: zod.number().nullish(),
+  hasWebsite: zod.boolean(),
+  hasPhone: zod.boolean(),
+  enrichmentStatus: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+  lastCheckedAt: zod.string().nullish(),
+});
+
+/**
+ * @summary Get dashboard statistics
+ */
+export const GetStatsResponse = zod.object({
+  totalGalleries: zod.number(),
+  galleriesWithWebsite: zod.number(),
+  galleriesWithPhone: zod.number(),
+  fromOsm: zod.number(),
+  enriched: zod.number(),
+  byCityBreakdown: zod.array(
+    zod.object({
+      city: zod.string().nullable(),
+      count: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * Fetches galleries from Overpass API for Rome and saves to database
+ * @summary Import Rome galleries from OSM
+ */
+export const ImportOsmRomeResponse = zod.object({
+  success: zod.boolean(),
+  fetched: zod.number(),
+  inserted: zod.number(),
+  updated: zod.number(),
+  skipped: zod.number(),
+  errors: zod.number(),
+  message: zod.string(),
+  runId: zod.number().nullish(),
+});
+
+/**
+ * @summary Get import run history
+ */
+export const GetImportRunsResponseItem = zod.object({
+  id: zod.number(),
+  source: zod.string(),
+  city: zod.string(),
+  status: zod.string(),
+  fetched: zod.number().nullish(),
+  inserted: zod.number().nullish(),
+  updated: zod.number().nullish(),
+  skipped: zod.number().nullish(),
+  errors: zod.number().nullish(),
+  errorMessage: zod.string().nullish(),
+  startedAt: zod.string(),
+  finishedAt: zod.string().nullish(),
+});
+export const GetImportRunsResponse = zod.array(GetImportRunsResponseItem);

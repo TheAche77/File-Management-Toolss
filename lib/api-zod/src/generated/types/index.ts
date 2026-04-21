@@ -6,4 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./cityCount";
+export * from "./errorResponse";
+export * from "./galleriesResponse";
+export * from "./gallery";
+export * from "./getGalleriesParams";
 export * from "./healthStatus";
+export * from "./importResult";
+export * from "./importRun";
+export * from "./statsResponse";

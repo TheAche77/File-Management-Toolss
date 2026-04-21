@@ -5,15 +5,27 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ErrorResponse,
+  GalleriesResponse,
+  Gallery,
+  GetGalleriesParams,
+  HealthStatus,
+  ImportResult,
+  ImportRun,
+  StatsResponse,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -92,6 +104,412 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns paginated list of galleries with optional filters
+ * @summary List galleries
+ */
+export const getGetGalleriesUrl = (params?: GetGalleriesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/galleries?${stringifiedParams}`
+    : `/api/galleries`;
+};
+
+export const getGalleries = async (
+  params?: GetGalleriesParams,
+  options?: RequestInit,
+): Promise<GalleriesResponse> => {
+  return customFetch<GalleriesResponse>(getGetGalleriesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGalleriesQueryKey = (params?: GetGalleriesParams) => {
+  return [`/api/galleries`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetGalleriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGalleries>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetGalleriesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGalleries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGalleriesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGalleries>>> = ({
+    signal,
+  }) => getGalleries(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGalleries>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGalleriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGalleries>>
+>;
+export type GetGalleriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List galleries
+ */
+
+export function useGetGalleries<
+  TData = Awaited<ReturnType<typeof getGalleries>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetGalleriesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGalleries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGalleriesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a gallery by ID
+ */
+export const getGetGalleryByIdUrl = (id: number) => {
+  return `/api/galleries/${id}`;
+};
+
+export const getGalleryById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Gallery> => {
+  return customFetch<Gallery>(getGetGalleryByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGalleryByIdQueryKey = (id: number) => {
+  return [`/api/galleries/${id}`] as const;
+};
+
+export const getGetGalleryByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGalleryById>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGalleryById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGalleryByIdQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGalleryById>>> = ({
+    signal,
+  }) => getGalleryById(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGalleryById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGalleryByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGalleryById>>
+>;
+export type GetGalleryByIdQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a gallery by ID
+ */
+
+export function useGetGalleryById<
+  TData = Awaited<ReturnType<typeof getGalleryById>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGalleryById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGalleryByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get dashboard statistics
+ */
+export const getGetStatsUrl = () => {
+  return `/api/stats`;
+};
+
+export const getStats = async (
+  options?: RequestInit,
+): Promise<StatsResponse> => {
+  return customFetch<StatsResponse>(getGetStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStatsQueryKey = () => {
+  return [`/api/stats`] as const;
+};
+
+export const getGetStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStats>>> = ({
+    signal,
+  }) => getStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStats>>
+>;
+export type GetStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get dashboard statistics
+ */
+
+export function useGetStats<
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Fetches galleries from Overpass API for Rome and saves to database
+ * @summary Import Rome galleries from OSM
+ */
+export const getImportOsmRomeUrl = () => {
+  return `/api/imports/osm/rome`;
+};
+
+export const importOsmRome = async (
+  options?: RequestInit,
+): Promise<ImportResult> => {
+  return customFetch<ImportResult>(getImportOsmRomeUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getImportOsmRomeMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importOsmRome>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importOsmRome>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["importOsmRome"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importOsmRome>>,
+    void
+  > = () => {
+    return importOsmRome(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportOsmRomeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importOsmRome>>
+>;
+
+export type ImportOsmRomeMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Import Rome galleries from OSM
+ */
+export const useImportOsmRome = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importOsmRome>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importOsmRome>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getImportOsmRomeMutationOptions(options));
+};
+
+/**
+ * @summary Get import run history
+ */
+export const getGetImportRunsUrl = () => {
+  return `/api/import-runs`;
+};
+
+export const getImportRuns = async (
+  options?: RequestInit,
+): Promise<ImportRun[]> => {
+  return customFetch<ImportRun[]>(getGetImportRunsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetImportRunsQueryKey = () => {
+  return [`/api/import-runs`] as const;
+};
+
+export const getGetImportRunsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getImportRuns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getImportRuns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetImportRunsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getImportRuns>>> = ({
+    signal,
+  }) => getImportRuns({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getImportRuns>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetImportRunsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getImportRuns>>
+>;
+export type GetImportRunsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get import run history
+ */
+
+export function useGetImportRuns<
+  TData = Awaited<ReturnType<typeof getImportRuns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getImportRuns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetImportRunsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

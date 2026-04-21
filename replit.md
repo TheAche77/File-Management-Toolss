@@ -25,3 +25,35 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Applications
+
+### Gallerie d'Italia (`artifacts/gallery-map`)
+A full-stack app for mapping art galleries in Italy (Rome first).
+
+**Features:**
+- Dashboard with live stats (total galleries, website coverage, phone coverage)
+- Gallery directory with search, city filter, has-website filter, pagination
+- Interactive Leaflet map centered on Rome with all gallery markers and popups
+- Admin panel with "Import Rome from OSM" button, import history, CSV export
+
+**Backend API endpoints:**
+- `GET /api/healthz` — health check
+- `GET /api/galleries` — list galleries (search, city, hasWebsite, hasPhone, source, page, pageSize)
+- `GET /api/galleries/:id` — single gallery
+- `GET /api/stats` — dashboard statistics
+- `POST /api/imports/osm/rome` — trigger OSM import for Rome
+- `GET /api/import-runs` — import run history
+- `GET /api/export/galleries.csv` — CSV export
+
+**Data sources:**
+- OpenStreetMap Overpass API — tags: tourism=gallery, shop=art, amenity=arts_centre
+- Optional: Google Places API enrichment (set GOOGLE_MAPS_API_KEY secret)
+
+**DB tables:** `galleries`, `import_runs`
+
+**Services:**
+- `overpassService.ts` — fetches from Overpass API with retry/timeout
+- `galleryNormalizer.ts` — normalizes OSM elements to DB schema
+- `dedupeService.ts` — deduplication by osm_id, coords+name, website, phone
+- `importService.ts` — orchestrates full import flow with run tracking

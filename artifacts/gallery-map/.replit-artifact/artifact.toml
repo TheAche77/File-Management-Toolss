@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Italy Gallery Map"
+version = "1.0.0"
+id = "artifacts/gallery-map"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19001
+
+[services.development]
+run = "pnpm --filter @workspace/gallery-map run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gallery-map", "run", "build" ]
+publicDir = "artifacts/gallery-map/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19001"
+BASE_PATH = "/"

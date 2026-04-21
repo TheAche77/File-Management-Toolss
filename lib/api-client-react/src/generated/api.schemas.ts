@@ -8,3 +8,116 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface Gallery {
+  id: number;
+  name: string;
+  slug: string;
+  latitude: string;
+  longitude: string;
+  /** @nullable */
+  addressLine?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  postalCode?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  website?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  sourcePrimary: string;
+  /** @nullable */
+  osmId?: string | null;
+  /** @nullable */
+  osmType?: string | null;
+  /** @nullable */
+  googlePlaceId?: string | null;
+  /** @nullable */
+  googleMapsUrl?: string | null;
+  /** @nullable */
+  rating?: string | null;
+  /** @nullable */
+  userRatingsTotal?: number | null;
+  hasWebsite: boolean;
+  hasPhone: boolean;
+  enrichmentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  lastCheckedAt?: string | null;
+}
+
+export interface GalleriesResponse {
+  galleries: Gallery[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface CityCount {
+  /** @nullable */
+  city: string | null;
+  count: number;
+}
+
+export interface StatsResponse {
+  totalGalleries: number;
+  galleriesWithWebsite: number;
+  galleriesWithPhone: number;
+  fromOsm: number;
+  enriched: number;
+  byCityBreakdown: CityCount[];
+}
+
+export interface ImportResult {
+  success: boolean;
+  fetched: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+  errors: number;
+  message: string;
+  /** @nullable */
+  runId?: number | null;
+}
+
+export interface ImportRun {
+  id: number;
+  source: string;
+  city: string;
+  status: string;
+  /** @nullable */
+  fetched?: number | null;
+  /** @nullable */
+  inserted?: number | null;
+  /** @nullable */
+  updated?: number | null;
+  /** @nullable */
+  skipped?: number | null;
+  /** @nullable */
+  errors?: number | null;
+  /** @nullable */
+  errorMessage?: string | null;
+  startedAt: string;
+  /** @nullable */
+  finishedAt?: string | null;
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export type GetGalleriesParams = {
+  search?: string;
+  city?: string;
+  hasWebsite?: boolean;
+  hasPhone?: boolean;
+  source?: string;
+  page?: number;
+  pageSize?: number;
+};

@@ -1,0 +1,114 @@
+Build now. Do not stay in plan mode.
+
+You are inside an existing Replit monorepo. Your task is to implement a real full-stack TypeScript app for mapping art galleries in Italy, starting from Rome, using the existing stack.
+
+Non-negotiable rules:
+
+* no Python
+* no Streamlit
+* no Playwright scraping
+* no Google Maps scraping
+* no second standalone app
+* no architecture rewrite unless strictly necessary
+* no unnecessary questions
+* no stopping after scaffolding
+* no fake implementation
+* no placeholder-only pages
+
+Implement directly in the existing monorepo:
+
+* backend Express + TypeScript
+* frontend React + Vite
+* PostgreSQL + Drizzle
+* Leaflet map
+* Overpass API import for Rome
+
+Must-have:
+
+* DB schema for galleries
+* OSM import route for Rome
+* normalization + deduplication
+* GET galleries API
+* CSV export API
+* frontend dashboard
+* frontend galleries table
+* frontend map page
+* frontend admin page with Import Rome button
+* health endpoint
+
+Optional only if safe:
+
+* Google Places API enrichment using official API and env var GOOGLE_MAPS_API_KEY
+
+Important:
+The app must be runnable on Replit after implementation.
+If something is missing in the repo, create it.
+If something is already present, extend it cleanly.
+If the repo has patterns or conventions, follow them.
+
+Overpass tags to import:
+
+* tourism=gallery
+* shop=art
+* amenity=arts_centre
+
+Store:
+
+* name
+* latitude
+* longitude
+* address_line
+* city
+* postal_code
+* region
+* country
+* website
+* phone
+* source_primary
+* osm_id
+* osm_type
+* google_place_id
+* google_maps_url
+* rating
+* user_ratings_total
+* has_website
+* has_phone
+* enrichment_status
+* timestamps
+
+Backend endpoints required:
+
+* GET /api/health
+* GET /api/galleries
+* GET /api/galleries/:id
+* POST /api/imports/osm/rome
+* GET /api/export/galleries.csv
+
+Frontend required pages:
+
+* dashboard
+* galleries table
+* map
+* admin/import
+
+Execution order:
+
+1. inspect repo
+2. find backend/frontend entry points
+3. add schema and migration
+4. implement Overpass service
+5. implement import route
+6. implement galleries route
+7. implement CSV export
+8. build frontend pages
+9. connect frontend to backend
+10. verify full flow
+
+At the end, report only:
+
+* files created/modified
+* run instructions
+* required env vars
+* what works
+
+Do the implementation now.

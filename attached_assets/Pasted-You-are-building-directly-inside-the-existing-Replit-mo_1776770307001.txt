@@ -1,0 +1,331 @@
+You are building directly inside the existing Replit monorepo.
+
+Your job is to IMPLEMENT the app, not just analyze it.
+
+Do not stay in planning mode.
+Do not ask unnecessary questions.
+Do not propose alternative architectures unless something is technically impossible.
+Do not switch to Python, Streamlit, Playwright scraping, or any other parallel stack.
+Do not create a second standalone app outside the current monorepo.
+Do not produce a conceptual mockup only.
+Do not stop after scaffolding.
+Build the real working implementation.
+
+## PRIMARY GOAL
+
+Create a full-stack TypeScript web application inside the current monorepo to map art galleries in Italy, starting with Rome.
+
+The app must:
+
+* import gallery data from OpenStreetMap via Overpass API
+* store normalized records in PostgreSQL using Drizzle ORM
+* expose backend API endpoints
+* provide a React frontend with:
+
+  * dashboard
+  * table of galleries
+  * interactive map
+  * admin/import page
+* support optional enrichment via Google Places API if GOOGLE_MAPS_API_KEY is present
+* run correctly on Replit
+
+This must be production-oriented, clean, modular, and immediately runnable.
+
+## EXISTING STACK TO RESPECT
+
+Use the current monorepo and existing conventions.
+
+Preferred stack:
+
+* frontend: React + Vite + TypeScript
+* backend: Express + TypeScript
+* database: PostgreSQL
+* ORM: Drizzle
+* package manager: use the repo’s existing package manager and workspace conventions
+* map: Leaflet or React-Leaflet
+
+Do not introduce Python.
+Do not introduce Streamlit.
+Do not introduce Google Maps scraping with Playwright.
+Do not create a second server if one already exists.
+Integrate into the existing structure.
+
+## FUNCTIONAL SCOPE
+
+### Phase 1 — must be fully implemented now
+
+Start with Rome only.
+
+Build these features:
+
+1. Import galleries from OpenStreetMap / Overpass API for Rome
+2. Normalize and save results into database
+3. Deduplicate records reasonably
+4. List galleries in a frontend table
+5. Show galleries on an interactive map
+6. Add filters/search
+7. Add CSV export
+8. Add admin page with an “Import Rome” action
+9. Add health endpoint
+
+### Phase 2 — implement if easy and safe in the same pass
+
+Optional enrichment via Google Places API:
+
+* only if GOOGLE_MAPS_API_KEY exists
+* no scraping
+* use official Places API only
+* enrich missing website / phone / place id / maps url
+* make this optional and non-blocking
+
+If enrichment is not fully completed in the first pass, still wire the architecture cleanly so it can be completed next.
+
+## DATA MODEL
+
+Create a galleries table with fields equivalent to:
+
+* id
+* name
+* slug
+* latitude
+* longitude
+* address_line
+* city
+* postal_code
+* region
+* country
+* website
+* phone
+* source_primary
+* osm_id
+* osm_type
+* google_place_id
+* google_maps_url
+* rating
+* user_ratings_total
+* has_website
+* has_phone
+* enrichment_status
+* created_at
+* updated_at
+* last_checked_at
+
+Also create supporting tables if useful, such as:
+
+* import_runs
+* gallery_sources
+
+Use sensible types, indexes, and defaults.
+
+## OSM / OVERPASS REQUIREMENTS
+
+Implement a service that fetches Rome gallery-related places from Overpass API.
+
+Search for these tags:
+
+* tourism=gallery
+* shop=art
+* amenity=arts_centre
+
+Normalize the following when available:
+
+* name
+* lat
+* lon
+* addr:street
+* addr:housenumber
+* addr:city
+* addr:postcode
+* website or contact:website
+* phone or contact:phone
+
+Build a normalized address_line from available address parts.
+
+Source must be marked as:
+
+* source_primary = "osm"
+
+Implement timeout, retry, and basic error handling.
+Do not crash the app on partial failures.
+Log import results.
+
+## DEDUPLICATION RULES
+
+Implement practical deduplication:
+
+* exact same osm_id + osm_type = same record
+* otherwise compare normalized name + nearby coordinates
+* otherwise compare same website or same phone if present
+
+Keep it simple but real.
+Avoid duplicate insertions on repeated imports.
+
+## BACKEND API
+
+Create or extend backend routes with endpoints equivalent to:
+
+* GET /api/health
+* GET /api/galleries
+* GET /api/galleries/:id
+* POST /api/imports/osm/rome
+* GET /api/export/galleries.csv
+
+Optional if implemented:
+
+* POST /api/enrich/missing
+* POST /api/enrich/:id
+
+GET /api/galleries must support query params such as:
+
+* search
+* city
+* hasWebsite
+* hasPhone
+* source
+* page
+* pageSize
+
+Return clean JSON.
+
+## FRONTEND REQUIREMENTS
+
+Create frontend pages/components for:
+
+1. Dashboard
+
+* total galleries
+* number with website
+* number with phone
+* number from OSM
+* optional enriched count
+
+2. Galleries table
+
+* searchable
+* filterable
+* pagination if useful
+* columns for:
+
+  * name
+  * city
+  * address
+  * website
+  * phone
+  * source
+  * enrichment status
+
+3. Map page
+
+* interactive map centered on Rome
+* markers for galleries
+* marker popup with:
+
+  * name
+  * address
+  * website clickable if present
+  * phone
+  * source
+
+4. Admin page
+
+* button to run “Import Rome”
+* show import status/result
+* button for CSV export
+* optional enrichment trigger if implemented
+
+Use a clean, modern, minimal UI.
+No fake data once real import is available.
+
+## FILE ORGANIZATION
+
+Respect the current monorepo structure.
+Create modular files such as:
+
+Backend:
+
+* overpassService
+* galleryNormalizer
+* dedupeService
+* import job/service
+* routes for galleries/import/export
+* DB schema/migrations
+
+Frontend:
+
+* Dashboard page
+* Galleries page
+* Map page
+* Admin/Settings page
+* reusable components for filters, stats, table, map
+
+Use clear naming and keep code maintainable.
+
+## GOOGLE PLACES ENRICHMENT RULES
+
+Only use official API.
+No scraping.
+
+If GOOGLE_MAPS_API_KEY exists:
+
+* allow enrichment of records missing website/phone
+* use text search based on name + city + address
+* then fetch details using place id
+* save website, phone, google_place_id, google_maps_url, rating, user_ratings_total when available
+
+If no API key exists:
+
+* app must still work perfectly
+* enrichment UI should be disabled or hidden gracefully
+
+## REPLIT COMPATIBILITY
+
+Make this work inside Replit.
+
+Requirements:
+
+* use the repo package manager already configured
+* make sure the dev command works
+* do not assume local-only tooling
+* keep environment variables in Replit Secrets
+* do not add heavyweight unnecessary infrastructure
+
+If config files need updates, update them.
+
+## CODE QUALITY RULES
+
+* write real implementation, not placeholders
+* keep comments concise and useful
+* prefer simple maintainable solutions over clever ones
+* do not overengineer
+* do not leave TODOs for core features
+* if something cannot be completed, implement the closest working version and explain clearly what remains
+
+## EXECUTION STRATEGY
+
+Work in this order:
+
+1. inspect existing monorepo structure
+2. identify backend app and frontend app locations
+3. add database schema/migration
+4. implement Overpass import service
+5. implement backend routes
+6. implement frontend pages/components
+7. connect frontend to backend
+8. verify import flow end-to-end
+9. add CSV export
+10. add optional Google enrichment support if straightforward
+
+## OUTPUT EXPECTATION
+
+At the end, provide:
+
+* summary of files created/changed
+* how to run the app in Replit
+* any required environment variables
+* what is fully working
+* what is optional or pending
+
+Again:
+Do not remain in analysis mode.
+Do not only suggest.
+Implement the application directly in the repo.
