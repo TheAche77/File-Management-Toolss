@@ -76,12 +76,12 @@ export default function Dashboard() {
 
         <Card className="border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Enriched</CardTitle>
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Fully Enriched</CardTitle>
             <Sparkles className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-serif">{stats.enriched ?? 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Google enriched</p>
+            <p className="text-xs text-muted-foreground mt-1">Records with richer verified signals</p>
           </CardContent>
         </Card>
       </div>

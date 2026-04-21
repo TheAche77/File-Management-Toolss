@@ -140,7 +140,7 @@ paths:
     post:
       operationId: runImport
       tags: [imports]
-      summary: Run an import for a category + city
+      summary: Queue an import for a category + city
       requestBody:
         required: true
         content:
@@ -148,8 +148,8 @@ paths:
             schema:
               $ref: "#/components/schemas/ImportRequest"
       responses:
-        "200":
-          description: Import result
+        "202":
+          description: Import accepted
           content:
             application/json:
               schema:
@@ -181,6 +181,31 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ImportRun"
+
+  /imports/runs/{id}:
+    get:
+      operationId: getImportRunById
+      tags: [imports]
+      summary: Get detailed status for one import run
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Import run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRun"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /export/businesses.csv:
     get:
@@ -372,6 +397,10 @@ components:
       properties:
         success:
           type: boolean
+        queued:
+          type: boolean
+        status:
+          type: string
         fetched:
           type: integer
         inserted:
@@ -386,7 +415,7 @@ components:
           type: string
         runId:
           type: ["integer", "null"]
-      required: [success, fetched, inserted, updated, skipped, errors, message]
+      required: [success, queued, status, fetched, inserted, updated, skipped, errors, message]
 
     ImportRun:
       type: object

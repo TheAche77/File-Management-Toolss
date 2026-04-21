@@ -149,6 +149,8 @@ export const RunImportBody = zod.object({
 
 export const RunImportResponse = zod.object({
   success: zod.boolean(),
+  queued: zod.boolean(),
+  status: zod.string(),
   fetched: zod.number(),
   inserted: zod.number(),
   updated: zod.number(),
@@ -177,6 +179,7 @@ export const GetImportRunsResponseItem = zod.object({
   finishedAt: zod.string().nullish(),
 });
 export const GetImportRunsResponse = zod.array(GetImportRunsResponseItem);
+export const GetImportRunByIdResponse = GetImportRunsResponseItem;
 
 /**
  * @summary Export businesses as CSV

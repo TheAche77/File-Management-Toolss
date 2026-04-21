@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db, businessesTable, importRunsTable, categoriesTable } from "@workspace/db";
+import type { ImportRun as DbImportRun } from "@workspace/db";
 import { eq, ilike, and, sql, count, desc, or } from "drizzle-orm";
-import { runImport } from "../services/importOrchestrator";
+import { queueImportRun } from "../services/importJobService";
 
 const router = Router();
 
@@ -116,17 +117,37 @@ router.post("/imports/run", async (req, res) => {
     res.status(400).json({ error: "categorySlug and city are required" });
     return;
   }
-  req.log.info({ categorySlug, city }, "Starting import");
-  const result = await runImport(categorySlug, city);
-  res.json({
-    success: result.success,
-    fetched: result.stats.fetched,
-    inserted: result.stats.inserted,
-    updated: result.stats.updated,
-    skipped: result.stats.skipped,
-    errors: result.stats.errors,
-    message: result.message,
-    runId: result.runId,
+
+  const category = await db
+    .select({ id: categoriesTable.id })
+    .from(categoriesTable)
+    .where(eq(categoriesTable.slug, categorySlug))
+    .limit(1);
+
+  if (category.length === 0) {
+    res.status(400).json({ error: `Unknown category: ${categorySlug}` });
+    return;
+  }
+
+  req.log.info({ categorySlug, city }, "Queueing import");
+  const queued = await queueImportRun(categorySlug, city);
+
+  if (!queued.accepted) {
+    res.status(409).json({ error: `An import is already active for ${categorySlug} in ${city}. Run ID: ${queued.runId}` });
+    return;
+  }
+
+  res.status(202).json({
+    success: true,
+    queued: true,
+    status: queued.status,
+    fetched: 0,
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    errors: 0,
+    message: `Import queued for ${city}`,
+    runId: queued.runId,
   });
 });
 
@@ -137,21 +158,28 @@ router.get("/imports/runs", async (_req, res) => {
     .orderBy(desc(importRunsTable.startedAt))
     .limit(50);
 
-  res.json(runs.map((r) => ({
-    id: r.id,
-    source: r.source,
-    categorySlug: r.categorySlug,
-    city: r.city,
-    status: r.status,
-    fetched: r.fetched,
-    inserted: r.inserted,
-    updated: r.updated,
-    skipped: r.skipped,
-    errors: r.errors,
-    errorMessage: r.errorMessage,
-    startedAt: r.startedAt.toISOString(),
-    finishedAt: r.finishedAt?.toISOString() ?? null,
-  })));
+  res.json(runs.map(serializeImportRun));
+});
+
+router.get("/imports/runs/:id", async (req, res) => {
+  const id = parseInt(req.params["id"] ?? "0", 10);
+  if (!id || isNaN(id)) {
+    res.status(400).json({ error: "Invalid run ID" });
+    return;
+  }
+
+  const runs = await db
+    .select()
+    .from(importRunsTable)
+    .where(eq(importRunsTable.id, id))
+    .limit(1);
+
+  if (runs.length === 0) {
+    res.status(404).json({ error: "Import run not found" });
+    return;
+  }
+
+  res.json(serializeImportRun(runs[0]!));
 });
 
 router.get("/export/businesses.csv", async (req, res) => {
@@ -213,6 +241,24 @@ function serializeBusiness(r: Record<string, unknown>) {
     enrichmentStatus: r["enrichmentStatus"],
     createdAt: (r["createdAt"] as Date).toISOString(),
     updatedAt: (r["updatedAt"] as Date).toISOString(),
+  };
+}
+
+function serializeImportRun(r: DbImportRun) {
+  return {
+    id: r.id,
+    source: r.source,
+    categorySlug: r.categorySlug,
+    city: r.city,
+    status: r.status,
+    fetched: r.fetched,
+    inserted: r.inserted,
+    updated: r.updated,
+    skipped: r.skipped,
+    errors: r.errors,
+    errorMessage: r.errorMessage,
+    startedAt: r.startedAt.toISOString(),
+    finishedAt: r.finishedAt?.toISOString() ?? null,
   };
 }
 

@@ -62,12 +62,14 @@ export function normalizeWebsite(value: string | null | undefined): string | nul
     const host = url.hostname.replace(/^www\./i, "").toLowerCase();
     const pathname = url.pathname.replace(/\/+$/, "");
     const normalizedPath = pathname === "" ? "" : pathname.toLowerCase();
-    return `${host}${normalizedPath}`;
+    return `https://${host}${normalizedPath}`;
   } catch {
-    return normalizeText(value)
+    const normalized = normalizeText(value)
       .replace(/^https?:\/\//, "")
       .replace(/^www\./, "")
       .replace(/\/+$/, "");
+
+    return normalized ? `https://${normalized}` : null;
   }
 }
 
@@ -124,7 +126,7 @@ export function buildOsmKey(categorySlug: string, osmId: string | null | undefin
 export function buildWebsiteKey(categorySlug: string, website: string | null | undefined): string | null {
   const normalized = normalizeWebsite(website);
   if (!normalized) return null;
-  return `${categorySlug}::${normalized}`;
+  return `${categorySlug}::${normalized.replace(/^https?:\/\//, "")}`;
 }
 
 export function buildCoordNameKey(categorySlug: string, name: string, latitude: string | number, longitude: string | number): string {

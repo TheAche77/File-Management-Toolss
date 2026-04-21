@@ -8,6 +8,8 @@
 
 export interface ImportResult {
   success: boolean;
+  queued: boolean;
+  status: string;
   fetched: number;
   inserted: number;
   updated: number;

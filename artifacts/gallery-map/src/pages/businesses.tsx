@@ -14,6 +14,7 @@ export default function Businesses() {
   const [city, setCity] = useState("");
   const [category, setCategory] = useState("all");
   const [hasWebsite, setHasWebsite] = useState(false);
+  const [hasPhone, setHasPhone] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -26,6 +27,7 @@ export default function Businesses() {
     city: city || undefined,
     categorySlug: category === "all" ? undefined : category,
     hasWebsite: hasWebsite || undefined,
+    hasPhone: hasPhone || undefined,
     page,
     pageSize
   };
@@ -42,7 +44,7 @@ export default function Businesses() {
       </div>
 
       <div className="bg-card border rounded-lg p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <Input 
               placeholder="Search names..." 
@@ -82,6 +84,16 @@ export default function Businesses() {
             />
             <label htmlFor="has-website" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               Has Website
+            </label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="has-phone" 
+              checked={hasPhone}
+              onCheckedChange={(checked) => { setHasPhone(checked as boolean); setPage(1); }}
+            />
+            <label htmlFor="has-phone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Has Phone
             </label>
           </div>
         </div>
@@ -179,7 +191,7 @@ export default function Businesses() {
         {data && data.totalPages > 1 && (
           <div className="border-t p-4 flex items-center justify-between bg-muted/20">
             <span className="text-sm text-muted-foreground">
-              Showing {(page - 1) * pageSize + 1} to Math.min(page * pageSize, data.total) of {data.total}
+              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, data.total)} of {data.total}
             </span>
             <div className="flex gap-2">
               <Button 

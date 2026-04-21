@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { 
   useRunImport, 
   useGetImportRuns, 
+  useGetImportRunById,
   getGetImportRunsQueryKey,
   useGetCategories,
   getGetCategoriesQueryKey
@@ -19,25 +20,87 @@ import { Badge } from "@/components/ui/badge";
 export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const lastActiveRunStatus = useRef<string | null>(null);
   
   const [category, setCategory] = useState("art_gallery");
   const [city, setCity] = useState("Rome");
+  const [activeRunId, setActiveRunId] = useState<number | null>(null);
 
   const { data: categories } = useGetCategories({
     query: { queryKey: getGetCategoriesQueryKey() }
   });
   
   const { data: runs, isLoading: runsLoading } = useGetImportRuns({
-    query: { queryKey: getGetImportRunsQueryKey() }
+    query: { 
+      queryKey: getGetImportRunsQueryKey(),
+      refetchInterval: activeRunId ? 5000 : false,
+    }
   });
+
+  const { data: activeRun } = useGetImportRunById(activeRunId ?? 0, {
+    query: {
+      enabled: !!activeRunId,
+      refetchInterval: activeRunId ? 2000 : false,
+    }
+  });
+
+  const currentRun = activeRun ?? runs?.find((run) => run.id === activeRunId) ?? null;
+
+  const exportHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (category && category !== "all") params.set("categorySlug", category);
+    if (city.trim()) params.set("city", city.trim());
+    const query = params.toString();
+    return query ? `/api/export/businesses.csv?${query}` : "/api/export/businesses.csv";
+  }, [category, city]);
+
+  useEffect(() => {
+    if (!activeRunId) {
+      const latestActiveRun = runs?.find((run) => ["queued", "running", "fetching", "merging"].includes(run.status));
+      if (latestActiveRun) {
+        setActiveRunId(latestActiveRun.id);
+      }
+    }
+  }, [activeRunId, runs]);
+
+  useEffect(() => {
+    if (!currentRun) return;
+
+    if (lastActiveRunStatus.current === currentRun.status) return;
+
+    if (currentRun.status === "completed") {
+      toast({
+        title: "Import Completed",
+        description: `Fetched: ${currentRun.fetched || 0}, Inserted: ${currentRun.inserted || 0}, Updated: ${currentRun.updated || 0}, Skipped: ${currentRun.skipped || 0}`,
+      });
+      queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
+      setActiveRunId(null);
+    }
+
+    if (currentRun.status === "failed") {
+      toast({
+        title: "Import Failed",
+        description: currentRun.errorMessage || "The queued import failed.",
+        variant: "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
+      setActiveRunId(null);
+    }
+
+    lastActiveRunStatus.current = currentRun.status;
+  }, [currentRun, queryClient, toast]);
 
   const importMutation = useRunImport({
     mutation: {
       onSuccess: (data) => {
+        if (data.runId) {
+          setActiveRunId(data.runId);
+          lastActiveRunStatus.current = data.status;
+        }
         queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
         toast({
-          title: "Import Complete",
-          description: `Fetched: ${data.fetched}, Inserted: ${data.inserted}, Updated: ${data.updated}`,
+          title: "Import Queued",
+          description: data.message,
         });
       },
       onError: (error) => {
@@ -94,22 +157,55 @@ export default function Admin() {
 
             <Button 
               onClick={handleImport} 
-              disabled={importMutation.isPending || !category || !city}
+              disabled={importMutation.isPending || !category || !city || !!currentRun}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-2"
               data-testid="button-run-import"
             >
               {importMutation.isPending ? (
-                <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Importing...</>
+                <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Queueing...</>
+              ) : currentRun ? (
+                <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Import In Progress</>
               ) : (
                 <><Database className="mr-2 h-4 w-4" /> Run Import</>
               )}
             </Button>
 
-            {importMutation.data && (
+            {currentRun ? (
               <div className="mt-4 text-sm bg-muted/50 p-3 border border-border rounded-md">
                 <p className="font-medium text-foreground mb-1 flex items-center gap-2">
-                  <Badge variant={importMutation.data.success ? "default" : "destructive"}>
-                    {importMutation.data.success ? "Success" : "Failed"}
+                  <Badge variant={currentRun.status === "failed" ? "destructive" : "secondary"} className="capitalize">
+                    {currentRun.status}
+                  </Badge>
+                  Active Run #{currentRun.id}
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2 text-center text-xs">
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold">{currentRun.fetched || 0}</div>
+                    <div className="text-muted-foreground">Fetched</div>
+                  </div>
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold text-primary">{currentRun.inserted || 0}</div>
+                    <div className="text-muted-foreground">Inserted</div>
+                  </div>
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold">{currentRun.updated || 0}</div>
+                    <div className="text-muted-foreground">Updated</div>
+                  </div>
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold">{currentRun.skipped || 0}</div>
+                    <div className="text-muted-foreground">Skipped</div>
+                  </div>
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold">{currentRun.errors || 0}</div>
+                    <div className="text-muted-foreground">Errors</div>
+                  </div>
+                </div>
+              </div>
+            ) : importMutation.data && (
+              <div className="mt-4 text-sm bg-muted/50 p-3 border border-border rounded-md">
+                <p className="font-medium text-foreground mb-1 flex items-center gap-2">
+                  <Badge variant={importMutation.data.success ? "secondary" : "destructive"}>
+                    {importMutation.data.status}
                   </Badge>
                   Last Result
                 </p>
@@ -143,12 +239,12 @@ export default function Admin() {
               className="w-full"
               asChild
             >
-              <a href={`/api/export/businesses.csv${category && category !== 'all' ? `?categorySlug=${category}` : ''}`} download>
+              <a href={exportHref} download>
                 <Download className="mr-2 h-4 w-4" /> Export Businesses CSV
               </a>
             </Button>
             <p className="text-xs text-muted-foreground mt-4">
-              The export will respect the currently selected category filter above.
+              The export will respect the selected category and city filters above.
             </p>
           </CardContent>
         </Card>

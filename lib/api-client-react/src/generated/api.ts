@@ -627,6 +627,88 @@ export function useGetImportRuns<
 }
 
 /**
+ * @summary Get detailed status for one import run
+ */
+export const getGetImportRunByIdUrl = (id: number) => {
+  return `/api/imports/runs/${id}`;
+};
+
+export const getImportRunById = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ImportRun> => {
+  return customFetch<ImportRun>(getGetImportRunByIdUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetImportRunByIdQueryKey = (id: number) => {
+  return [`/api/imports/runs/${id}`] as const;
+};
+
+export const getGetImportRunByIdQueryOptions = <
+  TData = Awaited<ReturnType<typeof getImportRunById>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getImportRunById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetImportRunByIdQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getImportRunById>>
+  > = ({ signal }) => getImportRunById(id, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getImportRunById>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetImportRunByIdQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getImportRunById>>
+>;
+export type GetImportRunByIdQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get detailed status for one import run
+ */
+export function useGetImportRunById<
+  TData = Awaited<ReturnType<typeof getImportRunById>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getImportRunById>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetImportRunByIdQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Export businesses as CSV
  */
 export const getExportBusinessesCsvUrl = (
