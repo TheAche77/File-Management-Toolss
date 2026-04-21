@@ -2,7 +2,7 @@ import { db, importRunsTable, categoriesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { OverpassConnector } from "../connectors/overpassConnector";
 import { GooglePlacesConnector } from "../connectors/googlePlacesConnector";
-import { upsertBusiness } from "./dedupeService";
+import { bulkMergeBusinesses } from "./dedupeService";
 import { logger } from "../lib/logger";
 import type { ConnectorOptions } from "../connectors/types";
 
@@ -39,9 +39,15 @@ export async function runImport(categorySlug: string, city: string): Promise<{
 
   const category = categories[0]!;
 
+  const activeConnectors = connectors.filter((c) => c.isAvailable());
   const [runRow] = await db
     .insert(importRunsTable)
-    .values({ source: "osm", categorySlug, city, status: "running" })
+    .values({
+      source: activeConnectors.map((connector) => connector.name).join("+") || "none",
+      categorySlug,
+      city,
+      status: "running",
+    })
     .returning({ id: importRunsTable.id });
 
   const runId = runRow?.id ?? null;
@@ -54,7 +60,6 @@ export async function runImport(categorySlug: string, city: string): Promise<{
       osmTags: category.osmTags,
     };
 
-    const activeConnectors = connectors.filter((c) => c.isAvailable());
     logger.info({ connectors: activeConnectors.map((c) => c.name), categorySlug, city }, "Running import");
 
     for (const connector of activeConnectors) {
@@ -62,15 +67,18 @@ export async function runImport(categorySlug: string, city: string): Promise<{
       stats.fetched += result.items.length;
       stats.errors += result.errors.length;
 
-      for (const item of result.items) {
-        try {
-          const r = await upsertBusiness(item);
-          if (r.action === "insert") stats.inserted++;
-          else stats.updated++;
-        } catch (err) {
-          stats.errors++;
-          logger.warn({ err, name: item.name }, "Error upserting business");
-        }
+      if (result.items.length === 0) {
+        continue;
+      }
+
+      try {
+        const mergeStats = await bulkMergeBusinesses(result.items);
+        stats.inserted += mergeStats.inserted;
+        stats.updated += mergeStats.updated;
+        stats.skipped += mergeStats.skipped;
+      } catch (err) {
+        stats.errors += result.items.length;
+        logger.warn({ err, connector: connector.name }, "Error bulk merging businesses");
       }
     }
 
