@@ -7,24 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { getArtistRecommendation } from "@/lib/artist-recommendation";
 import { getStoredAdminToken } from "@/lib/admin-auth";
-
-function formatPipelineValue(value?: string | null) {
-  if (!value) return "Not set";
-  return value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatDueLabel(daysUntilAction?: number | null, nextActionDate?: string | null) {
-  if (daysUntilAction === null || daysUntilAction === undefined) {
-    return "No action scheduled";
-  }
-  if (daysUntilAction < 0) return `Scaduto da ${Math.abs(daysUntilAction)} giorno${Math.abs(daysUntilAction) === 1 ? "" : "i"}`;
-  if (daysUntilAction === 0) return "Oggi";
-  if (daysUntilAction === 1) return "Domani";
-  return `${nextActionDate ?? `+${daysUntilAction} giorni`}`;
-}
+import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function getUrgencyTone(bucket: string) {
   if (bucket === "urgent") return "destructive";

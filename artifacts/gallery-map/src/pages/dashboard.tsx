@@ -13,27 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStoredAdminToken } from "@/lib/admin-auth";
+import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
-}
-
-function formatPipelineValue(value?: string | null) {
-  if (!value) return "Not set";
-  return value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatDueLabel(daysUntilAction?: number | null, nextActionDate?: string | null) {
-  if (daysUntilAction === null || daysUntilAction === undefined) {
-    return "No action scheduled";
-  }
-  if (daysUntilAction < 0) return `Scaduto da ${Math.abs(daysUntilAction)}g`;
-  if (daysUntilAction === 0) return "Oggi";
-  if (daysUntilAction === 1) return "Domani";
-  return `${nextActionDate ?? `+${daysUntilAction} giorni`}`;
 }
 
 function DashboardSkeleton() {

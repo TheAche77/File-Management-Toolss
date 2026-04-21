@@ -57,6 +57,7 @@ import {
   getAvatarTypeRecommendation,
 } from "@/lib/artist-recommendation";
 import { getStoredAdminToken } from "@/lib/admin-auth";
+import { formatPipelineValue } from "@/lib/outreach-formatting";
 
 const OUTREACH_STATUS_OPTIONS = [
   "not_contacted",
@@ -119,11 +120,6 @@ function formatSourceType(type: string) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-}
-
-function formatPipelineValue(value?: string | null) {
-  if (!value) return "Not set";
-  return formatSourceType(value);
 }
 
 function formatConfidence(value?: string | null) {
