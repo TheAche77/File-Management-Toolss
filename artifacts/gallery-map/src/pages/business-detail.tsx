@@ -36,6 +36,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { getStoredAdminToken } from "@/lib/admin-auth";
 
 function formatDate(value?: string | null) {
   if (!value) return "Not available";
@@ -146,6 +147,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const businessId = Number(params.id);
+  const hasAdminToken = Boolean(getStoredAdminToken());
 
   const businessQuery = useGetBusinessById(businessId, {
     query: {
@@ -164,7 +166,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const contactCandidatesQuery = useGetBusinessContactCandidates(businessId, {
     query: {
       queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
-      enabled: Number.isFinite(businessId) && businessId > 0,
+      enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
     },
   });
 
@@ -343,6 +345,14 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                   <Skeleton className="h-20 w-full" />
                   <Skeleton className="h-20 w-full" />
                 </>
+              ) : !hasAdminToken ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Unlock admin in the <Link href="/admin" className="text-primary hover:underline">Administration</Link> page to review contact candidates.
+                </div>
+              ) : contactCandidatesQuery.isError ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Contact candidates are unavailable with the current admin session.
+                </div>
               ) : contactCandidates.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
                   No contact candidates have been derived yet for this business.

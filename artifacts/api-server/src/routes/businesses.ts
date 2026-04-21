@@ -6,6 +6,7 @@ import { queueImportRun } from "../services/importJobService";
 import { getBusinessSources } from "../services/businessSourceService";
 import { getContactCandidates } from "../services/contactCandidateService";
 import { getReviewQueue } from "../services/reviewQueueService";
+import { requireAdminAuth } from "../lib/adminAuth";
 
 const router = Router();
 const CONTACT_CANDIDATE_STATUSES = new Set(["suggested", "approved", "rejected"]);
@@ -73,7 +74,7 @@ router.get("/businesses", async (req, res) => {
   });
 });
 
-router.get("/businesses/review-queue", async (req, res) => {
+router.get("/businesses/review-queue", requireAdminAuth, async (req, res) => {
   const {
     categorySlug,
     city,
@@ -145,7 +146,7 @@ router.get("/businesses/:id/sources", async (req, res) => {
   );
 });
 
-router.get("/businesses/:id/contact-candidates", async (req, res) => {
+router.get("/businesses/:id/contact-candidates", requireAdminAuth, async (req, res) => {
   const id = parseInt(req.params["id"] ?? "0", 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -169,7 +170,7 @@ router.get("/businesses/:id/contact-candidates", async (req, res) => {
   );
 });
 
-router.patch("/businesses/:id/contact-candidates/:candidateId", async (req, res) => {
+router.patch("/businesses/:id/contact-candidates/:candidateId", requireAdminAuth, async (req, res) => {
   const businessId = parseInt(req.params["id"] ?? "0", 10);
   const candidateId = parseInt(req.params["candidateId"] ?? "0", 10);
 
@@ -287,7 +288,7 @@ router.get("/stats", async (req, res) => {
   });
 });
 
-router.post("/imports/run", async (req, res) => {
+router.post("/imports/run", requireAdminAuth, async (req, res) => {
   const { categorySlug, city } = req.body as { categorySlug?: string; city?: string };
   if (!categorySlug || !city) {
     res.status(400).json({ error: "categorySlug and city are required" });
@@ -327,7 +328,7 @@ router.post("/imports/run", async (req, res) => {
   });
 });
 
-router.get("/imports/runs", async (_req, res) => {
+router.get("/imports/runs", requireAdminAuth, async (_req, res) => {
   const runs = await db
     .select()
     .from(importRunsTable)
@@ -337,7 +338,7 @@ router.get("/imports/runs", async (_req, res) => {
   res.json(runs.map(serializeImportRun));
 });
 
-router.get("/imports/runs/:id", async (req, res) => {
+router.get("/imports/runs/:id", requireAdminAuth, async (req, res) => {
   const id = parseInt(req.params["id"] ?? "0", 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid run ID" });
