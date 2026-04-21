@@ -11,6 +11,7 @@ import { z } from "zod/v4";
 export const importRunsTable = pgTable("import_runs", {
   id: serial("id").primaryKey(),
   source: text("source").notNull(),
+  categorySlug: text("category_slug").notNull(),
   city: text("city").notNull(),
   status: text("status").notNull().default("running"),
   fetched: integer("fetched"),

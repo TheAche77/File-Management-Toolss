@@ -5,9 +5,18 @@ import {
   Map as MapIcon, 
   List, 
   Settings,
-  Activity
+  Activity,
+  Compass,
+  Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -17,39 +26,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/galleries", label: "Directory", icon: List },
-    { href: "/map", label: "Map View", icon: MapIcon },
+    { href: "/businesses", label: "Directory", icon: List },
+    { href: "/map", label: "Map", icon: MapIcon },
     { href: "/admin", label: "Admin", icon: Settings },
   ];
 
+  const NavLinks = () => (
+    <>
+      {navItems.map((item) => {
+        const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
+        const Icon = item.icon;
+        
+        return (
+          <Link key={item.href} href={item.href} className="block">
+            <div 
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 text-sm transition-colors rounded-md",
+                isActive 
+                  ? "bg-primary text-primary-foreground font-medium" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {item.label}
+            </div>
+          </Link>
+        );
+      })}
+    </>
+  );
+
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
-      <aside className="w-64 border-r border-border bg-sidebar flex flex-col hidden md:flex shrink-0">
+      <aside className="w-64 border-r border-border bg-sidebar flex-col hidden md:flex shrink-0">
         <div className="p-6 border-b border-border">
-          <h1 className="text-2xl font-serif font-semibold text-primary">Gallerie d'Italia</h1>
-          <p className="text-sm text-muted-foreground mt-1 uppercase tracking-widest text-[10px]">Roma</p>
+          <div className="flex items-center gap-2">
+            <Compass className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-serif font-semibold text-primary">Scopri Italia</h1>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest text-[10px]">Local Discovery Engine</p>
         </div>
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
-            const Icon = item.icon;
-            
-            return (
-              <Link key={item.href} href={item.href} className="block">
-                <div 
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 text-sm transition-colors",
-                    isActive 
-                      ? "bg-primary text-primary-foreground font-medium" 
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
-                </div>
-              </Link>
-            );
-          })}
+          <NavLinks />
         </nav>
         
         <div className="p-4 border-t border-border mt-auto">
@@ -65,10 +83,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </aside>
       
       <main className="flex-1 overflow-auto flex flex-col min-w-0">
-        <header className="md:hidden p-4 border-b border-border bg-sidebar flex items-center justify-between shrink-0">
-          <h1 className="text-xl font-serif font-semibold text-primary">Gallerie d'Italia</h1>
+        <header className="md:hidden h-14 border-b border-border bg-sidebar flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center gap-2">
+            <Compass className="h-5 w-5 text-primary" />
+            <span className="font-serif text-lg font-semibold text-primary">Scopri Italia</span>
+          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <div className="p-6 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Compass className="h-6 w-6 text-primary" />
+                  <span className="font-serif text-xl font-semibold tracking-tight text-primary">
+                    Scopri Italia
+                  </span>
+                </div>
+              </div>
+              <div className="p-4 space-y-1">
+                <NavLinks />
+              </div>
+            </SheetContent>
+          </Sheet>
         </header>
-        <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto bg-muted/20">
           {children}
         </div>
       </main>

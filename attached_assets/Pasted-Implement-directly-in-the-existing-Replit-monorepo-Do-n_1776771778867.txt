@@ -1,0 +1,103 @@
+Implement directly in the existing Replit monorepo.
+
+Do not stay in planning mode.
+Do not ask unnecessary questions.
+Do not introduce Python, Streamlit, or a parallel app.
+Do not build a gallery-only architecture.
+Do not make scraping the default strategy.
+
+Goal:
+Turn the current Rome art gallery mapper into a reusable local business discovery engine for multiple categories.
+
+Source priority rules:
+
+1. official APIs first
+2. OpenStreetMap / Overpass second
+3. simple website extraction third
+4. browser automation only as fallback and disabled by default
+
+Build a real full-stack TypeScript implementation using the existing stack:
+
+* React + Vite frontend
+* Express + TypeScript backend
+* PostgreSQL + Drizzle
+* Leaflet map
+
+Create a reusable architecture with:
+
+* categories table
+* businesses table
+* business_sources table
+* import_runs table
+* reusable connector interfaces
+* overpass connector
+* optional google places connector
+* optional lightweight website extractor
+* source planner/orchestrator
+* deduplication service
+
+Seed categories:
+
+* art_gallery
+* museum
+* restaurant
+* hotel
+* bookstore
+* coworking
+* event_venue
+
+Make “art_gallery in Rome” the first fully working use case, but keep the system reusable for other categories without rewriting core logic.
+
+Required working features:
+
+* category-aware import endpoint
+* category-aware businesses API
+* Overpass import for Rome art galleries
+* normalized DB storage
+* deduplication
+* frontend dashboard
+* frontend businesses table
+* frontend map
+* frontend admin/import page
+* CSV export
+* health endpoint
+
+Required endpoints:
+
+* GET /api/health
+* GET /api/categories
+* GET /api/businesses
+* GET /api/businesses/:id
+* POST /api/imports/run
+* GET /api/imports/runs
+* GET /api/export/businesses.csv
+
+Optional if env exists:
+
+* Google Places enrichment using official API only
+* no Google Maps scraping
+
+Important implementation rule:
+A feature is complete only if database, backend, and frontend are connected end-to-end.
+
+Execution order:
+
+1. inspect repo
+2. extend schema
+3. implement connector interfaces
+4. implement overpass connector
+5. implement orchestrator
+6. implement import route
+7. implement listing/export routes
+8. build frontend pages
+9. connect everything
+10. verify Rome art gallery flow works
+
+At the end report:
+
+* files created/changed
+* env vars needed
+* run instructions
+* what works now
+
+Implement now.

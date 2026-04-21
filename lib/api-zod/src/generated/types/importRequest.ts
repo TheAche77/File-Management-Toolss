@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface CityCount {
-  /** @nullable */
-  city: string | null;
-  count: number;
+export interface ImportRequest {
+  categorySlug: string;
+  city: string;
 }

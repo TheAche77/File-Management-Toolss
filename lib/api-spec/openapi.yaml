@@ -2,16 +2,18 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: Local business discovery engine API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
-  - name: galleries
-    description: Gallery operations
+  - name: categories
+    description: Category operations
+  - name: businesses
+    description: Business operations
   - name: imports
     description: Import operations
   - name: export
@@ -24,7 +26,6 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -33,14 +34,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
-  /galleries:
+  /categories:
     get:
-      operationId: getGalleries
-      tags: [galleries]
-      summary: List galleries
-      description: Returns paginated list of galleries with optional filters
+      operationId: getCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /businesses:
+    get:
+      operationId: getBusinesses
+      tags: [businesses]
+      summary: List businesses with filters
       parameters:
         - name: search
+          in: query
+          schema:
+            type: string
+        - name: categorySlug
           in: query
           schema:
             type: string
@@ -56,10 +75,6 @@ paths:
           in: query
           schema:
             type: boolean
-        - name: source
-          in: query
-          schema:
-            type: string
         - name: page
           in: query
           schema:
@@ -72,17 +87,17 @@ paths:
             default: 50
       responses:
         "200":
-          description: List of galleries
+          description: Paginated businesses
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GalleriesResponse"
+                $ref: "#/components/schemas/BusinessesResponse"
 
-  /galleries/{id}:
+  /businesses/{id}:
     get:
-      operationId: getGalleryById
-      tags: [galleries]
-      summary: Get a gallery by ID
+      operationId: getBusinessById
+      tags: [businesses]
+      summary: Get a business by ID
       parameters:
         - name: id
           in: path
@@ -91,11 +106,11 @@ paths:
             type: integer
       responses:
         "200":
-          description: Gallery details
+          description: Business details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Gallery"
+                $ref: "#/components/schemas/Business"
         "404":
           description: Not found
           content:
@@ -107,21 +122,31 @@ paths:
     get:
       operationId: getStats
       tags: [stats]
-      summary: Get dashboard statistics
+      summary: Dashboard statistics
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
       responses:
         "200":
-          description: Stats summary
+          description: Stats
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/StatsResponse"
 
-  /imports/osm/rome:
+  /imports/run:
     post:
-      operationId: importOsmRome
+      operationId: runImport
       tags: [imports]
-      summary: Import Rome galleries from OSM
-      description: Fetches galleries from Overpass API for Rome and saves to database
+      summary: Run an import for a category + city
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRequest"
       responses:
         "200":
           description: Import result
@@ -129,6 +154,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ImportResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "500":
           description: Import failed
           content:
@@ -136,20 +167,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /import-runs:
+  /imports/runs:
     get:
       operationId: getImportRuns
       tags: [imports]
-      summary: Get import run history
+      summary: List import run history
       responses:
         "200":
-          description: List of import runs
+          description: Import runs
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: "#/components/schemas/ImportRun"
+
+  /export/businesses.csv:
+    get:
+      operationId: exportBusinessesCsv
+      tags: [export]
+      summary: Export businesses as CSV
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
 
 components:
   schemas:
@@ -158,14 +211,34 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
-    Gallery:
+    Category:
       type: object
       properties:
         id:
           type: integer
+        slug:
+          type: string
+        label:
+          type: string
+        description:
+          type: ["string", "null"]
+        osmTags:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, slug, label, osmTags, active, createdAt]
+
+    Business:
+      type: object
+      properties:
+        id:
+          type: integer
+        categorySlug:
+          type: string
         name:
           type: string
         slug:
@@ -188,8 +261,6 @@ components:
           type: ["string", "null"]
         phone:
           type: ["string", "null"]
-        sourcePrimary:
-          type: string
         osmId:
           type: ["string", "null"]
         osmType:
@@ -212,28 +283,26 @@ components:
           type: string
         updatedAt:
           type: string
-        lastCheckedAt:
-          type: ["string", "null"]
       required:
         - id
+        - categorySlug
         - name
         - slug
         - latitude
         - longitude
-        - sourcePrimary
         - hasWebsite
         - hasPhone
         - enrichmentStatus
         - createdAt
         - updatedAt
 
-    GalleriesResponse:
+    BusinessesResponse:
       type: object
       properties:
-        galleries:
+        businesses:
           type: array
           items:
-            $ref: "#/components/schemas/Gallery"
+            $ref: "#/components/schemas/Business"
         total:
           type: integer
         page:
@@ -242,37 +311,43 @@ components:
           type: integer
         totalPages:
           type: integer
-      required:
-        - galleries
-        - total
-        - page
-        - pageSize
-        - totalPages
+      required: [businesses, total, page, pageSize, totalPages]
 
     StatsResponse:
       type: object
       properties:
-        totalGalleries:
+        totalBusinesses:
           type: integer
-        galleriesWithWebsite:
+        withWebsite:
           type: integer
-        galleriesWithPhone:
-          type: integer
-        fromOsm:
+        withPhone:
           type: integer
         enriched:
           type: integer
+        byCategoryBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryCount"
         byCityBreakdown:
           type: array
           items:
             $ref: "#/components/schemas/CityCount"
       required:
-        - totalGalleries
-        - galleriesWithWebsite
-        - galleriesWithPhone
-        - fromOsm
+        - totalBusinesses
+        - withWebsite
+        - withPhone
         - enriched
+        - byCategoryBreakdown
         - byCityBreakdown
+
+    CategoryCount:
+      type: object
+      properties:
+        categorySlug:
+          type: string
+        count:
+          type: integer
+      required: [categorySlug, count]
 
     CityCount:
       type: object
@@ -281,9 +356,16 @@ components:
           type: ["string", "null"]
         count:
           type: integer
-      required:
-        - city
-        - count
+      required: [city, count]
+
+    ImportRequest:
+      type: object
+      properties:
+        categorySlug:
+          type: string
+        city:
+          type: string
+      required: [categorySlug, city]
 
     ImportResult:
       type: object
@@ -304,14 +386,7 @@ components:
           type: string
         runId:
           type: ["integer", "null"]
-      required:
-        - success
-        - fetched
-        - inserted
-        - updated
-        - skipped
-        - errors
-        - message
+      required: [success, fetched, inserted, updated, skipped, errors, message]
 
     ImportRun:
       type: object
@@ -319,6 +394,8 @@ components:
         id:
           type: integer
         source:
+          type: string
+        categorySlug:
           type: string
         city:
           type: string
@@ -340,17 +417,11 @@ components:
           type: string
         finishedAt:
           type: ["string", "null"]
-      required:
-        - id
-        - source
-        - city
-        - status
-        - startedAt
+      required: [id, source, categorySlug, city, status, startedAt]
 
     ErrorResponse:
       type: object
       properties:
         error:
           type: string
-      required:
-        - error
+      required: [error]

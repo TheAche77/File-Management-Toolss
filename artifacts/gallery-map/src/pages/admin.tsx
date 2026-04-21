@@ -1,6 +1,15 @@
-import { useImportOsmRome, useGetImportRuns, getGetImportRunsQueryKey } from "@workspace/api-client-react";
+import { useState } from "react";
+import { 
+  useRunImport, 
+  useGetImportRuns, 
+  getGetImportRunsQueryKey,
+  useGetCategories,
+  getGetCategoriesQueryKey
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, RefreshCw, Database } from "lucide-react";
 import { format } from "date-fns";
@@ -11,11 +20,18 @@ export default function Admin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  const [category, setCategory] = useState("art_gallery");
+  const [city, setCity] = useState("Rome");
+
+  const { data: categories } = useGetCategories({
+    query: { queryKey: getGetCategoriesQueryKey() }
+  });
+  
   const { data: runs, isLoading: runsLoading } = useGetImportRuns({
     query: { queryKey: getGetImportRunsQueryKey() }
   });
 
-  const importMutation = useImportOsmRome({
+  const importMutation = useRunImport({
     mutation: {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
@@ -27,43 +43,90 @@ export default function Admin() {
       onError: (error) => {
         toast({
           title: "Import Failed",
-          description: error.error || "An unknown error occurred",
+          description: (error as any)?.response?.data?.error || error.message || "An unknown error occurred",
           variant: "destructive",
         });
       }
     }
   });
 
+  const handleImport = () => {
+    if (!category || !city) return;
+    importMutation.mutate({ data: { categorySlug: category, city } });
+  };
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-4xl font-serif text-foreground">Administration</h1>
-        <p className="text-muted-foreground mt-2 text-lg">System controls and data management.</p>
+        <h1 className="text-4xl font-serif text-foreground font-bold tracking-tight">Administration</h1>
+        <p className="text-muted-foreground mt-1">System controls and data management.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="font-serif text-xl">Data Import</CardTitle>
-            <CardDescription>Fetch the latest gallery data from OpenStreetMap for Rome.</CardDescription>
+            <CardDescription>Fetch the latest business data from OpenStreetMap for a given category and city.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Category</label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger data-testid="select-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((c) => (
+                    <SelectItem key={c.id} value={c.slug}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">City</label>
+              <Input 
+                value={city} 
+                onChange={(e) => setCity(e.target.value)} 
+                placeholder="e.g. Rome" 
+              />
+            </div>
+
             <Button 
-              onClick={() => importMutation.mutate()} 
-              disabled={importMutation.isPending}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              data-testid="button-import-rome"
+              onClick={handleImport} 
+              disabled={importMutation.isPending || !category || !city}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-2"
+              data-testid="button-run-import"
             >
               {importMutation.isPending ? (
                 <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Importing...</>
               ) : (
-                <><Database className="mr-2 h-4 w-4" /> Import Rome from OSM</>
+                <><Database className="mr-2 h-4 w-4" /> Run Import</>
               )}
             </Button>
+
             {importMutation.data && (
-              <div className="mt-4 text-sm bg-muted/50 p-3 border border-border">
-                <p className="font-medium text-foreground mb-1">Last Result:</p>
-                <p className="text-muted-foreground">Inserted: {importMutation.data.inserted} | Updated: {importMutation.data.updated} | Errors: {importMutation.data.errors}</p>
+              <div className="mt-4 text-sm bg-muted/50 p-3 border border-border rounded-md">
+                <p className="font-medium text-foreground mb-1 flex items-center gap-2">
+                  <Badge variant={importMutation.data.success ? "default" : "destructive"}>
+                    {importMutation.data.success ? "Success" : "Failed"}
+                  </Badge>
+                  Last Result
+                </p>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-center text-xs">
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold">{importMutation.data.fetched}</div>
+                    <div className="text-muted-foreground">Fetched</div>
+                  </div>
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold text-primary">{importMutation.data.inserted}</div>
+                    <div className="text-muted-foreground">Inserted</div>
+                  </div>
+                  <div className="bg-background p-2 rounded border">
+                    <div className="font-bold">{importMutation.data.updated}</div>
+                    <div className="text-muted-foreground">Updated</div>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -78,57 +141,66 @@ export default function Admin() {
             <Button 
               variant="outline" 
               className="w-full"
-              data-testid="button-export-csv"
               asChild
             >
-              <a href="/api/export/galleries.csv" download>
-                <Download className="mr-2 h-4 w-4" /> Export Complete CSV
+              <a href={`/api/export/businesses.csv${category && category !== 'all' ? `?categorySlug=${category}` : ''}`} download>
+                <Download className="mr-2 h-4 w-4" /> Export Businesses CSV
               </a>
             </Button>
+            <p className="text-xs text-muted-foreground mt-4">
+              The export will respect the currently selected category filter above.
+            </p>
           </CardContent>
         </Card>
       </div>
 
       <div>
-        <h2 className="text-2xl font-serif mb-4">Import History</h2>
-        <div className="bg-card border border-border overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted text-muted-foreground uppercase tracking-wider text-xs">
-              <tr>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Fetched</th>
-                <th className="px-4 py-3 font-medium text-right">Inserted</th>
-                <th className="px-4 py-3 font-medium text-right">Updated</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {runsLoading ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading history...</td></tr>
-              ) : runs?.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No import history found.</td></tr>
-              ) : (
-                runs?.map((run) => (
-                  <tr key={run.id} className="hover:bg-accent/50 transition-colors">
-                    <td className="px-4 py-3 text-foreground whitespace-nowrap">
-                      {format(new Date(run.startedAt), 'MMM d, yyyy HH:mm')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge 
-                        variant={run.status === 'completed' ? 'default' : run.status === 'failed' ? 'destructive' : 'secondary'}
-                        className="uppercase tracking-widest text-[10px] rounded-none font-normal"
-                      >
-                        {run.status}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">{run.fetched || 0}</td>
-                    <td className="px-4 py-3 text-right text-primary font-medium">{run.inserted || 0}</td>
-                    <td className="px-4 py-3 text-right">{run.updated || 0}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <h2 className="text-2xl font-serif mb-4 font-semibold tracking-tight">Import History</h2>
+        <div className="bg-card border border-border overflow-hidden rounded-lg">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted text-muted-foreground uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Date</th>
+                  <th className="px-4 py-3 font-medium">Target</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium text-right">Fetched</th>
+                  <th className="px-4 py-3 font-medium text-right">Inserted</th>
+                  <th className="px-4 py-3 font-medium text-right">Updated</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {runsLoading ? (
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Loading history...</td></tr>
+                ) : runs?.length === 0 ? (
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No import history found.</td></tr>
+                ) : (
+                  runs?.map((run) => (
+                    <tr key={run.id} className="hover:bg-accent/50 transition-colors">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
+                        {format(new Date(run.startedAt), 'MMM d, yyyy HH:mm')}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="font-medium">{run.city}</div>
+                        <div className="text-xs text-muted-foreground capitalize">{run.categorySlug.replace(/_/g, ' ')}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge 
+                          variant={run.status === 'completed' ? 'default' : run.status === 'failed' ? 'destructive' : 'secondary'}
+                          className="capitalize text-[10px] rounded-sm font-medium"
+                        >
+                          {run.status}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right">{run.fetched || 0}</td>
+                      <td className="px-4 py-3 text-right text-primary font-medium">{run.inserted || 0}</td>
+                      <td className="px-4 py-3 text-right">{run.updated || 0}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -4,8 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
-import Galleries from "@/pages/galleries";
-import GalleryDetail from "@/pages/gallery-detail";
+import Businesses from "@/pages/businesses";
 import MapView from "@/pages/map";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
@@ -23,8 +22,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
-        <Route path="/galleries" component={Galleries} />
-        <Route path="/galleries/:id" component={GalleryDetail} />
+        <Route path="/businesses" component={Businesses} />
         <Route path="/map" component={MapView} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />

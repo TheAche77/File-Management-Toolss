@@ -6,8 +6,13 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface CityCount {
+export interface Category {
+  id: number;
+  slug: string;
+  label: string;
   /** @nullable */
-  city: string | null;
-  count: number;
+  description?: string | null;
+  osmTags: string;
+  active: boolean;
+  createdAt: string;
 }

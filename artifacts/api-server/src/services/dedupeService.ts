@@ -1,29 +1,36 @@
-import { db, galleriesTable } from "@workspace/db";
-import { and, eq, or, sql } from "drizzle-orm";
-import type { InsertGallery } from "@workspace/db";
+import { db, businessesTable } from "@workspace/db";
+import { and, eq, sql } from "drizzle-orm";
+import type { InsertBusiness } from "@workspace/db";
 import { logger } from "../lib/logger";
+
+export type DedupeAction = "insert" | "update";
 
 const COORD_TOLERANCE = 0.0005;
 
-export type DedupeResult = "insert" | "update" | "skip";
-
-export async function resolveGallery(
-  incoming: InsertGallery,
-): Promise<{ action: DedupeResult; id?: number }> {
+export async function upsertBusiness(
+  incoming: InsertBusiness,
+): Promise<{ action: DedupeAction; id: number }> {
   if (incoming.osmId && incoming.osmType) {
     const existing = await db
-      .select({ id: galleriesTable.id })
-      .from(galleriesTable)
+      .select({ id: businessesTable.id })
+      .from(businessesTable)
       .where(
         and(
-          eq(galleriesTable.osmId, incoming.osmId),
-          eq(galleriesTable.osmType, incoming.osmType),
+          eq(businessesTable.categorySlug, incoming.categorySlug),
+          eq(businessesTable.osmId, incoming.osmId),
+          eq(businessesTable.osmType, incoming.osmType),
         ),
       )
       .limit(1);
 
     if (existing.length > 0) {
-      return { action: "update", id: existing[0]!.id };
+      const id = existing[0]!.id;
+      await db
+        .update(businessesTable)
+        .set({ ...incoming, updatedAt: new Date() })
+        .where(eq(businessesTable.id, id));
+      logger.debug({ id, name: incoming.name }, "Business updated (osm_id match)");
+      return { action: "update", id };
     }
   }
 
@@ -31,71 +38,67 @@ export async function resolveGallery(
   const lon = parseFloat(incoming.longitude);
 
   const coordMatch = await db
-    .select({ id: galleriesTable.id })
-    .from(galleriesTable)
+    .select({ id: businessesTable.id })
+    .from(businessesTable)
     .where(
       and(
-        sql`abs(${galleriesTable.latitude}::float - ${lat}) < ${COORD_TOLERANCE}`,
-        sql`abs(${galleriesTable.longitude}::float - ${lon}) < ${COORD_TOLERANCE}`,
-        eq(galleriesTable.name, incoming.name),
+        eq(businessesTable.categorySlug, incoming.categorySlug),
+        eq(businessesTable.name, incoming.name),
+        sql`abs(${businessesTable.latitude}::float - ${lat}) < ${COORD_TOLERANCE}`,
+        sql`abs(${businessesTable.longitude}::float - ${lon}) < ${COORD_TOLERANCE}`,
       ),
     )
     .limit(1);
 
   if (coordMatch.length > 0) {
-    return { action: "update", id: coordMatch[0]!.id };
+    const id = coordMatch[0]!.id;
+    await db
+      .update(businessesTable)
+      .set({ ...incoming, updatedAt: new Date() })
+      .where(eq(businessesTable.id, id));
+    logger.debug({ id, name: incoming.name }, "Business updated (coord+name match)");
+    return { action: "update", id };
   }
 
   if (incoming.website) {
-    const websiteMatch = await db
-      .select({ id: galleriesTable.id })
-      .from(galleriesTable)
-      .where(eq(galleriesTable.website, incoming.website))
+    const webMatch = await db
+      .select({ id: businessesTable.id })
+      .from(businessesTable)
+      .where(
+        and(
+          eq(businessesTable.categorySlug, incoming.categorySlug),
+          eq(businessesTable.website, incoming.website),
+        ),
+      )
       .limit(1);
-
-    if (websiteMatch.length > 0) {
-      return { action: "update", id: websiteMatch[0]!.id };
+    if (webMatch.length > 0) {
+      const id = webMatch[0]!.id;
+      await db.update(businessesTable).set({ ...incoming, updatedAt: new Date() }).where(eq(businessesTable.id, id));
+      return { action: "update", id };
     }
   }
 
-  if (incoming.phone) {
-    const phoneMatch = await db
-      .select({ id: galleriesTable.id })
-      .from(galleriesTable)
-      .where(eq(galleriesTable.phone, incoming.phone))
+  const inserted = await db
+    .insert(businessesTable)
+    .values(incoming)
+    .onConflictDoNothing()
+    .returning({ id: businessesTable.id });
+
+  if (inserted.length === 0) {
+    const existing = await db
+      .select({ id: businessesTable.id })
+      .from(businessesTable)
+      .where(
+        and(
+          eq(businessesTable.slug, incoming.slug),
+          eq(businessesTable.categorySlug, incoming.categorySlug),
+        ),
+      )
       .limit(1);
-
-    if (phoneMatch.length > 0) {
-      return { action: "update", id: phoneMatch[0]!.id };
-    }
-  }
-
-  return { action: "insert" };
-}
-
-export async function upsertGallery(
-  incoming: InsertGallery,
-): Promise<{ action: DedupeResult; id: number }> {
-  const resolved = await resolveGallery(incoming);
-
-  if (resolved.action === "insert") {
-    const inserted = await db
-      .insert(galleriesTable)
-      .values(incoming)
-      .returning({ id: galleriesTable.id });
-    const id = inserted[0]!.id;
-    logger.debug({ id, name: incoming.name }, "Gallery inserted");
-    return { action: "insert", id };
-  } else {
-    const id = resolved.id!;
-    await db
-      .update(galleriesTable)
-      .set({
-        ...incoming,
-        updatedAt: new Date(),
-      })
-      .where(eq(galleriesTable.id, id));
-    logger.debug({ id, name: incoming.name }, "Gallery updated");
+    const id = existing[0]?.id ?? 0;
     return { action: "update", id };
   }
+
+  logger.debug({ id: inserted[0]!.id, name: incoming.name }, "Business inserted");
+  return { action: "insert", id: inserted[0]!.id };
 }
