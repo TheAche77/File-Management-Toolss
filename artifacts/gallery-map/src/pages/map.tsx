@@ -1,8 +1,10 @@
 import { useGetBusinesses } from "@workspace/api-client-react";
+import { Link } from "wouter";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { ExternalLink, Globe, Phone, MapPin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { buttonVariants } from "@/components/ui/button";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -60,6 +62,16 @@ export default function MapView() {
                         <span>{biz.addressLine || 'No address'}{biz.city ? `, ${biz.city}` : ''}</span>
                       </div>
                       <div className="space-y-1 pt-2 border-t border-border/50">
+                        <Link
+                          href={`/businesses/${biz.id}`}
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "sm",
+                            className: "h-auto px-0 text-xs text-primary justify-start",
+                          })}
+                        >
+                          Open details
+                        </Link>
                         {biz.website && (
                           <a href={biz.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-primary hover:underline">
                             <Globe className="w-3 h-3" /> Visit Website <ExternalLink className="w-3 h-3" />

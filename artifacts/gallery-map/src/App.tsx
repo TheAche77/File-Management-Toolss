@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import Dashboard from "@/pages/dashboard";
 import Businesses from "@/pages/businesses";
+import BusinessDetail from "@/pages/business-detail";
 import MapView from "@/pages/map";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
@@ -22,6 +23,9 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/businesses/:id">
+          {(params) => <BusinessDetail params={params as { id: string }} />}
+        </Route>
         <Route path="/businesses" component={Businesses} />
         <Route path="/map" component={MapView} />
         <Route path="/admin" component={Admin} />

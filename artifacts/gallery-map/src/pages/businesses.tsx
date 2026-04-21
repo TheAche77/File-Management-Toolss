@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useGetBusinesses, getGetBusinessesQueryKey, useGetCategories, getGetCategoriesQueryKey } from "@workspace/api-client-react";
 import { Search, MapPin, Globe, Phone, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -130,13 +131,17 @@ export default function Businesses() {
                 </TableRow>
               ) : (
                 data?.businesses.map((business) => (
-                  <TableRow key={business.id}>
-                    <TableCell className="font-medium">
-                      {business.name}
-                      {business.enrichmentStatus === 'enriched' && (
-                        <Badge variant="outline" className="ml-2 text-[10px] bg-primary/5 text-primary">Enriched</Badge>
-                      )}
-                    </TableCell>
+                    <TableRow key={business.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/businesses/${business.id}`} className="hover:text-primary transition-colors">
+                            {business.name}
+                          </Link>
+                          {business.enrichmentStatus === 'enriched' && (
+                            <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary">Enriched</Badge>
+                          )}
+                        </div>
+                      </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="capitalize">
                         {business.categorySlug.replace(/_/g, ' ')}
@@ -172,14 +177,22 @@ export default function Businesses() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {business.googleMapsUrl && (
-                        <Button variant="ghost" size="sm" asChild>
-                          <a href={business.googleMapsUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-4 w-4" />
-                            <span className="sr-only">View on Google Maps</span>
-                          </a>
-                        </Button>
-                      )}
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/businesses/${business.id}`}
+                          className={buttonVariants({ variant: "ghost", size: "sm" })}
+                        >
+                          Details
+                        </Link>
+                        {business.googleMapsUrl && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <a href={business.googleMapsUrl} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-4 w-4" />
+                              <span className="sr-only">View on Google Maps</span>
+                            </a>
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
