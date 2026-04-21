@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { useGetOutreachPipeline } from "@workspace/api-client-react";
+import { useGetOutreachPipeline, getGetOutreachPipelineQueryKey } from "@workspace/api-client-react";
 import { CalendarClock, ExternalLink, Mail, MoveRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,7 @@ export default function PipelinePage() {
   const hasAdminToken = Boolean(getStoredAdminToken());
   const { data, isLoading, isError } = useGetOutreachPipeline(
     { horizonDays: 7, limit: 60 },
-    { query: { enabled: hasAdminToken } },
+    { query: { queryKey: getGetOutreachPipelineQueryKey({ horizonDays: 7, limit: 60 }), enabled: hasAdminToken } },
   );
 
   if (!hasAdminToken) {

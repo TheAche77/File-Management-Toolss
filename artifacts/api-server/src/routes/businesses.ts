@@ -134,7 +134,7 @@ router.get("/businesses/review-queue", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/businesses/:id", async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const rows = await db.select().from(businessesTable).where(eq(businessesTable.id, id)).limit(1);
@@ -143,7 +143,7 @@ router.get("/businesses/:id", async (req, res) => {
 });
 
 router.get("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -164,7 +164,7 @@ router.get("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
 });
 
 router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -252,7 +252,7 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/businesses/:id/sources", async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -290,7 +290,7 @@ router.get("/businesses/:id/sources", async (req, res) => {
 });
 
 router.get("/businesses/:id/contact-candidates", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
@@ -314,8 +314,8 @@ router.get("/businesses/:id/contact-candidates", requireAdminAuth, async (req, r
 });
 
 router.patch("/businesses/:id/contact-candidates/:candidateId", requireAdminAuth, async (req, res) => {
-  const businessId = parseInt(req.params["id"] ?? "0", 10);
-  const candidateId = parseInt(req.params["candidateId"] ?? "0", 10);
+  const businessId = parseInt(String(req.params["id"] ?? "0"), 10);
+  const candidateId = parseInt(String(req.params["candidateId"] ?? "0"), 10);
 
   if (!businessId || isNaN(businessId) || !candidateId || isNaN(candidateId)) {
     res.status(400).json({ error: "Invalid contact candidate identifier" });
@@ -547,7 +547,7 @@ router.get("/imports/runs", requireAdminAuth, async (_req, res) => {
 });
 
 router.get("/imports/runs/:id", requireAdminAuth, async (req, res) => {
-  const id = parseInt(req.params["id"] ?? "0", 10);
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid run ID" });
     return;
