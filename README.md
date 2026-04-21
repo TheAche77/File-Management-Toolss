@@ -192,3 +192,4 @@ Not in scope:
 The higher-level product and engineering roadmap lives in:
 
 - [ROADMAP.md](./ROADMAP.md)
+- [ROADMAP_SLG_OUTREACH.md](./ROADMAP_SLG_OUTREACH.md)
