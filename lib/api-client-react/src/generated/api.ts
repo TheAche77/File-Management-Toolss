@@ -24,11 +24,13 @@ import type {
   ErrorResponse,
   ExportBusinessesCsvParams,
   GetBusinessesParams,
+  GetReviewQueueParams,
   GetStatsParams,
   HealthStatus,
   ImportRequest,
   ImportResult,
   ImportRun,
+  ReviewQueueItem,
   StatsResponse,
 } from "./api.schemas";
 
@@ -277,6 +279,99 @@ export function useGetBusinesses<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetBusinessesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List businesses that should be manually reviewed next
+ */
+export const getGetReviewQueueUrl = (params?: GetReviewQueueParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/businesses/review-queue?${stringifiedParams}`
+    : `/api/businesses/review-queue`;
+};
+
+export const getReviewQueue = async (
+  params?: GetReviewQueueParams,
+  options?: RequestInit,
+): Promise<ReviewQueueItem[]> => {
+  return customFetch<ReviewQueueItem[]>(getGetReviewQueueUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetReviewQueueQueryKey = (params?: GetReviewQueueParams) => {
+  return [`/api/businesses/review-queue`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetReviewQueueQueryOptions = <
+  TData = Awaited<ReturnType<typeof getReviewQueue>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetReviewQueueParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReviewQueue>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetReviewQueueQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getReviewQueue>>> = ({
+    signal,
+  }) => getReviewQueue(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getReviewQueue>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetReviewQueueQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getReviewQueue>>
+>;
+export type GetReviewQueueQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List businesses that should be manually reviewed next
+ */
+export function useGetReviewQueue<
+  TData = Awaited<ReturnType<typeof getReviewQueue>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetReviewQueueParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReviewQueue>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetReviewQueueQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

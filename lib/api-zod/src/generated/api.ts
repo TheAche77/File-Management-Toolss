@@ -80,6 +80,52 @@ export const GetBusinessesResponse = zod.object({
 });
 
 /**
+ * @summary List businesses that should be manually reviewed next
+ */
+export const getReviewQueueQueryLimitDefault = 25;
+
+export const GetReviewQueueQueryParams = zod.object({
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  limit: zod.coerce.number().default(getReviewQueueQueryLimitDefault),
+});
+
+export const GetReviewQueueResponseItem = zod.object({
+  business: zod.object({
+    id: zod.number(),
+    categorySlug: zod.string(),
+    name: zod.string(),
+    slug: zod.string(),
+    latitude: zod.string(),
+    longitude: zod.string(),
+    addressLine: zod.string().nullish(),
+    city: zod.string().nullish(),
+    postalCode: zod.string().nullish(),
+    region: zod.string().nullish(),
+    country: zod.string().nullish(),
+    website: zod.string().nullish(),
+    phone: zod.string().nullish(),
+    osmId: zod.string().nullish(),
+    osmType: zod.string().nullish(),
+    googlePlaceId: zod.string().nullish(),
+    googleMapsUrl: zod.string().nullish(),
+    rating: zod.string().nullish(),
+    userRatingsTotal: zod.number().nullish(),
+    hasWebsite: zod.boolean(),
+    hasPhone: zod.boolean(),
+    enrichmentStatus: zod.string(),
+    createdAt: zod.string(),
+    updatedAt: zod.string(),
+  }),
+  reasons: zod.array(zod.string()),
+  priorityScore: zod.number(),
+  sourceCount: zod.number(),
+  officialSourceCount: zod.number(),
+  failedSourceCount: zod.number(),
+});
+export const GetReviewQueueResponse = zod.array(GetReviewQueueResponseItem);
+
+/**
  * @summary Get a business by ID
  */
 export const GetBusinessByIdParams = zod.object({

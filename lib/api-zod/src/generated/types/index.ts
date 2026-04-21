@@ -20,4 +20,5 @@ export * from "./healthStatus";
 export * from "./importRequest";
 export * from "./importResult";
 export * from "./importRun";
+export * from "./reviewQueueItem";
 export * from "./statsResponse";

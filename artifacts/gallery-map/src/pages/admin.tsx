@@ -3,19 +3,29 @@ import {
   useRunImport, 
   useGetImportRuns, 
   useGetImportRunById,
+  useGetReviewQueue,
   getGetImportRunsQueryKey,
+  getGetReviewQueueQueryKey,
   useGetCategories,
   getGetCategoriesQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, RefreshCw, Database } from "lucide-react";
+import { Download, RefreshCw, Database, ClipboardCheck, TriangleAlert, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+
+function formatReviewReason(reason: string) {
+  return reason
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 export default function Admin() {
   const { toast } = useToast();
@@ -41,6 +51,15 @@ export default function Admin() {
     query: {
       enabled: !!activeRunId,
       refetchInterval: activeRunId ? 2000 : false,
+    }
+  });
+
+  const reviewQueueParams = useMemo(() => ({ limit: 12 }), []);
+
+  const { data: reviewQueue, isLoading: reviewQueueLoading } = useGetReviewQueue(reviewQueueParams, {
+    query: {
+      queryKey: getGetReviewQueueQueryKey(reviewQueueParams),
+      refetchInterval: activeRunId ? 5000 : 15000,
     }
   });
 
@@ -74,6 +93,7 @@ export default function Admin() {
         description: `Fetched: ${currentRun.fetched || 0}, Inserted: ${currentRun.inserted || 0}, Updated: ${currentRun.updated || 0}, Skipped: ${currentRun.skipped || 0}`,
       });
       queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetReviewQueueQueryKey(reviewQueueParams) });
       setActiveRunId(null);
     }
 
@@ -84,11 +104,12 @@ export default function Admin() {
         variant: "destructive",
       });
       queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetReviewQueueQueryKey(reviewQueueParams) });
       setActiveRunId(null);
     }
 
     lastActiveRunStatus.current = currentRun.status;
-  }, [currentRun, queryClient, toast]);
+  }, [currentRun, queryClient, reviewQueueParams, toast]);
 
   const importMutation = useRunImport({
     mutation: {
@@ -98,6 +119,7 @@ export default function Admin() {
           lastActiveRunStatus.current = data.status;
         }
         queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetReviewQueueQueryKey(reviewQueueParams) });
         toast({
           title: "Import Queued",
           description: data.message,
@@ -249,6 +271,78 @@ export default function Admin() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="font-serif text-xl flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5 text-primary" />
+            Review Queue
+          </CardTitle>
+          <CardDescription>
+            Prioritized businesses that still need manual review before deeper enrichment or outreach.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {reviewQueueLoading ? (
+            <div className="text-sm text-muted-foreground">Loading review queue...</div>
+          ) : !reviewQueue || reviewQueue.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+              No businesses currently need review in the queue.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reviewQueue.map((item) => (
+                <div
+                  key={item.business.id}
+                  className="rounded-lg border bg-background p-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
+                >
+                  <div className="space-y-2 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link href={`/businesses/${item.business.id}`} className="font-medium hover:text-primary transition-colors">
+                        {item.business.name}
+                      </Link>
+                      <Badge variant="secondary" className="capitalize">
+                        {item.business.categorySlug.replace(/_/g, " ")}
+                      </Badge>
+                      <Badge variant="outline">Priority {item.priorityScore}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {item.business.city || "Unknown city"}
+                      {item.business.addressLine ? `, ${item.business.addressLine}` : ""}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {item.reasons.map((reason) => (
+                        <Badge key={reason} variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+                          <TriangleAlert className="mr-1 h-3 w-3" />
+                          {formatReviewReason(reason)}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                      <span>{item.sourceCount} sources</span>
+                      <span>{item.officialSourceCount} official</span>
+                      <span>{item.failedSourceCount} failed</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 shrink-0">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/businesses/${item.business.id}`}>Open Review</Link>
+                    </Button>
+                    {item.business.website && (
+                      <Button variant="ghost" size="sm" asChild>
+                        <a href={item.business.website} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div>
         <h2 className="text-2xl font-serif mb-4 font-semibold tracking-tight">Import History</h2>

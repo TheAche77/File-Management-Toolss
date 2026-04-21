@@ -4,6 +4,7 @@ import type { ImportRun as DbImportRun } from "@workspace/db";
 import { eq, ilike, and, sql, count, desc, or } from "drizzle-orm";
 import { queueImportRun } from "../services/importJobService";
 import { getBusinessSources } from "../services/businessSourceService";
+import { getReviewQueue } from "../services/reviewQueueService";
 
 const router = Router();
 
@@ -68,6 +69,31 @@ router.get("/businesses", async (req, res) => {
     pageSize: size,
     totalPages: Math.ceil(total / size),
   });
+});
+
+router.get("/businesses/review-queue", async (req, res) => {
+  const {
+    categorySlug,
+    city,
+    limit = "25",
+  } = req.query as Record<string, string | undefined>;
+
+  const items = await getReviewQueue({
+    categorySlug,
+    city,
+    limit: parseInt(limit ?? "25", 10),
+  });
+
+  res.json(
+    items.map((item) => ({
+      business: serializeBusiness(item.business),
+      reasons: item.reasons,
+      priorityScore: item.priorityScore,
+      sourceCount: item.sourceCount,
+      officialSourceCount: item.officialSourceCount,
+      failedSourceCount: item.failedSourceCount,
+    })),
+  );
 });
 
 router.get("/businesses/:id", async (req, res) => {

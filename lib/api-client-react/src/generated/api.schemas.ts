@@ -89,6 +89,15 @@ export interface BusinessSource {
   updatedAt: string;
 }
 
+export interface ReviewQueueItem {
+  business: Business;
+  reasons: string[];
+  priorityScore: number;
+  sourceCount: number;
+  officialSourceCount: number;
+  failedSourceCount: number;
+}
+
 export interface CategoryCount {
   categorySlug: string;
   count: number;
@@ -163,6 +172,12 @@ export type GetBusinessesParams = {
   hasPhone?: boolean;
   page?: number;
   pageSize?: number;
+};
+
+export type GetReviewQueueParams = {
+  categorySlug?: string;
+  city?: string;
+  limit?: number;
 };
 
 export type GetStatsParams = {

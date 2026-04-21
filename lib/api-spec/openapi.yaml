@@ -93,6 +93,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/BusinessesResponse"
 
+  /businesses/review-queue:
+    get:
+      operationId: getReviewQueue
+      tags: [businesses]
+      summary: List businesses that should be manually reviewed next
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Prioritized review queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReviewQueueItem"
+
   /businesses/{id}:
     get:
       operationId: getBusinessById
@@ -403,6 +432,31 @@ components:
         - isOfficial
         - createdAt
         - updatedAt
+
+    ReviewQueueItem:
+      type: object
+      properties:
+        business:
+          $ref: "#/components/schemas/Business"
+        reasons:
+          type: array
+          items:
+            type: string
+        priorityScore:
+          type: integer
+        sourceCount:
+          type: integer
+        officialSourceCount:
+          type: integer
+        failedSourceCount:
+          type: integer
+      required:
+        - business
+        - reasons
+        - priorityScore
+        - sourceCount
+        - officialSourceCount
+        - failedSourceCount
 
     StatsResponse:
       type: object
