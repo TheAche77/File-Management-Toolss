@@ -200,6 +200,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateBusinessContactCandidate
+      tags: [businesses]
+      summary: Update review state or primary flag for one contact candidate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactCandidateUpdateRequest"
+      responses:
+        "200":
+          description: Updated contact candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactCandidate"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /stats:
     get:
@@ -536,6 +570,14 @@ components:
         - reviewStatus
         - createdAt
         - updatedAt
+
+    ContactCandidateUpdateRequest:
+      type: object
+      properties:
+        reviewStatus:
+          type: string
+        isPrimary:
+          type: boolean
 
     StatsResponse:
       type: object

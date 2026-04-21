@@ -1,13 +1,14 @@
 import { Router } from "express";
-import { db, businessesTable, importRunsTable, categoriesTable } from "@workspace/db";
+import { db, businessesTable, importRunsTable, categoriesTable, contactCandidatesTable } from "@workspace/db";
 import type { ImportRun as DbImportRun } from "@workspace/db";
-import { eq, ilike, and, sql, count, desc, or } from "drizzle-orm";
+import { eq, ilike, and, sql, count, desc, or, ne } from "drizzle-orm";
 import { queueImportRun } from "../services/importJobService";
 import { getBusinessSources } from "../services/businessSourceService";
 import { getContactCandidates } from "../services/contactCandidateService";
 import { getReviewQueue } from "../services/reviewQueueService";
 
 const router = Router();
+const CONTACT_CANDIDATE_STATUSES = new Set(["suggested", "approved", "rejected"]);
 
 router.get("/categories", async (_req, res) => {
   const rows = await db.select().from(categoriesTable).orderBy(categoriesTable.label);
@@ -164,27 +165,93 @@ router.get("/businesses/:id/contact-candidates", async (req, res) => {
 
   const contactCandidates = await getContactCandidates(id);
   res.json(
-    contactCandidates.map((candidate) => ({
-      id: candidate.id,
-      businessId: candidate.businessId,
-      fullName: candidate.fullName ?? null,
-      role: candidate.role ?? null,
-      contactType: candidate.contactType,
-      email: candidate.email ?? null,
-      phone: candidate.phone ?? null,
-      contactUrl: candidate.contactUrl ?? null,
-      sourceUrl: candidate.sourceUrl,
-      sourceType: candidate.sourceType,
-      confidenceScore: candidate.confidenceScore,
-      isPrimary: candidate.isPrimary,
-      isPersonalData: candidate.isPersonalData,
-      lastVerifiedAt: candidate.lastVerifiedAt?.toISOString() ?? null,
-      reviewStatus: candidate.reviewStatus,
-      notes: candidate.notes ?? null,
-      createdAt: candidate.createdAt.toISOString(),
-      updatedAt: candidate.updatedAt.toISOString(),
-    })),
+    contactCandidates.map(serializeContactCandidate),
   );
+});
+
+router.patch("/businesses/:id/contact-candidates/:candidateId", async (req, res) => {
+  const businessId = parseInt(req.params["id"] ?? "0", 10);
+  const candidateId = parseInt(req.params["candidateId"] ?? "0", 10);
+
+  if (!businessId || isNaN(businessId) || !candidateId || isNaN(candidateId)) {
+    res.status(400).json({ error: "Invalid contact candidate identifier" });
+    return;
+  }
+
+  const body = req.body as {
+    reviewStatus?: string;
+    isPrimary?: boolean;
+  };
+
+  if (body.reviewStatus && !CONTACT_CANDIDATE_STATUSES.has(body.reviewStatus)) {
+    res.status(400).json({ error: "Invalid reviewStatus" });
+    return;
+  }
+
+  if (body.reviewStatus === undefined && body.isPrimary === undefined) {
+    res.status(400).json({ error: "At least one field must be updated" });
+    return;
+  }
+
+  const candidates = await db
+    .select()
+    .from(contactCandidatesTable)
+    .where(
+      and(
+        eq(contactCandidatesTable.id, candidateId),
+        eq(contactCandidatesTable.businessId, businessId),
+      ),
+    )
+    .limit(1);
+
+  if (candidates.length === 0) {
+    res.status(404).json({ error: "Contact candidate not found" });
+    return;
+  }
+
+  const existing = candidates[0]!;
+  const nextReviewStatus = body.reviewStatus ?? existing.reviewStatus;
+  const nextIsPrimary =
+    nextReviewStatus === "rejected"
+      ? false
+      : body.isPrimary ?? existing.isPrimary;
+
+  const [updated] = await db.transaction(async (tx) => {
+    if (nextIsPrimary) {
+      await tx
+        .update(contactCandidatesTable)
+        .set({
+          isPrimary: false,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(contactCandidatesTable.businessId, businessId),
+            ne(contactCandidatesTable.id, candidateId),
+            eq(contactCandidatesTable.isPrimary, true),
+          ),
+        );
+    }
+
+    const [result] = await tx
+      .update(contactCandidatesTable)
+      .set({
+        reviewStatus: nextIsPrimary ? "approved" : nextReviewStatus,
+        isPrimary: nextIsPrimary,
+        updatedAt: new Date(),
+      })
+      .where(eq(contactCandidatesTable.id, candidateId))
+      .returning();
+
+    return [result];
+  });
+
+  if (!updated) {
+    res.status(500).json({ error: "Failed to update contact candidate" });
+    return;
+  }
+
+  res.json(serializeContactCandidate(updated));
 });
 
 router.get("/stats", async (req, res) => {
@@ -368,6 +435,29 @@ function serializeImportRun(r: DbImportRun) {
     errorMessage: r.errorMessage,
     startedAt: r.startedAt.toISOString(),
     finishedAt: r.finishedAt?.toISOString() ?? null,
+  };
+}
+
+function serializeContactCandidate(candidate: Record<string, unknown>) {
+  return {
+    id: candidate["id"],
+    businessId: candidate["businessId"],
+    fullName: candidate["fullName"] ?? null,
+    role: candidate["role"] ?? null,
+    contactType: candidate["contactType"],
+    email: candidate["email"] ?? null,
+    phone: candidate["phone"] ?? null,
+    contactUrl: candidate["contactUrl"] ?? null,
+    sourceUrl: candidate["sourceUrl"],
+    sourceType: candidate["sourceType"],
+    confidenceScore: candidate["confidenceScore"],
+    isPrimary: candidate["isPrimary"],
+    isPersonalData: candidate["isPersonalData"],
+    lastVerifiedAt: (candidate["lastVerifiedAt"] as Date | null | undefined)?.toISOString() ?? null,
+    reviewStatus: candidate["reviewStatus"],
+    notes: candidate["notes"] ?? null,
+    createdAt: (candidate["createdAt"] as Date).toISOString(),
+    updatedAt: (candidate["updatedAt"] as Date).toISOString(),
   };
 }
 

@@ -13,6 +13,7 @@ export * from "./category";
 export * from "./categoryCount";
 export * from "./cityCount";
 export * from "./contactCandidate";
+export * from "./contactCandidateUpdateRequest";
 export * from "./errorResponse";
 export * from "./exportBusinessesCsvParams";
 export * from "./getBusinessesParams";

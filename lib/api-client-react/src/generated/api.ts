@@ -19,6 +19,7 @@ import type {
 import type {
   Business,
   ContactCandidate,
+  ContactCandidateUpdateRequest,
   BusinessSource,
   BusinessesResponse,
   Category,
@@ -555,6 +556,105 @@ export function useGetBusinessContactCandidates<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Update review state or primary flag for one contact candidate
+ */
+export const getUpdateBusinessContactCandidateUrl = (
+  id: number,
+  candidateId: number,
+) => {
+  return `/api/businesses/${id}/contact-candidates/${candidateId}`;
+};
+
+export const updateBusinessContactCandidate = async (
+  id: number,
+  candidateId: number,
+  data: ContactCandidateUpdateRequest,
+  options?: RequestInit,
+): Promise<ContactCandidate> => {
+  return customFetch<ContactCandidate>(
+    getUpdateBusinessContactCandidateUrl(id, candidateId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers ?? {}),
+      },
+      body: JSON.stringify(data),
+    },
+  );
+};
+
+export const getUpdateBusinessContactCandidateMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBusinessContactCandidate>>,
+    TError,
+    { id: number; candidateId: number; data: BodyType<ContactCandidateUpdateRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBusinessContactCandidate>>,
+  TError,
+  { id: number; candidateId: number; data: BodyType<ContactCandidateUpdateRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateBusinessContactCandidate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBusinessContactCandidate>>,
+    { id: number; candidateId: number; data: BodyType<ContactCandidateUpdateRequest> }
+  > = (props) => {
+    const { id, candidateId, data } = props;
+
+    return updateBusinessContactCandidate(id, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBusinessContactCandidateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBusinessContactCandidate>>
+>;
+export type UpdateBusinessContactCandidateMutationBody =
+  BodyType<ContactCandidateUpdateRequest>;
+export type UpdateBusinessContactCandidateMutationError =
+  ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update review state or primary flag for one contact candidate
+ */
+export const useUpdateBusinessContactCandidate = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBusinessContactCandidate>>,
+    TError,
+    { id: number; candidateId: number; data: BodyType<ContactCandidateUpdateRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateBusinessContactCandidate>>,
+  TError,
+  { id: number; candidateId: number; data: BodyType<ContactCandidateUpdateRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateBusinessContactCandidateMutationOptions(options));
+};
 
 /**
  * @summary List tracked sources for one business

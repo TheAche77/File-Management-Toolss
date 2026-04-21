@@ -191,6 +191,22 @@ export const GetBusinessContactCandidatesResponse = zod.array(
 );
 
 /**
+ * @summary Update review state or primary flag for one contact candidate
+ */
+export const UpdateBusinessContactCandidateParams = zod.object({
+  id: zod.coerce.number(),
+  candidateId: zod.coerce.number(),
+});
+
+export const UpdateBusinessContactCandidateBody = zod.object({
+  reviewStatus: zod.string().optional(),
+  isPrimary: zod.boolean().optional(),
+});
+
+export const UpdateBusinessContactCandidateResponse =
+  GetBusinessContactCandidatesResponseItem;
+
+/**
  * @summary List tracked sources for one business
  */
 export const GetBusinessSourcesParams = zod.object({

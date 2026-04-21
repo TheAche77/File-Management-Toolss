@@ -6,7 +6,9 @@ import {
   useGetBusinessContactCandidates,
   useGetBusinessById,
   useGetBusinessSources,
+  useUpdateBusinessContactCandidate,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Building2,
@@ -33,6 +35,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 function formatDate(value?: string | null) {
   if (!value) return "Not available";
@@ -140,6 +143,8 @@ function OverviewSkeleton() {
 }
 
 export default function BusinessDetail({ params }: { params: { id: string } }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const businessId = Number(params.id);
 
   const businessQuery = useGetBusinessById(businessId, {
@@ -160,6 +165,29 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     query: {
       queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
       enabled: Number.isFinite(businessId) && businessId > 0,
+    },
+  });
+
+  const updateContactCandidateMutation = useUpdateBusinessContactCandidate({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
+        });
+        toast({
+          title: "Contact candidate updated",
+          description: "The review status has been saved.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Update failed",
+          description:
+            (error as { message?: string })?.message ||
+            "Could not update the contact candidate.",
+          variant: "destructive",
+        });
+      },
     },
   });
 
@@ -372,6 +400,55 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                       <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground max-w-xs">
                         {candidate.notes || "No notes available."}
                       </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {candidate.reviewStatus !== "approved" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updateContactCandidateMutation.isPending}
+                          onClick={() =>
+                            updateContactCandidateMutation.mutate({
+                              id: businessId,
+                              candidateId: candidate.id,
+                              data: { reviewStatus: "approved" },
+                            })
+                          }
+                        >
+                          Approve
+                        </Button>
+                      )}
+                      {candidate.reviewStatus !== "rejected" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updateContactCandidateMutation.isPending}
+                          onClick={() =>
+                            updateContactCandidateMutation.mutate({
+                              id: businessId,
+                              candidateId: candidate.id,
+                              data: { reviewStatus: "rejected" },
+                            })
+                          }
+                        >
+                          Reject
+                        </Button>
+                      )}
+                      {!candidate.isPrimary && candidate.reviewStatus !== "rejected" && (
+                        <Button
+                          size="sm"
+                          disabled={updateContactCandidateMutation.isPending}
+                          onClick={() =>
+                            updateContactCandidateMutation.mutate({
+                              id: businessId,
+                              candidateId: candidate.id,
+                              data: { reviewStatus: "approved", isPrimary: true },
+                            })
+                          }
+                        >
+                          Set Primary
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))

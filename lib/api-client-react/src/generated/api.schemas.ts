@@ -117,6 +117,11 @@ export interface ContactCandidate {
   updatedAt: string;
 }
 
+export interface ContactCandidateUpdateRequest {
+  reviewStatus?: string;
+  isPrimary?: boolean;
+}
+
 export interface ReviewQueueItem {
   business: Business;
   reasons: string[];
