@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "rbBOfDWiAuAs2UCeHs8dP"
+uri = "file://scopri_italia_business.csv"
+type = "table"
+title = "Scopri Italia — 372 Business (Musei, Librerie, Gallerie)"
