@@ -147,6 +147,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /businesses/{id}/outreach:
+    get:
+      operationId: getBusinessOutreach
+      tags: [businesses]
+      summary: Get protected outreach fields for one business
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Outreach details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessOutreach"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateBusinessOutreach
+      tags: [businesses]
+      summary: Update protected outreach fields for one business
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBusinessOutreachRequest"
+      responses:
+        "200":
+          description: Updated outreach details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessOutreach"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /businesses/{id}/sources:
     get:
       operationId: getBusinessSources
@@ -518,6 +572,66 @@ components:
         - sourceCount
         - officialSourceCount
         - failedSourceCount
+
+    BusinessOutreach:
+      type: object
+      properties:
+        businessId:
+          type: integer
+        outreachStatus:
+          type: string
+        contactName:
+          type: ["string", "null"]
+        contactRole:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        lastContactDate:
+          type: ["string", "null"]
+        nextActionDate:
+          type: ["string", "null"]
+        assignedArtist:
+          type: ["string", "null"]
+        avatarType:
+          type: ["string", "null"]
+        targetMarket:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        warmConnection:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+      required:
+        - businessId
+        - outreachStatus
+        - updatedAt
+
+    UpdateBusinessOutreachRequest:
+      type: object
+      properties:
+        outreachStatus:
+          type: string
+        contactName:
+          type: ["string", "null"]
+        contactRole:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        lastContactDate:
+          type: ["string", "null"]
+        nextActionDate:
+          type: ["string", "null"]
+        assignedArtist:
+          type: ["string", "null"]
+        avatarType:
+          type: ["string", "null"]
+        targetMarket:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        warmConnection:
+          type: ["string", "null"]
 
     ContactCandidate:
       type: object

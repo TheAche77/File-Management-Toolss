@@ -7,6 +7,7 @@
  */
 
 export * from "./business";
+export * from "./businessOutreach";
 export * from "./businessSource";
 export * from "./businessesResponse";
 export * from "./category";
@@ -24,3 +25,4 @@ export * from "./importResult";
 export * from "./importRun";
 export * from "./reviewQueueItem";
 export * from "./statsResponse";
+export * from "./updateBusinessOutreachRequest";

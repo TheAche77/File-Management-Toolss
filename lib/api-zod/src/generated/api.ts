@@ -160,6 +160,52 @@ export const GetBusinessByIdResponse = zod.object({
 });
 
 /**
+ * @summary Get protected outreach fields for one business
+ */
+export const GetBusinessOutreachParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBusinessOutreachResponse = zod.object({
+  businessId: zod.number(),
+  outreachStatus: zod.string(),
+  contactName: zod.string().nullish(),
+  contactRole: zod.string().nullish(),
+  contactEmail: zod.string().nullish(),
+  lastContactDate: zod.string().nullish(),
+  nextActionDate: zod.string().nullish(),
+  assignedArtist: zod.string().nullish(),
+  avatarType: zod.string().nullish(),
+  targetMarket: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  warmConnection: zod.string().nullish(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update protected outreach fields for one business
+ */
+export const UpdateBusinessOutreachParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBusinessOutreachBody = zod.object({
+  outreachStatus: zod.string().optional(),
+  contactName: zod.string().nullish().optional(),
+  contactRole: zod.string().nullish().optional(),
+  contactEmail: zod.string().nullish().optional(),
+  lastContactDate: zod.string().nullish().optional(),
+  nextActionDate: zod.string().nullish().optional(),
+  assignedArtist: zod.string().nullish().optional(),
+  avatarType: zod.string().nullish().optional(),
+  targetMarket: zod.string().nullish().optional(),
+  notes: zod.string().nullish().optional(),
+  warmConnection: zod.string().nullish().optional(),
+});
+
+export const UpdateBusinessOutreachResponse = GetBusinessOutreachResponse;
+
+/**
  * @summary List contact candidates derived for one business
  */
 export const GetBusinessContactCandidatesParams = zod.object({

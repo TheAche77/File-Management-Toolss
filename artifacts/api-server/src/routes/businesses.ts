@@ -10,6 +10,40 @@ import { requireAdminAuth } from "../lib/adminAuth";
 
 const router = Router();
 const CONTACT_CANDIDATE_STATUSES = new Set(["suggested", "approved", "rejected"]);
+const OUTREACH_STATUSES = new Set([
+  "not_contacted",
+  "emailed",
+  "follow_up_1",
+  "follow_up_2",
+  "interested",
+  "closed_won",
+  "closed_lost",
+]);
+const ASSIGNED_ARTISTS = new Set(["Ache77", "Exit Enter", "Nian", "Kraita317"]);
+const AVATAR_TYPES = new Set([
+  "gallery_director",
+  "hotel_art_curator",
+  "festival",
+  "museum_shop",
+  "institution",
+]);
+const TARGET_MARKETS = new Set(["IT", "UK", "NL", "FR", "ES", "PT", "RO"]);
+
+function normalizeNullableString(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== "string") return undefined;
+
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function normalizeNullableDateString(value: unknown): string | null | undefined {
+  const normalized = normalizeNullableString(value);
+  if (normalized === undefined || normalized === null) return normalized;
+
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : undefined;
+}
 
 router.get("/categories", async (_req, res) => {
   const rows = await db.select().from(categoriesTable).orderBy(categoriesTable.label);
@@ -106,6 +140,115 @@ router.get("/businesses/:id", async (req, res) => {
   const rows = await db.select().from(businessesTable).where(eq(businessesTable.id, id)).limit(1);
   if (rows.length === 0) { res.status(404).json({ error: "Business not found" }); return; }
   res.json(serializeBusiness(rows[0]!));
+});
+
+router.get("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
+  const id = parseInt(req.params["id"] ?? "0", 10);
+  if (!id || isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const rows = await db
+    .select()
+    .from(businessesTable)
+    .where(eq(businessesTable.id, id))
+    .limit(1);
+
+  if (rows.length === 0) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+
+  res.json(serializeBusinessOutreach(rows[0]!));
+});
+
+router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
+  const id = parseInt(req.params["id"] ?? "0", 10);
+  if (!id || isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const outreachStatus = normalizeNullableString(body["outreachStatus"]);
+  const contactName = normalizeNullableString(body["contactName"]);
+  const contactRole = normalizeNullableString(body["contactRole"]);
+  const contactEmail = normalizeNullableString(body["contactEmail"]);
+  const lastContactDate = normalizeNullableDateString(body["lastContactDate"]);
+  const nextActionDate = normalizeNullableDateString(body["nextActionDate"]);
+  const assignedArtist = normalizeNullableString(body["assignedArtist"]);
+  const avatarType = normalizeNullableString(body["avatarType"]);
+  const targetMarket = normalizeNullableString(body["targetMarket"]);
+  const notes = normalizeNullableString(body["notes"]);
+  const warmConnection = normalizeNullableString(body["warmConnection"]);
+
+  if (body["outreachStatus"] !== undefined && (!outreachStatus || !OUTREACH_STATUSES.has(outreachStatus))) {
+    res.status(400).json({ error: "Invalid outreachStatus" });
+    return;
+  }
+
+  if (body["assignedArtist"] !== undefined && assignedArtist !== null && (!assignedArtist || !ASSIGNED_ARTISTS.has(assignedArtist))) {
+    res.status(400).json({ error: "Invalid assignedArtist" });
+    return;
+  }
+
+  if (body["avatarType"] !== undefined && avatarType !== null && (!avatarType || !AVATAR_TYPES.has(avatarType))) {
+    res.status(400).json({ error: "Invalid avatarType" });
+    return;
+  }
+
+  if (body["targetMarket"] !== undefined && targetMarket !== null && (!targetMarket || !TARGET_MARKETS.has(targetMarket))) {
+    res.status(400).json({ error: "Invalid targetMarket" });
+    return;
+  }
+
+  if (body["lastContactDate"] !== undefined && lastContactDate === undefined) {
+    res.status(400).json({ error: "Invalid lastContactDate" });
+    return;
+  }
+
+  if (body["nextActionDate"] !== undefined && nextActionDate === undefined) {
+    res.status(400).json({ error: "Invalid nextActionDate" });
+    return;
+  }
+
+  const updateValues = Object.fromEntries(
+    Object.entries({
+      outreachStatus,
+      contactName,
+      contactRole,
+      contactEmail,
+      lastContactDate,
+      nextActionDate,
+      assignedArtist,
+      avatarType,
+      targetMarket,
+      notes,
+      warmConnection,
+    }).filter(([, value]) => value !== undefined),
+  );
+
+  if (Object.keys(updateValues).length === 0) {
+    res.status(400).json({ error: "At least one outreach field must be updated" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(businessesTable)
+    .set({
+      ...updateValues,
+      updatedAt: new Date(),
+    })
+    .where(eq(businessesTable.id, id))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+
+  res.json(serializeBusinessOutreach(updated));
 });
 
 router.get("/businesses/:id/sources", async (req, res) => {
@@ -417,6 +560,24 @@ function serializeBusiness(r: Record<string, unknown>) {
     hasPhone: r["hasPhone"],
     enrichmentStatus: r["enrichmentStatus"],
     createdAt: (r["createdAt"] as Date).toISOString(),
+    updatedAt: (r["updatedAt"] as Date).toISOString(),
+  };
+}
+
+function serializeBusinessOutreach(r: Record<string, unknown>) {
+  return {
+    businessId: r["id"],
+    outreachStatus: r["outreachStatus"],
+    contactName: r["contactName"] ?? null,
+    contactRole: r["contactRole"] ?? null,
+    contactEmail: r["contactEmail"] ?? null,
+    lastContactDate: r["lastContactDate"] ?? null,
+    nextActionDate: r["nextActionDate"] ?? null,
+    assignedArtist: r["assignedArtist"] ?? null,
+    avatarType: r["avatarType"] ?? null,
+    targetMarket: r["targetMarket"] ?? null,
+    notes: r["notes"] ?? null,
+    warmConnection: r["warmConnection"] ?? null,
     updatedAt: (r["updatedAt"] as Date).toISOString(),
   };
 }

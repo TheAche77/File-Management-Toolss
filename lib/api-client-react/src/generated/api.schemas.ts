@@ -117,6 +117,56 @@ export interface ContactCandidate {
   updatedAt: string;
 }
 
+export interface BusinessOutreach {
+  businessId: number;
+  outreachStatus: string;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactRole?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  lastContactDate?: string | null;
+  /** @nullable */
+  nextActionDate?: string | null;
+  /** @nullable */
+  assignedArtist?: string | null;
+  /** @nullable */
+  avatarType?: string | null;
+  /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  warmConnection?: string | null;
+  updatedAt: string;
+}
+
+export interface UpdateBusinessOutreachRequest {
+  outreachStatus?: string;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactRole?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  lastContactDate?: string | null;
+  /** @nullable */
+  nextActionDate?: string | null;
+  /** @nullable */
+  assignedArtist?: string | null;
+  /** @nullable */
+  avatarType?: string | null;
+  /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  warmConnection?: string | null;
+}
+
 export interface ContactCandidateUpdateRequest {
   reviewStatus?: string;
   isPrimary?: boolean;

@@ -1,12 +1,16 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import {
+  getGetBusinessOutreachQueryKey,
   getGetBusinessContactCandidatesQueryKey,
   getGetBusinessByIdQueryKey,
   getGetBusinessSourcesQueryKey,
+  useGetBusinessOutreach,
   useGetBusinessContactCandidates,
   useGetBusinessById,
   useGetBusinessSources,
   useUpdateBusinessContactCandidate,
+  useUpdateBusinessOutreach,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,10 +37,56 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { getStoredAdminToken } from "@/lib/admin-auth";
+
+const OUTREACH_STATUS_OPTIONS = [
+  "not_contacted",
+  "emailed",
+  "follow_up_1",
+  "follow_up_2",
+  "interested",
+  "closed_won",
+  "closed_lost",
+] as const;
+
+const ASSIGNED_ARTIST_OPTIONS = ["Ache77", "Exit Enter", "Nian", "Kraita317"] as const;
+
+const AVATAR_TYPE_OPTIONS = [
+  "gallery_director",
+  "hotel_art_curator",
+  "festival",
+  "museum_shop",
+  "institution",
+] as const;
+
+const TARGET_MARKET_OPTIONS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO"] as const;
+
+type OutreachFormState = {
+  outreachStatus: string;
+  contactName: string;
+  contactRole: string;
+  contactEmail: string;
+  lastContactDate: string;
+  nextActionDate: string;
+  assignedArtist: string;
+  avatarType: string;
+  targetMarket: string;
+  warmConnection: string;
+  notes: string;
+};
 
 function formatDate(value?: string | null) {
   if (!value) return "Not available";
@@ -64,11 +114,50 @@ function formatSourceType(type: string) {
     .join(" ");
 }
 
+function formatPipelineValue(value?: string | null) {
+  if (!value) return "Not set";
+  return formatSourceType(value);
+}
+
 function formatConfidence(value?: string | null) {
   if (!value) return "N/A";
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return value;
   return `${Math.round(numeric * 100)}%`;
+}
+
+function buildOutreachFormState(
+  outreach?: {
+    outreachStatus?: string;
+    contactName?: string | null;
+    contactRole?: string | null;
+    contactEmail?: string | null;
+    lastContactDate?: string | null;
+    nextActionDate?: string | null;
+    assignedArtist?: string | null;
+    avatarType?: string | null;
+    targetMarket?: string | null;
+    warmConnection?: string | null;
+    notes?: string | null;
+  } | null,
+): OutreachFormState {
+  return {
+    outreachStatus: outreach?.outreachStatus ?? "not_contacted",
+    contactName: outreach?.contactName ?? "",
+    contactRole: outreach?.contactRole ?? "",
+    contactEmail: outreach?.contactEmail ?? "",
+    lastContactDate: outreach?.lastContactDate ?? "",
+    nextActionDate: outreach?.nextActionDate ?? "",
+    assignedArtist: outreach?.assignedArtist ?? "",
+    avatarType: outreach?.avatarType ?? "",
+    targetMarket: outreach?.targetMarket ?? "",
+    warmConnection: outreach?.warmConnection ?? "",
+    notes: outreach?.notes ?? "",
+  };
+}
+
+function serializeOutreachFormState(form: OutreachFormState) {
+  return JSON.stringify(form);
 }
 
 function InfoRow({
@@ -148,6 +237,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const { toast } = useToast();
   const businessId = Number(params.id);
   const hasAdminToken = Boolean(getStoredAdminToken());
+  const [outreachForm, setOutreachForm] = useState<OutreachFormState>(() => buildOutreachFormState());
 
   const businessQuery = useGetBusinessById(businessId, {
     query: {
@@ -163,10 +253,47 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     },
   });
 
+  const outreachQuery = useGetBusinessOutreach(businessId, {
+    query: {
+      queryKey: getGetBusinessOutreachQueryKey(businessId),
+      enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
+    },
+  });
+
   const contactCandidatesQuery = useGetBusinessContactCandidates(businessId, {
     query: {
       queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
       enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
+    },
+  });
+
+  useEffect(() => {
+    if (outreachQuery.data) {
+      setOutreachForm(buildOutreachFormState(outreachQuery.data));
+    }
+  }, [outreachQuery.data]);
+
+  const updateOutreachMutation = useUpdateBusinessOutreach({
+    mutation: {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({
+          queryKey: getGetBusinessOutreachQueryKey(businessId),
+        });
+        setOutreachForm(buildOutreachFormState(data));
+        toast({
+          title: "Outreach updated",
+          description: "The outreach pipeline fields have been saved.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Outreach update failed",
+          description:
+            (error as { message?: string })?.message ||
+            "Could not update the outreach fields for this business.",
+          variant: "destructive",
+        });
+      },
     },
   });
 
@@ -235,7 +362,41 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
 
   const business = businessQuery.data;
   const sources = sourcesQuery.data ?? [];
+  const outreach = outreachQuery.data;
   const contactCandidates = contactCandidatesQuery.data ?? [];
+  const persistedOutreachForm = buildOutreachFormState(outreach);
+  const isOutreachDirty =
+    serializeOutreachFormState(outreachForm) !== serializeOutreachFormState(persistedOutreachForm);
+
+  function updateOutreachField<K extends keyof OutreachFormState>(
+    key: K,
+    value: OutreachFormState[K],
+  ) {
+    setOutreachForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function resetOutreachForm() {
+    setOutreachForm(buildOutreachFormState(outreach));
+  }
+
+  function saveOutreach() {
+    updateOutreachMutation.mutate({
+      id: businessId,
+      data: {
+        outreachStatus: outreachForm.outreachStatus,
+        contactName: outreachForm.contactName.trim() || null,
+        contactRole: outreachForm.contactRole.trim() || null,
+        contactEmail: outreachForm.contactEmail.trim() || null,
+        lastContactDate: outreachForm.lastContactDate || null,
+        nextActionDate: outreachForm.nextActionDate || null,
+        assignedArtist: outreachForm.assignedArtist || null,
+        avatarType: outreachForm.avatarType || null,
+        targetMarket: outreachForm.targetMarket || null,
+        warmConnection: outreachForm.warmConnection.trim() || null,
+        notes: outreachForm.notes.trim() || null,
+      },
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -329,6 +490,241 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                 label="Slug"
                 value={business.slug}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Outreach Pipeline</CardTitle>
+              <CardDescription>
+                Operational CRM fields for follow-up planning, artist assignment, and market targeting.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {outreachQuery.isLoading ? (
+                <>
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-48 w-full" />
+                </>
+              ) : !hasAdminToken ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Unlock admin in the <Link href="/admin" className="text-primary hover:underline">Administration</Link> page to manage outreach fields.
+                </div>
+              ) : outreachQuery.isError ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Outreach fields are unavailable with the current admin session.
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-lg border p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
+                      <p className="mt-2 text-sm font-medium">
+                        {formatPipelineValue(outreach?.outreachStatus ?? outreachForm.outreachStatus)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Assigned Artist</p>
+                      <p className="mt-2 text-sm font-medium">
+                        {outreach?.assignedArtist || outreachForm.assignedArtist || "Not assigned"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Next Action</p>
+                      <p className="mt-2 text-sm font-medium">
+                        {outreach?.nextActionDate || outreachForm.nextActionDate || "Not scheduled"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Target Market</p>
+                      <p className="mt-2 text-sm font-medium">
+                        {outreach?.targetMarket || outreachForm.targetMarket || "Not set"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="outreach-status">Outreach status</Label>
+                      <Select
+                        value={outreachForm.outreachStatus}
+                        onValueChange={(value) => updateOutreachField("outreachStatus", value)}
+                      >
+                        <SelectTrigger id="outreach-status">
+                          <SelectValue placeholder="Select a status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {OUTREACH_STATUS_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {formatPipelineValue(option)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="assigned-artist">Assigned artist</Label>
+                      <Select
+                        value={outreachForm.assignedArtist || "__none__"}
+                        onValueChange={(value) =>
+                          updateOutreachField("assignedArtist", value === "__none__" ? "" : value)
+                        }
+                      >
+                        <SelectTrigger id="assigned-artist">
+                          <SelectValue placeholder="Select an artist" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Not assigned</SelectItem>
+                          {ASSIGNED_ARTIST_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="avatar-type">Avatar type</Label>
+                      <Select
+                        value={outreachForm.avatarType || "__none__"}
+                        onValueChange={(value) =>
+                          updateOutreachField("avatarType", value === "__none__" ? "" : value)
+                        }
+                      >
+                        <SelectTrigger id="avatar-type">
+                          <SelectValue placeholder="Select an avatar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Not set</SelectItem>
+                          {AVATAR_TYPE_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {formatPipelineValue(option)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="target-market">Target market</Label>
+                      <Select
+                        value={outreachForm.targetMarket || "__none__"}
+                        onValueChange={(value) =>
+                          updateOutreachField("targetMarket", value === "__none__" ? "" : value)
+                        }
+                      >
+                        <SelectTrigger id="target-market">
+                          <SelectValue placeholder="Select a market" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Not set</SelectItem>
+                          {TARGET_MARKET_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-name">Contact name</Label>
+                      <Input
+                        id="contact-name"
+                        value={outreachForm.contactName}
+                        onChange={(event) => updateOutreachField("contactName", event.target.value)}
+                        placeholder="Sarah Mitchell"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-role">Contact role</Label>
+                      <Input
+                        id="contact-role"
+                        value={outreachForm.contactRole}
+                        onChange={(event) => updateOutreachField("contactRole", event.target.value)}
+                        placeholder="Gallery Director"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-email">Contact email</Label>
+                      <Input
+                        id="contact-email"
+                        type="email"
+                        value={outreachForm.contactEmail}
+                        onChange={(event) => updateOutreachField("contactEmail", event.target.value)}
+                        placeholder="director@example.com"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="warm-connection">Warm connection</Label>
+                      <Input
+                        id="warm-connection"
+                        value={outreachForm.warmConnection}
+                        onChange={(event) =>
+                          updateOutreachField("warmConnection", event.target.value)
+                        }
+                        placeholder="Eine tramite The Gathering 2017"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="last-contact-date">Last contact date</Label>
+                      <Input
+                        id="last-contact-date"
+                        type="date"
+                        value={outreachForm.lastContactDate}
+                        onChange={(event) =>
+                          updateOutreachField("lastContactDate", event.target.value)
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="next-action-date">Next action date</Label>
+                      <Input
+                        id="next-action-date"
+                        type="date"
+                        value={outreachForm.nextActionDate}
+                        onChange={(event) =>
+                          updateOutreachField("nextActionDate", event.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="outreach-notes">Notes</Label>
+                    <Textarea
+                      id="outreach-notes"
+                      value={outreachForm.notes}
+                      onChange={(event) => updateOutreachField("notes", event.target.value)}
+                      placeholder="Internal notes, handover context, or next-step specifics."
+                      className="min-h-[120px]"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      disabled={!isOutreachDirty || updateOutreachMutation.isPending}
+                      onClick={saveOutreach}
+                    >
+                      Save Outreach
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={!isOutreachDirty || updateOutreachMutation.isPending}
+                      onClick={resetOutreachForm}
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 

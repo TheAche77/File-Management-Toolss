@@ -18,6 +18,7 @@ import type {
 
 import type {
   Business,
+  BusinessOutreach,
   ContactCandidate,
   ContactCandidateUpdateRequest,
   BusinessSource,
@@ -34,6 +35,7 @@ import type {
   ImportRun,
   ReviewQueueItem,
   StatsResponse,
+  UpdateBusinessOutreachRequest,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -468,6 +470,184 @@ export function useGetBusinessById<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get protected outreach fields for one business
+ */
+export const getGetBusinessOutreachUrl = (id: number) => {
+  return `/api/businesses/${id}/outreach`;
+};
+
+export const getBusinessOutreach = async (
+  id: number,
+  options?: RequestInit,
+): Promise<BusinessOutreach> => {
+  return customFetch<BusinessOutreach>(getGetBusinessOutreachUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBusinessOutreachQueryKey = (id: number) => {
+  return [`/api/businesses/${id}/outreach`] as const;
+};
+
+export const getGetBusinessOutreachQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBusinessOutreach>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessOutreach>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBusinessOutreachQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBusinessOutreach>>
+  > = ({ signal }) => getBusinessOutreach(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBusinessOutreach>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBusinessOutreachQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBusinessOutreach>>
+>;
+export type GetBusinessOutreachQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get protected outreach fields for one business
+ */
+export function useGetBusinessOutreach<
+  TData = Awaited<ReturnType<typeof getBusinessOutreach>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessOutreach>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBusinessOutreachQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update protected outreach fields for one business
+ */
+export const getUpdateBusinessOutreachUrl = (id: number) => {
+  return `/api/businesses/${id}/outreach`;
+};
+
+export const updateBusinessOutreach = async (
+  id: number,
+  data: UpdateBusinessOutreachRequest,
+  options?: RequestInit,
+): Promise<BusinessOutreach> => {
+  return customFetch<BusinessOutreach>(getUpdateBusinessOutreachUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.headers ?? {}),
+    },
+    body: JSON.stringify(data),
+  });
+};
+
+export const getUpdateBusinessOutreachMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBusinessOutreach>>,
+    TError,
+    { id: number; data: BodyType<UpdateBusinessOutreachRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBusinessOutreach>>,
+  TError,
+  { id: number; data: BodyType<UpdateBusinessOutreachRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateBusinessOutreach"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBusinessOutreach>>,
+    { id: number; data: BodyType<UpdateBusinessOutreachRequest> }
+  > = (props) => {
+    const { id, data } = props;
+
+    return updateBusinessOutreach(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBusinessOutreachMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBusinessOutreach>>
+>;
+export type UpdateBusinessOutreachMutationBody =
+  BodyType<UpdateBusinessOutreachRequest>;
+export type UpdateBusinessOutreachMutationError =
+  ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update protected outreach fields for one business
+ */
+export const useUpdateBusinessOutreach = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBusinessOutreach>>,
+    TError,
+    { id: number; data: BodyType<UpdateBusinessOutreachRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateBusinessOutreach>>,
+  TError,
+  { id: number; data: BodyType<UpdateBusinessOutreachRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateBusinessOutreachMutationOptions(options));
+};
 
 /**
  * @summary List contact candidates derived for one business
