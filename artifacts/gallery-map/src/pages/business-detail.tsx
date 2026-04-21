@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import {
+  getGetOutreachDashboardQueryKey,
+  getGetOutreachPipelineQueryKey,
   getGetBusinessOutreachQueryKey,
   getGetBusinessContactCandidatesQueryKey,
   getGetBusinessByIdQueryKey,
@@ -278,6 +280,12 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
       onSuccess: (data) => {
         queryClient.invalidateQueries({
           queryKey: getGetBusinessOutreachQueryKey(businessId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getGetOutreachDashboardQueryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getGetOutreachPipelineQueryKey({ horizonDays: 7, limit: 60 }),
         });
         setOutreachForm(buildOutreachFormState(data));
         toast({

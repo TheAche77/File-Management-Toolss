@@ -201,6 +201,67 @@ export interface StatsResponse {
   byCityBreakdown: CityCount[];
 }
 
+export interface OutreachPipelineItem {
+  businessId: number;
+  businessName: string;
+  /** @nullable */
+  city?: string | null;
+  categorySlug: string;
+  /** @nullable */
+  website?: string | null;
+  outreachStatus: string;
+  /** @nullable */
+  nextActionDate?: string | null;
+  /** @nullable */
+  lastContactDate?: string | null;
+  /** @nullable */
+  assignedArtist?: string | null;
+  /** @nullable */
+  avatarType?: string | null;
+  /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactRole?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  warmConnection?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  urgencyBucket: string;
+  /** @nullable */
+  daysUntilAction?: number | null;
+  recommendedAction: string;
+  updatedAt: string;
+}
+
+export interface OutreachPipelineSummary {
+  urgent: number;
+  thisWeek: number;
+  next: number;
+}
+
+export interface OutreachPipelineResponse {
+  today: string;
+  horizonDays: number;
+  total: number;
+  summary: OutreachPipelineSummary;
+  items: OutreachPipelineItem[];
+}
+
+export interface OutreachDashboardResponse {
+  totalTargets: number;
+  contacted: number;
+  positiveResponses: number;
+  responseRate: number;
+  overdueFollowUps: number;
+  inProgress: number;
+  interested: number;
+  urgentThisWeek: OutreachPipelineItem[];
+}
+
 export interface ImportRequest {
   categorySlug: string;
   city: string;
@@ -265,6 +326,11 @@ export type GetReviewQueueParams = {
 
 export type GetStatsParams = {
   categorySlug?: string;
+};
+
+export type GetOutreachPipelineParams = {
+  horizonDays?: number;
+  limit?: number;
 };
 
 export type ExportBusinessesCsvParams = {

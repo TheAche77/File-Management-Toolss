@@ -303,6 +303,89 @@ export const GetStatsResponse = zod.object({
 });
 
 /**
+ * @summary Outreach KPI dashboard metrics
+ */
+export const GetOutreachDashboardResponse = zod.object({
+  totalTargets: zod.number(),
+  contacted: zod.number(),
+  positiveResponses: zod.number(),
+  responseRate: zod.number(),
+  overdueFollowUps: zod.number(),
+  inProgress: zod.number(),
+  interested: zod.number(),
+  urgentThisWeek: zod.array(
+    zod.object({
+      businessId: zod.number(),
+      businessName: zod.string(),
+      city: zod.string().nullish(),
+      categorySlug: zod.string(),
+      website: zod.string().nullish(),
+      outreachStatus: zod.string(),
+      nextActionDate: zod.string().nullish(),
+      lastContactDate: zod.string().nullish(),
+      assignedArtist: zod.string().nullish(),
+      avatarType: zod.string().nullish(),
+      targetMarket: zod.string().nullish(),
+      contactName: zod.string().nullish(),
+      contactRole: zod.string().nullish(),
+      contactEmail: zod.string().nullish(),
+      warmConnection: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      urgencyBucket: zod.string(),
+      daysUntilAction: zod.number().nullish(),
+      recommendedAction: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Follow-up board items and urgency buckets
+ */
+export const getOutreachPipelineQueryHorizonDaysDefault = 7;
+export const getOutreachPipelineQueryLimitDefault = 50;
+
+export const GetOutreachPipelineQueryParams = zod.object({
+  horizonDays: zod.coerce.number().default(getOutreachPipelineQueryHorizonDaysDefault),
+  limit: zod.coerce.number().default(getOutreachPipelineQueryLimitDefault),
+});
+
+export const GetOutreachPipelineResponse = zod.object({
+  today: zod.string(),
+  horizonDays: zod.number(),
+  total: zod.number(),
+  summary: zod.object({
+    urgent: zod.number(),
+    thisWeek: zod.number(),
+    next: zod.number(),
+  }),
+  items: zod.array(
+    zod.object({
+      businessId: zod.number(),
+      businessName: zod.string(),
+      city: zod.string().nullish(),
+      categorySlug: zod.string(),
+      website: zod.string().nullish(),
+      outreachStatus: zod.string(),
+      nextActionDate: zod.string().nullish(),
+      lastContactDate: zod.string().nullish(),
+      assignedArtist: zod.string().nullish(),
+      avatarType: zod.string().nullish(),
+      targetMarket: zod.string().nullish(),
+      contactName: zod.string().nullish(),
+      contactRole: zod.string().nullish(),
+      contactEmail: zod.string().nullish(),
+      warmConnection: zod.string().nullish(),
+      notes: zod.string().nullish(),
+      urgencyBucket: zod.string(),
+      daysUntilAction: zod.number().nullish(),
+      recommendedAction: zod.string(),
+      updatedAt: zod.string(),
+    }),
+  ),
+});
+
+/**
  * @summary Run an import for a category + city
  */
 export const RunImportBody = zod.object({

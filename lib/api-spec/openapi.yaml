@@ -20,6 +20,8 @@ tags:
     description: Export operations
   - name: stats
     description: Statistics operations
+  - name: outreach
+    description: Outreach operations
 paths:
   /healthz:
     get:
@@ -306,6 +308,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StatsResponse"
+
+  /outreach/dashboard:
+    get:
+      operationId: getOutreachDashboard
+      tags: [outreach]
+      summary: Outreach KPI dashboard metrics
+      responses:
+        "200":
+          description: Outreach dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutreachDashboardResponse"
+
+  /outreach/pipeline:
+    get:
+      operationId: getOutreachPipeline
+      tags: [outreach]
+      summary: Follow-up board items and urgency buckets
+      parameters:
+        - name: horizonDays
+          in: query
+          schema:
+            type: integer
+            default: 7
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Outreach pipeline board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutreachPipelineResponse"
 
   /imports/run:
     post:
@@ -719,6 +758,117 @@ components:
         - enriched
         - byCategoryBreakdown
         - byCityBreakdown
+
+    OutreachPipelineItem:
+      type: object
+      properties:
+        businessId:
+          type: integer
+        businessName:
+          type: string
+        city:
+          type: ["string", "null"]
+        categorySlug:
+          type: string
+        website:
+          type: ["string", "null"]
+        outreachStatus:
+          type: string
+        nextActionDate:
+          type: ["string", "null"]
+        lastContactDate:
+          type: ["string", "null"]
+        assignedArtist:
+          type: ["string", "null"]
+        avatarType:
+          type: ["string", "null"]
+        targetMarket:
+          type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        contactRole:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        warmConnection:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        urgencyBucket:
+          type: string
+        daysUntilAction:
+          type: ["integer", "null"]
+        recommendedAction:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - businessId
+        - businessName
+        - categorySlug
+        - outreachStatus
+        - urgencyBucket
+        - recommendedAction
+        - updatedAt
+
+    OutreachPipelineSummary:
+      type: object
+      properties:
+        urgent:
+          type: integer
+        thisWeek:
+          type: integer
+        next:
+          type: integer
+      required: [urgent, thisWeek, next]
+
+    OutreachPipelineResponse:
+      type: object
+      properties:
+        today:
+          type: string
+        horizonDays:
+          type: integer
+        total:
+          type: integer
+        summary:
+          $ref: "#/components/schemas/OutreachPipelineSummary"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutreachPipelineItem"
+      required: [today, horizonDays, total, summary, items]
+
+    OutreachDashboardResponse:
+      type: object
+      properties:
+        totalTargets:
+          type: integer
+        contacted:
+          type: integer
+        positiveResponses:
+          type: integer
+        responseRate:
+          type: number
+        overdueFollowUps:
+          type: integer
+        inProgress:
+          type: integer
+        interested:
+          type: integer
+        urgentThisWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutreachPipelineItem"
+      required:
+        - totalTargets
+        - contacted
+        - positiveResponses
+        - responseRate
+        - overdueFollowUps
+        - inProgress
+        - interested
+        - urgentThisWeek
 
     CategoryCount:
       type: object

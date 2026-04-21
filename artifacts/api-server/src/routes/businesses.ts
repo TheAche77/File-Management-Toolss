@@ -431,6 +431,71 @@ router.get("/stats", async (req, res) => {
   });
 });
 
+router.get("/outreach/dashboard", requireAdminAuth, async (_req, res) => {
+  const today = getTodayDateString();
+  const rows = await getOutreachRows();
+  const activeRows = rows.filter((row) => !isClosedOutreachStatus(row.outreachStatus as string));
+  const contacted = rows.filter((row) => (row.outreachStatus as string) !== "not_contacted").length;
+  const positiveResponses = rows.filter((row) =>
+    new Set(["interested", "closed_won"]).has((row.outreachStatus as string) ?? ""),
+  ).length;
+  const inProgress = rows.filter((row) =>
+    new Set(["emailed", "follow_up_1", "follow_up_2"]).has((row.outreachStatus as string) ?? ""),
+  ).length;
+  const interested = rows.filter((row) => row.outreachStatus === "interested").length;
+  const overdueFollowUps = activeRows.filter((row) => {
+    if ((row.outreachStatus as string) === "not_contacted") return false;
+    const nextActionDate = row.nextActionDate as string | null | undefined;
+    return Boolean(nextActionDate && compareDateStrings(nextActionDate, today) < 0);
+  }).length;
+
+  const urgentThisWeek = buildOutreachPipelineItems(rows, {
+    today,
+    horizonDays: 7,
+    limit: 6,
+  });
+
+  res.json({
+    totalTargets: rows.length,
+    contacted,
+    positiveResponses,
+    responseRate: contacted > 0 ? positiveResponses / contacted : 0,
+    overdueFollowUps,
+    inProgress,
+    interested,
+    urgentThisWeek,
+  });
+});
+
+router.get("/outreach/pipeline", requireAdminAuth, async (req, res) => {
+  const {
+    horizonDays = "7",
+    limit = "50",
+  } = req.query as Record<string, string | undefined>;
+
+  const parsedHorizonDays = Math.max(1, Math.min(30, parseInt(horizonDays ?? "7", 10) || 7));
+  const parsedLimit = Math.max(1, Math.min(200, parseInt(limit ?? "50", 10) || 50));
+  const today = getTodayDateString();
+  const rows = await getOutreachRows();
+  const items = buildOutreachPipelineItems(rows, {
+    today,
+    horizonDays: parsedHorizonDays,
+    limit: parsedLimit,
+  });
+
+  res.json({
+    today,
+    horizonDays: parsedHorizonDays,
+    total: items.length,
+    summary: {
+      urgent: items.filter((item) => item.urgencyBucket === "urgent").length,
+      thisWeek: items.filter((item) => item.urgencyBucket === "this_week").length,
+      next: items.filter((item) => item.urgencyBucket === "next").length,
+    },
+    items,
+  });
+});
+
 router.post("/imports/run", requireAdminAuth, async (req, res) => {
   const { categorySlug, city } = req.body as { categorySlug?: string; city?: string };
   if (!categorySlug || !city) {
@@ -580,6 +645,161 @@ function serializeBusinessOutreach(r: Record<string, unknown>) {
     warmConnection: r["warmConnection"] ?? null,
     updatedAt: (r["updatedAt"] as Date).toISOString(),
   };
+}
+
+function getTodayDateString() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+  return `${year}-${month}-${day}`;
+}
+
+function compareDateStrings(left: string, right: string) {
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
+function diffDateStringsInDays(left: string, right: string) {
+  const leftDate = new Date(`${left}T00:00:00Z`);
+  const rightDate = new Date(`${right}T00:00:00Z`);
+  return Math.round((leftDate.getTime() - rightDate.getTime()) / 86_400_000);
+}
+
+function isClosedOutreachStatus(status: string) {
+  return status === "closed_won" || status === "closed_lost";
+}
+
+async function getOutreachRows() {
+  return db
+    .select({
+      id: businessesTable.id,
+      name: businessesTable.name,
+      city: businessesTable.city,
+      categorySlug: businessesTable.categorySlug,
+      website: businessesTable.website,
+      outreachStatus: businessesTable.outreachStatus,
+      nextActionDate: businessesTable.nextActionDate,
+      lastContactDate: businessesTable.lastContactDate,
+      assignedArtist: businessesTable.assignedArtist,
+      avatarType: businessesTable.avatarType,
+      targetMarket: businessesTable.targetMarket,
+      contactName: businessesTable.contactName,
+      contactRole: businessesTable.contactRole,
+      contactEmail: businessesTable.contactEmail,
+      warmConnection: businessesTable.warmConnection,
+      notes: businessesTable.notes,
+      updatedAt: businessesTable.updatedAt,
+    })
+    .from(businessesTable);
+}
+
+function getRecommendedAction(status: string) {
+  switch (status) {
+    case "emailed":
+      return "Follow-up #1";
+    case "follow_up_1":
+      return "Follow-up #2";
+    case "follow_up_2":
+      return "Follow-up #3";
+    case "interested":
+      return "Proposta dettagliata";
+    case "closed_won":
+      return "Relationship handoff";
+    case "closed_lost":
+      return "Archive";
+    case "not_contacted":
+    default:
+      return "Primo contatto";
+  }
+}
+
+function getUrgencyBucket(status: string, nextActionDate: string | null | undefined, today: string) {
+  if (isClosedOutreachStatus(status)) return null;
+  if (!nextActionDate) {
+    return status === "not_contacted" ? "urgent" : null;
+  }
+
+  const delta = diffDateStringsInDays(nextActionDate, today);
+  if (delta <= 0) return "urgent";
+  if (delta <= 3) return "this_week";
+  if (delta <= 7) return "next";
+  return null;
+}
+
+function getUrgencySortValue(bucket: string) {
+  switch (bucket) {
+    case "urgent":
+      return 0;
+    case "this_week":
+      return 1;
+    case "next":
+      return 2;
+    default:
+      return 3;
+  }
+}
+
+function buildOutreachPipelineItems(
+  rows: Awaited<ReturnType<typeof getOutreachRows>>,
+  options: { today: string; horizonDays: number; limit: number },
+) {
+  const { today, horizonDays, limit } = options;
+
+  return rows
+    .map((row) => {
+      const status = row.outreachStatus as string;
+      const nextActionDate = row.nextActionDate as string | null | undefined;
+      const urgencyBucket = getUrgencyBucket(status, nextActionDate, today);
+      if (!urgencyBucket) return null;
+
+      const daysUntilAction = nextActionDate ? diffDateStringsInDays(nextActionDate, today) : null;
+      if (daysUntilAction !== null && daysUntilAction > horizonDays) {
+        return null;
+      }
+
+      return {
+        businessId: row.id,
+        businessName: row.name,
+        city: row.city ?? null,
+        categorySlug: row.categorySlug,
+        website: row.website ?? null,
+        outreachStatus: status,
+        nextActionDate: nextActionDate ?? null,
+        lastContactDate: row.lastContactDate ?? null,
+        assignedArtist: row.assignedArtist ?? null,
+        avatarType: row.avatarType ?? null,
+        targetMarket: row.targetMarket ?? null,
+        contactName: row.contactName ?? null,
+        contactRole: row.contactRole ?? null,
+        contactEmail: row.contactEmail ?? null,
+        warmConnection: row.warmConnection ?? null,
+        notes: row.notes ?? null,
+        urgencyBucket,
+        daysUntilAction,
+        recommendedAction: getRecommendedAction(status),
+        updatedAt: row.updatedAt.toISOString(),
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .sort((left, right) => {
+      const bucketDelta =
+        getUrgencySortValue(left.urgencyBucket) - getUrgencySortValue(right.urgencyBucket);
+      if (bucketDelta !== 0) return bucketDelta;
+
+      const leftDays = left.daysUntilAction ?? -1;
+      const rightDays = right.daysUntilAction ?? -1;
+      if (leftDays !== rightDays) return leftDays - rightDays;
+
+      return left.businessName.localeCompare(right.businessName);
+    })
+    .slice(0, limit);
 }
 
 function serializeImportRun(r: DbImportRun) {
