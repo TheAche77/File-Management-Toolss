@@ -22,6 +22,8 @@ The current branch supports:
 - contact candidates with manual review actions
 - generic email extraction from official websites only
 - minimal admin protection via `ADMIN_API_TOKEN`
+- business detail pages with sources, contact candidates, and outreach editing
+- outreach KPI dashboard and follow-up pipeline board
 
 The enrichment model is intentionally conservative:
 
@@ -154,6 +156,8 @@ Protected capabilities currently include:
 - read review queue
 - read contact candidates
 - approve/reject/set-primary contact candidates
+- read and edit outreach fields
+- read outreach dashboard and pipeline data
 
 ## Data Flow
 
@@ -186,6 +190,35 @@ Not in scope:
 - The Google Places connector is still a stub even if `GOOGLE_MAPS_API_KEY` is present.
 - The current environment here did not allow running `pnpm`/`npm`, so recent changes were implemented and reviewed but not compiled in this session.
 - Any schema additions such as `business_sources` or `contact_candidates` require the corresponding database schema update in your real environment.
+
+## Post-Merge Rollout
+
+After promoting the outreach branch into `crea`, run the backend schema update before starting the apps:
+
+```bash
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
+pnpm --filter @workspace/db run push
+```
+
+Recommended local validation order:
+
+```bash
+pnpm run typecheck
+pnpm --filter @workspace/api-server run build
+pnpm --filter @workspace/gallery-map run typecheck
+```
+
+Smoke test checklist:
+
+1. Unlock `/admin` with `ADMIN_API_TOKEN`.
+2. Open `/` and verify the outreach KPI dashboard loads.
+3. Open `/pipeline` and verify urgency buckets render.
+4. Open `/businesses/:id` from the directory and verify:
+   - sources load
+   - contact candidates load
+   - outreach fields save and re-read
+5. Queue an import and verify import history/progress still works.
+6. Verify directory, map, and CSV export still behave as before.
 
 ## Roadmap
 
