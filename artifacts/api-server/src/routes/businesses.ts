@@ -574,24 +574,79 @@ router.get("/export/businesses.csv", async (req, res) => {
   if (city) conditions.push(ilike(businessesTable.city, `%${city}%`));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const rows = await db.select().from(businessesTable).where(where).orderBy(businessesTable.name);
+  const rows = await db.select().from(businessesTable).where(where).orderBy(businessesTable.categorySlug, businessesTable.name);
 
-  const headers = ["id", "category", "name", "city", "address", "postal_code", "latitude", "longitude", "website", "phone", "osm_id", "rating", "enrichment_status", "created_at"];
+  const CATEGORY_LABELS: Record<string, string> = {
+    art_gallery: "Galleria d'Arte",
+    bookstore: "Libreria",
+    museum: "Museo",
+  };
+
+  const headers = [
+    "id", "categoria", "nome", "indirizzo", "citta", "cap", "regione", "paese",
+    "latitudine", "longitudine", "sito_web", "telefono", "osm_id", "osm_tipo",
+    "valutazione", "numero_recensioni", "ha_sito_web", "ha_telefono",
+    "stato_arricchimento", "stato_outreach", "nome_contatto", "ruolo_contatto",
+    "email_contatto", "data_ultimo_contatto", "data_prossima_azione",
+    "artista_assegnato", "tipo_avatar", "mercato_target", "note",
+    "connessione_calda", "creato_il", "aggiornato_il",
+  ];
 
   const esc = (v: unknown): string => {
     if (v == null) return "";
     const s = String(v);
-    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+    return s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")
+      ? `"${s.replace(/"/g, '""')}"`
+      : s;
   };
 
   const lines = [
     headers.join(","),
-    ...rows.map((r) => [r.id, esc(r.categorySlug), esc(r.name), esc(r.city), esc(r.addressLine), esc(r.postalCode), esc(r.latitude), esc(r.longitude), esc(r.website), esc(r.phone), esc(r.osmId), esc(r.rating), esc(r.enrichmentStatus), r.createdAt.toISOString()].join(",")),
+    ...rows.map((r) => [
+      r.id,
+      esc(CATEGORY_LABELS[r.categorySlug] ?? r.categorySlug),
+      esc(r.name),
+      esc(r.addressLine),
+      esc(r.city),
+      esc(r.postalCode),
+      esc(r.region),
+      esc(r.country),
+      esc(r.latitude),
+      esc(r.longitude),
+      esc(r.website),
+      esc(r.phone),
+      esc(r.osmId),
+      esc(r.osmType),
+      esc(r.rating),
+      esc(r.userRatingsTotal),
+      r.hasWebsite ? "Sì" : "No",
+      r.hasPhone ? "Sì" : "No",
+      esc(r.enrichmentStatus),
+      esc(r.outreachStatus),
+      esc(r.contactName),
+      esc(r.contactRole),
+      esc(r.contactEmail),
+      esc(r.lastContactDate),
+      esc(r.nextActionDate),
+      esc(r.assignedArtist),
+      esc(r.avatarType),
+      esc(r.targetMarket),
+      esc(r.notes),
+      esc(r.warmConnection),
+      r.createdAt.toISOString().replace("T", " ").slice(0, 16),
+      r.updatedAt.toISOString().replace("T", " ").slice(0, 16),
+    ].join(",")),
   ];
 
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", 'attachment; filename="businesses.csv"');
-  res.send(lines.join("\n"));
+  const filename = categorySlug
+    ? `scopri_italia_${categorySlug}.csv`
+    : "scopri_italia_business.csv";
+
+  // UTF-8 BOM so Excel opens it correctly without encoding issues
+  const BOM = "\uFEFF";
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(BOM + lines.join("\r\n"));
 });
 
 // Legacy redirect - galleries was the old path

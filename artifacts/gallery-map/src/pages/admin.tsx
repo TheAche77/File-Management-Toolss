@@ -85,6 +85,32 @@ export default function Admin() {
     return query ? `/api/export/businesses.csv?${query}` : "/api/export/businesses.csv";
   }, [category, city]);
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  async function handleDownloadCSV() {
+    setIsDownloading(true);
+    try {
+      const resp = await fetch(exportHref);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const categorySlug = category !== "all" ? category : "";
+      a.href = url;
+      a.download = categorySlug
+        ? `scopri_italia_${categorySlug}.csv`
+        : "scopri_italia_business.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: "Export failed", description: "Could not download CSV.", variant: "destructive" });
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
   useEffect(() => {
     if (!activeRunId) {
       const latestActiveRun = runs?.find((run) => ["queued", "running", "fetching", "merging"].includes(run.status));
@@ -358,20 +384,20 @@ export default function Admin() {
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="font-serif text-xl">Data Export</CardTitle>
-            <CardDescription>Download the complete catalogue as a CSV file.</CardDescription>
+            <CardDescription>Scarica il catalogo completo come file CSV (32 colonne, compatibile con Excel).</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
+          <CardContent className="space-y-3">
+            <Button
+              variant="default"
               className="w-full"
-              asChild
+              onClick={handleDownloadCSV}
+              disabled={isDownloading}
             >
-              <a href={exportHref} download>
-                <Download className="mr-2 h-4 w-4" /> Export Businesses CSV
-              </a>
+              <Download className="mr-2 h-4 w-4" />
+              {isDownloading ? "Download in corso..." : "Scarica CSV completo"}
             </Button>
-            <p className="text-xs text-muted-foreground mt-4">
-              The export will respect the selected category and city filters above.
+            <p className="text-xs text-muted-foreground">
+              Il filtro per categoria e città selezionati sopra viene applicato anche all'export.
             </p>
           </CardContent>
         </Card>
