@@ -82,6 +82,14 @@ const AVATAR_TYPE_OPTIONS = [
 
 const TARGET_MARKET_OPTIONS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO"] as const;
 
+type AuditDiff = { field: unknown; before: unknown; after: unknown };
+
+function getAuditDiffs(payload: Record<string, unknown>): AuditDiff[] {
+  const diffs = payload["diffs"];
+  if (!Array.isArray(diffs) || diffs.length === 0) return [];
+  return diffs as AuditDiff[];
+}
+
 type OutreachFormState = {
   outreachStatus: string;
   contactName: string;
@@ -979,10 +987,10 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                             ))}
                           </div>
                         )}
-                        {Array.isArray(event.payload?.diffs) && (event.payload.diffs as Array<{ field: unknown; before: unknown; after: unknown }>).length > 0 && (
+                        {getAuditDiffs(event.payload).length > 0 && (
                           <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
                             <div className="space-y-1">
-                              {(event.payload.diffs as Array<{ field: unknown; before: unknown; after: unknown }>).map((diff) => (
+                              {getAuditDiffs(event.payload).map((diff) => (
                                 <p key={`${event.id}-${String(diff.field)}`}>
                                   <span className="font-medium text-foreground">
                                     {formatAuditChangedField(String(diff.field))}
