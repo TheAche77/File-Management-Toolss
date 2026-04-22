@@ -434,6 +434,9 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     },
   });
 
+  const [filterEventType, setFilterEventType] = useState("all");
+  const [filterChangedField, setFilterChangedField] = useState("all");
+
   useEffect(() => {
     if (outreachQuery.data) {
       const nextForm = buildOutreachFormState(
@@ -1062,8 +1065,64 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
                   No outreach history has been recorded for this business yet.
                 </div>
-              ) : (
-                (outreachEventsQuery.data ?? []).map((event, index) => {
+              ) : (() => {
+                const allEvents = outreachEventsQuery.data ?? [];
+                const uniqueEventTypes = Array.from(new Set(allEvents.map((e) => e.eventType)));
+                const uniqueChangedFields = Array.from(
+                  new Set(allEvents.flatMap((e) => e.changedFields)),
+                ).sort();
+                const filteredEvents = allEvents.filter((e) => {
+                  if (filterEventType !== "all" && e.eventType !== filterEventType) return false;
+                  if (filterChangedField !== "all" && !e.changedFields.includes(filterChangedField)) return false;
+                  return true;
+                });
+                return (
+                  <>
+                    {(uniqueEventTypes.length > 1 || uniqueChangedFields.length > 0) && (
+                      <div className="flex flex-wrap gap-2 pb-2">
+                        {uniqueEventTypes.length > 1 && (
+                          <Select value={filterEventType} onValueChange={(v) => { setFilterEventType(v); setFilterChangedField("all"); }}>
+                            <SelectTrigger className="h-8 w-44 text-xs">
+                              <SelectValue placeholder="Tipo evento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Tutti i tipi</SelectItem>
+                              {uniqueEventTypes.map((t) => (
+                                <SelectItem key={t} value={t}>{formatSourceType(t)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {uniqueChangedFields.length > 0 && (
+                          <Select value={filterChangedField} onValueChange={(v) => { setFilterChangedField(v); setFilterEventType("all"); }}>
+                            <SelectTrigger className="h-8 w-52 text-xs">
+                              <SelectValue placeholder="Campo modificato" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Tutti i campi</SelectItem>
+                              {uniqueChangedFields.map((f) => (
+                                <SelectItem key={f} value={f}>{formatAuditChangedField(f)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {(filterEventType !== "all" || filterChangedField !== "all") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs text-muted-foreground"
+                            onClick={() => { setFilterEventType("all"); setFilterChangedField("all"); }}
+                          >
+                            Azzera filtri
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {filteredEvents.length === 0 ? (
+                      <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                        Nessun evento corrisponde al filtro selezionato.
+                      </div>
+                    ) : filteredEvents.map((event, index) => {
                   const diffs = getAuditDiffs(event.payload);
                   const context = getPayloadContext(event.payload);
                   return (
@@ -1124,8 +1183,10 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                       </div>
                     </div>
                   );
-                })
-              )}
+                })}
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
 
