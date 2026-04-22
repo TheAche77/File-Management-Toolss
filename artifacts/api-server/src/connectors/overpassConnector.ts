@@ -1,5 +1,5 @@
 import type { Connector, ConnectorOptions, ConnectorResult } from "./types";
-import { resolveBbox, resolveCityProfile } from "./types";
+import { resolveBbox } from "./types";
 import type { InsertBusiness } from "@workspace/db";
 import { logger } from "../lib/logger";
 
@@ -51,18 +51,6 @@ function extractPhone(tags: Record<string, string>): string | null {
   return tags["phone"] ?? tags["contact:phone"] ?? null;
 }
 
-function extractCountry(
-  tags: Record<string, string>,
-  fallbackCity: string,
-): string | null {
-  return (
-    tags["addr:country"] ??
-    tags["contact:country"] ??
-    resolveCityProfile(fallbackCity)?.country ??
-    null
-  );
-}
-
 async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -76,7 +64,6 @@ export class OverpassConnector implements Connector {
 
   async fetch(options: ConnectorOptions): Promise<ConnectorResult> {
     const bbox = options.bbox ?? resolveBbox(options.city);
-    const locationProfile = resolveCityProfile(options.city);
     const query = buildQuery(options.osmTags, bbox);
     const errors: string[] = [];
 
@@ -146,10 +133,10 @@ export class OverpassConnector implements Connector {
         latitude: String(lat),
         longitude: String(lon),
         addressLine: buildAddressLine(tags),
-        city: tags["addr:city"] ?? locationProfile?.canonicalCity ?? options.city,
+        city: tags["addr:city"] ?? options.city,
         postalCode: tags["addr:postcode"] ?? null,
         region: tags["addr:state"] ?? null,
-        country: extractCountry(tags, options.city),
+        country: "Italy",
         website,
         phone,
         osmId: String(el.id),

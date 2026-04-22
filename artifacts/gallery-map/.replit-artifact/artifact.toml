@@ -15,7 +15,7 @@ paths = [ "/" ]
 localPort = 19001
 
 [services.development]
-run = "pnpm --filter @workspace/gallery-map run dev"
+run = "bash scripts/restore-ssh-key.sh; pnpm --filter @workspace/gallery-map run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/gallery-map", "run", "build" ]

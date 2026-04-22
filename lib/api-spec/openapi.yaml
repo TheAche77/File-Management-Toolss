@@ -69,10 +69,6 @@ paths:
           in: query
           schema:
             type: string
-        - name: targetMarket
-          in: query
-          schema:
-            type: string
         - name: hasWebsite
           in: query
           schema:
@@ -342,18 +338,6 @@ paths:
           schema:
             type: integer
             default: 50
-        - name: categorySlug
-          in: query
-          schema:
-            type: string
-        - name: city
-          in: query
-          schema:
-            type: string
-        - name: targetMarket
-          in: query
-          schema:
-            type: string
       responses:
         "200":
           description: Outreach pipeline board
@@ -447,10 +431,6 @@ paths:
           in: query
           schema:
             type: string
-        - name: targetMarket
-          in: query
-          schema:
-            type: string
       responses:
         "200":
           description: CSV file
@@ -511,8 +491,6 @@ components:
         region:
           type: ["string", "null"]
         country:
-          type: ["string", "null"]
-        targetMarket:
           type: ["string", "null"]
         website:
           type: ["string", "null"]

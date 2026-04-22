@@ -1,5 +1,4 @@
 import type { InsertBusiness, Business } from "@workspace/db";
-import { inferCountry, inferTargetMarket } from "../lib/locationProfiles";
 
 const CITY_ALIASES: Record<string, string> = {
   rome: "Roma",
@@ -100,10 +99,6 @@ export function normalizeIncomingBusiness(incoming: InsertBusiness): InsertBusin
   const city = normalizeCity(incoming.city);
   const website = normalizeWebsite(incoming.website);
   const phone = normalizePhone(incoming.phone);
-  const country =
-    incoming.country ? collapseWhitespace(incoming.country) : inferCountry(city);
-  const targetMarket =
-    incoming.targetMarket ?? inferTargetMarket(city, country);
 
   const normalized: InsertBusiness = {
     ...incoming,
@@ -112,10 +107,9 @@ export function normalizeIncomingBusiness(incoming: InsertBusiness): InsertBusin
     city,
     postalCode: incoming.postalCode ? collapseWhitespace(incoming.postalCode) : null,
     region: incoming.region ? collapseWhitespace(incoming.region) : null,
-    country,
+    country: incoming.country ? collapseWhitespace(incoming.country) : "Italy",
     website,
     phone,
-    targetMarket,
     hasWebsite: Boolean(website),
     hasPhone: Boolean(phone),
   };

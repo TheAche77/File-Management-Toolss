@@ -1,24 +1,12 @@
-import {
-  getBusinesses,
-  getGetBusinessesQueryKey,
-  useGetBusinesses,
-  useGetCategories,
-  getGetCategoriesQueryKey,
-} from "@workspace/api-client-react";
+import { getBusinesses, getGetBusinessesQueryKey, useGetBusinesses } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { ExternalLink, Globe, Phone, MapPin } from "lucide-react";
 import { useQueries } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
-import { SharedBusinessFilters } from "@/components/shared-business-filters";
-import {
-  buildSearchParams,
-  readSharedBusinessFilters,
-  syncSearchParams,
-} from "@/lib/business-filters";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -40,31 +28,13 @@ const MAP_PAGE_SIZE = 100;
 type MapBusiness = Awaited<ReturnType<typeof getBusinesses>>["businesses"][number];
 
 export default function MapView() {
-  const initialFilters = readSharedBusinessFilters(window.location.search);
-  const [city, setCity] = useState(initialFilters.city);
-  const [category, setCategory] = useState(initialFilters.categorySlug);
-  const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
-
-  const { data: categories } = useGetCategories({
-    query: { queryKey: getGetCategoriesQueryKey() },
-  });
-
-  const sharedQueryParams = useMemo(
-    () => ({
-      city: city || undefined,
-      categorySlug: category === "all" ? undefined : category,
-      targetMarket: targetMarket === "all" ? undefined : targetMarket,
-    }),
-    [category, city, targetMarket],
-  );
-
-  const firstPageQuery = useGetBusinesses({ ...sharedQueryParams, page: 1, pageSize: MAP_PAGE_SIZE });
+  const firstPageQuery = useGetBusinesses({ page: 1, pageSize: MAP_PAGE_SIZE });
   const totalPages = firstPageQuery.data?.totalPages ?? 1;
 
   const remainingPageQueries = useQueries({
     queries: Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
       const page = index + 2;
-      const params = { ...sharedQueryParams, page, pageSize: MAP_PAGE_SIZE };
+      const params = { page, pageSize: MAP_PAGE_SIZE };
 
       return {
         queryKey: getGetBusinessesQueryKey(params),
@@ -96,22 +66,6 @@ export default function MapView() {
     return merged;
   }, [firstPageQuery.data?.businesses, remainingPageQueries]);
 
-  useEffect(() => {
-    const nextSearch = buildSearchParams(window.location.search, {
-      city,
-      categorySlug: category,
-      targetMarket,
-      search: undefined,
-      hasWebsite: undefined,
-      hasPhone: undefined,
-      page: undefined,
-      horizonDays: undefined,
-      limit: undefined,
-    });
-
-    syncSearchParams(nextSearch);
-  }, [category, city, targetMarket]);
-
   const isLoading =
     firstPageQuery.isLoading ||
     remainingPageQueries.some((query) => query.isLoading);
@@ -123,17 +77,6 @@ export default function MapView() {
         <p className="text-muted-foreground mt-2 text-lg">
           Geographic distribution of indexed businesses across the current dataset.
         </p>
-        <div className="mt-4 rounded-lg border bg-card p-4">
-          <SharedBusinessFilters
-            categories={categories}
-            city={city}
-            categorySlug={category}
-            targetMarket={targetMarket}
-            onCityChange={setCity}
-            onCategoryChange={setCategory}
-            onTargetMarketChange={setTargetMarket}
-          />
-        </div>
         {firstPageQuery.data && (
           <p className="text-sm text-muted-foreground mt-1">
             Loaded {businesses.length} of {firstPageQuery.data.total} businesses across {totalPages} page{totalPages === 1 ? "" : "s"}.

@@ -89,7 +89,7 @@ Impact:
 
 Status:
 
-- fixed on `2026-04-22`
+- not fixed yet
 
 ### P1 - Functional/Product Gaps
 
@@ -193,7 +193,7 @@ Status:
 
 #### 9. Legacy schema residue still exists
 
-`galleries.ts` was legacy schema residue even though `businesses` is the active model.
+`galleries.ts` is still in the repo even though `businesses` is the active model.
 
 Affected area:
 
