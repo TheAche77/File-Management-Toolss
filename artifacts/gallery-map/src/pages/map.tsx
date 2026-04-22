@@ -1,8 +1,10 @@
-import { useGetBusinesses } from "@workspace/api-client-react";
+import { getBusinesses, getGetBusinessesQueryKey, useGetBusinesses } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { ExternalLink, Globe, Phone, MapPin } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -22,14 +24,64 @@ const customIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const MAP_PAGE_SIZE = 100;
+type MapBusiness = Awaited<ReturnType<typeof getBusinesses>>["businesses"][number];
+
 export default function MapView() {
-  const { data, isLoading } = useGetBusinesses({ pageSize: 500 });
+  const firstPageQuery = useGetBusinesses({ page: 1, pageSize: MAP_PAGE_SIZE });
+  const totalPages = firstPageQuery.data?.totalPages ?? 1;
+
+  const remainingPageQueries = useQueries({
+    queries: Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
+      const page = index + 2;
+      const params = { page, pageSize: MAP_PAGE_SIZE };
+
+      return {
+        queryKey: getGetBusinessesQueryKey(params),
+        queryFn: () => getBusinesses(params),
+        enabled: Boolean(firstPageQuery.data) && totalPages > 1,
+        staleTime: 60_000,
+      };
+    }),
+  });
+
+  const businesses = useMemo(() => {
+    const seen = new Set<number>();
+    const merged: MapBusiness[] = [];
+
+    for (const business of firstPageQuery.data?.businesses ?? []) {
+      if (seen.has(business.id)) continue;
+      seen.add(business.id);
+      merged.push(business);
+    }
+
+    for (const query of remainingPageQueries) {
+      for (const business of query.data?.businesses ?? []) {
+        if (seen.has(business.id)) continue;
+        seen.add(business.id);
+        merged.push(business);
+      }
+    }
+
+    return merged;
+  }, [firstPageQuery.data?.businesses, remainingPageQueries]);
+
+  const isLoading =
+    firstPageQuery.isLoading ||
+    remainingPageQueries.some((query) => query.isLoading);
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] max-w-6xl mx-auto space-y-4">
       <div>
         <h1 className="text-4xl font-serif text-foreground">Map View</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Geographic distribution of businesses across Italy.</p>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Geographic distribution of indexed businesses across the current dataset.
+        </p>
+        {firstPageQuery.data && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Loaded {businesses.length} of {firstPageQuery.data.total} businesses across {totalPages} page{totalPages === 1 ? "" : "s"}.
+          </p>
+        )}
       </div>
 
       <div className="flex-1 border border-border relative z-0 bg-card overflow-hidden">
@@ -46,7 +98,7 @@ export default function MapView() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
-            {data?.businesses.map(biz => {
+            {businesses.map(biz => {
               if (!biz.latitude || !biz.longitude) return null;
               const lat = parseFloat(biz.latitude);
               const lng = parseFloat(biz.longitude);
