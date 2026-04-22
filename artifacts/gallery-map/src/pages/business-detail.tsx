@@ -144,6 +144,25 @@ function getAuditDiffs(payload: Record<string, unknown>): AuditDiff[] {
   return diffs as AuditDiff[];
 }
 
+const PAYLOAD_SKIP_KEYS = new Set(["diffs"]);
+
+type PayloadEntry = { key: string; value: string };
+
+function getPayloadContext(payload: Record<string, unknown>): PayloadEntry[] {
+  if (!payload || typeof payload !== "object") return [];
+  return Object.entries(payload)
+    .filter(([key, val]) => {
+      if (PAYLOAD_SKIP_KEYS.has(key)) return false;
+      if (val === null || val === undefined || val === "") return false;
+      if (Array.isArray(val) && val.length === 0) return false;
+      return true;
+    })
+    .map(([key, val]) => ({
+      key,
+      value: formatDiffValue(key, val),
+    }));
+}
+
 function formatDiffValue(field: string, value: unknown): string {
   if (value === null || value === undefined || value === "") return "vuoto";
   if (typeof value === "boolean") return value ? "Sì" : "No";
@@ -1060,7 +1079,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                             ))}
                           </div>
                         )}
-                        {getAuditDiffs(event.payload).length > 0 && (
+                        {getAuditDiffs(event.payload).length > 0 ? (
                           <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
                             {getAuditDiffs(event.payload).map((diff) => {
                               const fieldKey = String(diff.field);
@@ -1079,7 +1098,18 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                               );
                             })}
                           </div>
-                        )}
+                        ) : getPayloadContext(event.payload).length > 0 ? (
+                          <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
+                            {getPayloadContext(event.payload).map((entry) => (
+                              <div key={`${event.id}-ctx-${entry.key}`} className="flex flex-wrap items-center gap-1.5">
+                                <span className="font-medium text-foreground">
+                                  {formatAuditChangedField(entry.key)}:
+                                </span>
+                                <span className="text-foreground">{entry.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="text-xs text-muted-foreground whitespace-nowrap">
