@@ -1,0 +1,75 @@
+Implement, review, and integrate now.
+
+The repo was just synced from GitHub after external Codex changes.
+Your task is to inspect the real updated codebase, identify the new/changed parts, and integrate them into the main application architecture.
+
+Do not remain in planning mode.
+Do not stop after code review.
+Do not produce a passive audit only.
+Do not keep duplicate implementations alive.
+Do not leave the app fragmented.
+
+Your mission:
+
+review the synced changes
+compare them to the existing architecture
+decide what to keep, merge, refactor, replace, or remove
+implement the integration directly
+make the whole app more coherent, more functional, and more complete
+Focus on:
+
+backend/frontend contract alignment
+schema consistency
+route/page consistency
+duplicated features
+orphaned modules
+shared types
+import/export issues
+end-to-end flow completion
+Rules:
+
+keep value, remove redundancy
+prefer one strong implementation over multiple weak ones
+prefer working end-to-end flows over disconnected code
+prefer reusable architecture over hardcoded islands
+if a new Codex part is useful but incomplete, finish it or integrate it cleanly
+if legacy code conflicts with better new code, replace legacy code
+if both are valuable, merge intelligently
+Required execution order:
+
+inspect changed/new files
+map current architecture
+identify overlaps/conflicts/gaps
+choose best integration direction
+modify files directly
+fix type/build/runtime issues
+complete missing connections
+verify the app runs coherently
+At the end report:
+
+files changed
+what was integrated
+what was merged
+what was removed
+what now works
+what remains optional
+A feature is not complete unless schema, backend, and frontend are connected end-to-end.
+
+Proceed now and modify the repo directly.
+Do not build static UI shells disconnected from live backend data.
+Do not preserve old code just because it already existed.
+Do not discard new code just because it was generated externally.
+Unify the system around the strongest architecture actually present in the repo.
+Do not repeatedly re-analyze the same folders once the architecture is already identified.
+Do not ask for confirmation unless there is a hard blocker.
+Prefer a working integrated solution over an overengineered partial refactor.
+If two implementations overlap, consolidate them instead of keeping both alive.
+Before finishing, do one final pass specifically for integration quality:
+
+remove dead imports
+fix broken references
+align shared types
+verify route-to-page connections
+verify admin actions trigger real backend logic
+verify the main user flows are actually usable
+Your final goal is not to preserve the repo exactly as it is, but to evolve it into the strongest coherent version of itself after the sync.
