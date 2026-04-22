@@ -256,6 +256,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /businesses/{id}/outreach-events:
+    get:
+      operationId: getBusinessOutreachEvents
+      tags: [businesses]
+      summary: List outreach audit events for one business
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Outreach audit event timeline
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutreachEvent"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     patch:
       operationId: updateBusinessContactCandidate
       tags: [businesses]
@@ -314,6 +341,19 @@ paths:
       operationId: getOutreachDashboard
       tags: [outreach]
       summary: Outreach KPI dashboard metrics
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: Outreach dashboard
@@ -727,6 +767,43 @@ components:
         - reviewStatus
         - createdAt
         - updatedAt
+
+    OutreachEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        businessId:
+          type: integer
+        eventType:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: ["integer", "null"]
+        actorType:
+          type: string
+        summary:
+          type: string
+        changedFields:
+          type: array
+          items:
+            type: string
+        payload:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - businessId
+        - eventType
+        - entityType
+        - actorType
+        - summary
+        - changedFields
+        - payload
+        - createdAt
 
     ContactCandidateUpdateRequest:
       type: object

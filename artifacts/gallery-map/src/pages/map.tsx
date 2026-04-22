@@ -1,6 +1,6 @@
 import { getBusinesses, getGetBusinessesQueryKey, useGetBusinesses } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { ExternalLink, Globe, Phone, MapPin } from "lucide-react";
 import { useQueries } from "@tanstack/react-query";
@@ -26,6 +26,185 @@ const customIcon = new L.Icon({
 
 const MAP_PAGE_SIZE = 100;
 type MapBusiness = Awaited<ReturnType<typeof getBusinesses>>["businesses"][number];
+type MapCluster = {
+  key: string;
+  latitude: number;
+  longitude: number;
+  businesses: MapBusiness[];
+};
+
+function getClusterStep(zoom: number) {
+  if (zoom <= 6) return 0.5;
+  if (zoom <= 8) return 0.18;
+  if (zoom <= 10) return 0.08;
+  if (zoom <= 12) return 0.035;
+  if (zoom <= 14) return 0.015;
+  return 0.006;
+}
+
+function getClusterIcon(count: number) {
+  const size = count >= 10 ? 42 : 36;
+
+  return L.divIcon({
+    className: "",
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:9999px;background:#1f2937;color:#fff;border:3px solid #f9fafb;font-weight:700;font-size:12px;box-shadow:0 8px 20px rgba(0,0,0,0.18);">${count}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+}
+
+function buildClusters(businesses: MapBusiness[], zoom: number) {
+  const step = getClusterStep(zoom);
+  const buckets = new Map<string, MapBusiness[]>();
+
+  for (const business of businesses) {
+    const lat = Number.parseFloat(business.latitude);
+    const lng = Number.parseFloat(business.longitude);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) continue;
+
+    const latBucket = Math.round(lat / step);
+    const lngBucket = Math.round(lng / step);
+    const key = `${latBucket}:${lngBucket}`;
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.push(business);
+    } else {
+      buckets.set(key, [business]);
+    }
+  }
+
+  return Array.from(buckets.entries()).map(([key, clusterBusinesses]): MapCluster => {
+    const positions = clusterBusinesses.map((business) => ({
+      latitude: Number.parseFloat(business.latitude),
+      longitude: Number.parseFloat(business.longitude),
+    }));
+
+    return {
+      key,
+      latitude:
+        positions.reduce((sum, position) => sum + position.latitude, 0) / positions.length,
+      longitude:
+        positions.reduce((sum, position) => sum + position.longitude, 0) / positions.length,
+      businesses: clusterBusinesses,
+    };
+  });
+}
+
+function SingleBusinessMarker({ business }: { business: MapBusiness }) {
+  const lat = Number.parseFloat(business.latitude);
+  const lng = Number.parseFloat(business.longitude);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+  return (
+    <Marker position={[lat, lng]} icon={customIcon}>
+      <Popup className="font-sans">
+        <div className="p-1">
+          <h3 className="font-serif font-semibold text-base m-0 mb-1">{business.name}</h3>
+          <div className="text-xs text-muted-foreground mb-2 flex items-start gap-1">
+            <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+            <span>
+              {business.addressLine || "No address"}
+              {business.city ? `, ${business.city}` : ""}
+            </span>
+          </div>
+          <div className="space-y-1 pt-2 border-t border-border/50">
+            <Link
+              href={`/businesses/${business.id}`}
+              className={buttonVariants({
+                variant: "ghost",
+                size: "sm",
+                className: "h-auto px-0 text-xs text-primary justify-start",
+              })}
+            >
+              Open details
+            </Link>
+            {business.website && (
+              <a
+                href={business.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <Globe className="w-3 h-3" /> Visit Website <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+            {business.phone && (
+              <div className="flex items-center gap-1.5 text-xs">
+                <Phone className="w-3 h-3 text-muted-foreground" /> {business.phone}
+              </div>
+            )}
+          </div>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
+function ClusteredMarkers({ businesses }: { businesses: MapBusiness[] }) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(() => map.getZoom());
+
+  useMapEvents({
+    zoomend() {
+      setZoom(map.getZoom());
+    },
+  });
+
+  const clusters = useMemo(() => buildClusters(businesses, zoom), [businesses, zoom]);
+
+  return (
+    <>
+      {clusters.map((cluster) =>
+        cluster.businesses.length === 1 ? (
+          <SingleBusinessMarker
+            key={cluster.businesses[0]!.id}
+            business={cluster.businesses[0]!}
+          />
+        ) : (
+          <Marker
+            key={cluster.key}
+            position={[cluster.latitude, cluster.longitude]}
+            icon={getClusterIcon(cluster.businesses.length)}
+          >
+            <Popup className="font-sans">
+              <div className="space-y-2 p-1">
+                <div>
+                  <h3 className="font-serif font-semibold text-base">
+                    {cluster.businesses.length} businesses in this area
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Zoom in to split this cluster into individual locations.
+                  </p>
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {cluster.businesses.slice(0, 8).map((business) => (
+                    <div key={business.id} className="border-t pt-2 first:border-t-0 first:pt-0">
+                      <Link
+                        href={`/businesses/${business.id}`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {business.name}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        {[business.city, business.targetMarket].filter(Boolean).join(" · ") || "No location metadata"}
+                      </p>
+                    </div>
+                  ))}
+                  {cluster.businesses.length > 8 && (
+                    <p className="text-xs text-muted-foreground">
+                      +{cluster.businesses.length - 8} more businesses in this cluster
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ),
+      )}
+    </>
+  );
+}
 
 export default function MapView() {
   const firstPageQuery = useGetBusinesses({ page: 1, pageSize: MAP_PAGE_SIZE });
@@ -98,48 +277,7 @@ export default function MapView() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
-            {businesses.map(biz => {
-              if (!biz.latitude || !biz.longitude) return null;
-              const lat = parseFloat(biz.latitude);
-              const lng = parseFloat(biz.longitude);
-              if (isNaN(lat) || isNaN(lng)) return null;
-
-              return (
-                <Marker key={biz.id} position={[lat, lng]} icon={customIcon}>
-                  <Popup className="font-sans">
-                    <div className="p-1">
-                      <h3 className="font-serif font-semibold text-base m-0 mb-1">{biz.name}</h3>
-                      <div className="text-xs text-muted-foreground mb-2 flex items-start gap-1">
-                        <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
-                        <span>{biz.addressLine || 'No address'}{biz.city ? `, ${biz.city}` : ''}</span>
-                      </div>
-                      <div className="space-y-1 pt-2 border-t border-border/50">
-                        <Link
-                          href={`/businesses/${biz.id}`}
-                          className={buttonVariants({
-                            variant: "ghost",
-                            size: "sm",
-                            className: "h-auto px-0 text-xs text-primary justify-start",
-                          })}
-                        >
-                          Open details
-                        </Link>
-                        {biz.website && (
-                          <a href={biz.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-                            <Globe className="w-3 h-3" /> Visit Website <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                        {biz.phone && (
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <Phone className="w-3 h-3 text-muted-foreground" /> {biz.phone}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
+            <ClusteredMarkers businesses={businesses} />
           </MapContainer>
         )}
       </div>

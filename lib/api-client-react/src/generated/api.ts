@@ -27,6 +27,7 @@ import type {
   ErrorResponse,
   ExportBusinessesCsvParams,
   GetBusinessesParams,
+  GetOutreachDashboardParams,
   GetOutreachPipelineParams,
   GetReviewQueueParams,
   GetStatsParams,
@@ -1022,27 +1023,44 @@ export function useGetStats<
 /**
  * @summary Outreach KPI dashboard metrics
  */
-export const getGetOutreachDashboardUrl = () => {
-  return `/api/outreach/dashboard`;
+export const getGetOutreachDashboardUrl = (params?: GetOutreachDashboardParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/outreach/dashboard?${stringifiedParams}`
+    : `/api/outreach/dashboard`;
 };
 
 export const getOutreachDashboard = async (
+  params?: GetOutreachDashboardParams,
   options?: RequestInit,
 ): Promise<OutreachDashboardResponse> => {
-  return customFetch<OutreachDashboardResponse>(getGetOutreachDashboardUrl(), {
+  return customFetch<OutreachDashboardResponse>(getGetOutreachDashboardUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetOutreachDashboardQueryKey = () => {
-  return [`/api/outreach/dashboard`] as const;
+export const getGetOutreachDashboardQueryKey = (
+  params?: GetOutreachDashboardParams,
+) => {
+  return [`/api/outreach/dashboard`, ...(params ? [params] : [])] as const;
 };
 
 export const getGetOutreachDashboardQueryOptions = <
   TData = Awaited<ReturnType<typeof getOutreachDashboard>>,
   TError = ErrorType<ErrorResponse>,
->(options?: {
+>(
+  params?: GetOutreachDashboardParams,
+  options?: {
   query?: UseQueryOptions<
     Awaited<ReturnType<typeof getOutreachDashboard>>,
     TError,
@@ -1053,11 +1071,11 @@ export const getGetOutreachDashboardQueryOptions = <
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetOutreachDashboardQueryKey();
+    queryOptions?.queryKey ?? getGetOutreachDashboardQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof getOutreachDashboard>>
-  > = ({ signal }) => getOutreachDashboard({ signal, ...requestOptions });
+  > = ({ signal }) => getOutreachDashboard(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getOutreachDashboard>>,
@@ -1077,7 +1095,9 @@ export type GetOutreachDashboardQueryError = ErrorType<ErrorResponse>;
 export function useGetOutreachDashboard<
   TData = Awaited<ReturnType<typeof getOutreachDashboard>>,
   TError = ErrorType<ErrorResponse>,
->(options?: {
+>(
+  params?: GetOutreachDashboardParams,
+  options?: {
   query?: UseQueryOptions<
     Awaited<ReturnType<typeof getOutreachDashboard>>,
     TError,
@@ -1085,7 +1105,7 @@ export function useGetOutreachDashboard<
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetOutreachDashboardQueryOptions(options);
+  const queryOptions = getGetOutreachDashboardQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

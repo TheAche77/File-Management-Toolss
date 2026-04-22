@@ -5,6 +5,11 @@ import { eq, ilike, and, sql, count, desc, or, ne } from "drizzle-orm";
 import { queueImportRun } from "../services/importJobService";
 import { getBusinessSources } from "../services/businessSourceService";
 import { getContactCandidates } from "../services/contactCandidateService";
+import {
+  getOutreachEvents,
+  recordContactCandidateUpdate,
+  recordOutreachUpdate,
+} from "../services/outreachAuditService";
 import { getReviewQueue } from "../services/reviewQueueService";
 import { requireAdminAuth } from "../lib/adminAuth";
 
@@ -64,6 +69,7 @@ router.get("/businesses", async (req, res) => {
     search,
     categorySlug,
     city,
+    targetMarket,
     hasWebsite,
     hasPhone,
     page = "1",
@@ -87,6 +93,7 @@ router.get("/businesses", async (req, res) => {
   }
   if (categorySlug) conditions.push(eq(businessesTable.categorySlug, categorySlug));
   if (city) conditions.push(ilike(businessesTable.city, `%${city}%`));
+  if (targetMarket) conditions.push(eq(businessesTable.targetMarket, targetMarket));
   if (hasWebsite === "true") conditions.push(eq(businessesTable.hasWebsite, true));
   if (hasWebsite === "false") conditions.push(eq(businessesTable.hasWebsite, false));
   if (hasPhone === "true") conditions.push(eq(businessesTable.hasPhone, true));
@@ -168,6 +175,17 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const existingRows = await db
+    .select()
+    .from(businessesTable)
+    .where(eq(businessesTable.id, id))
+    .limit(1);
+
+  if (existingRows.length === 0) {
+    res.status(404).json({ error: "Business not found" });
     return;
   }
 
@@ -261,7 +279,43 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
     return;
   }
 
+  await recordOutreachUpdate(existingRows[0]!, updated);
   res.json(serializeBusinessOutreach(updated));
+});
+
+router.get("/businesses/:id/outreach-events", requireAdminAuth, async (req, res) => {
+  const id = parseInt(String(req.params["id"] ?? "0"), 10);
+  if (!id || isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const business = await db
+    .select({ id: businessesTable.id })
+    .from(businessesTable)
+    .where(eq(businessesTable.id, id))
+    .limit(1);
+
+  if (business.length === 0) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+
+  const events = await getOutreachEvents(id);
+  res.json(
+    events.map((event) => ({
+      id: event.id,
+      businessId: event.businessId,
+      eventType: event.eventType,
+      entityType: event.entityType,
+      entityId: event.entityId ?? null,
+      actorType: event.actorType,
+      summary: event.summary,
+      changedFields: event.changedFields,
+      payload: event.payload,
+      createdAt: event.createdAt.toISOString(),
+    })),
+  );
 });
 
 router.get("/businesses/:id/sources", async (req, res) => {
@@ -408,6 +462,7 @@ router.patch("/businesses/:id/contact-candidates/:candidateId", requireAdminAuth
     return;
   }
 
+  await recordContactCandidateUpdate(businessId, existing, updated);
   res.json(serializeContactCandidate(updated));
 });
 
@@ -444,9 +499,14 @@ router.get("/stats", async (req, res) => {
   });
 });
 
-router.get("/outreach/dashboard", requireAdminAuth, async (_req, res) => {
+router.get("/outreach/dashboard", requireAdminAuth, async (req, res) => {
   const today = getTodayDateString();
-  const rows = await getOutreachRows();
+  const { categorySlug, city, targetMarket } = req.query as Record<string, string | undefined>;
+  const rows = filterOutreachRows(await getOutreachRows(), {
+    categorySlug,
+    city,
+    targetMarket,
+  });
   const activeRows = rows.filter((row) => !isClosedOutreachStatus(row.outreachStatus as string));
   const contacted = rows.filter((row) => (row.outreachStatus as string) !== "not_contacted").length;
   const positiveResponses = rows.filter((row) =>
@@ -484,12 +544,19 @@ router.get("/outreach/pipeline", requireAdminAuth, async (req, res) => {
   const {
     horizonDays = "7",
     limit = "50",
+    categorySlug,
+    city,
+    targetMarket,
   } = req.query as Record<string, string | undefined>;
 
   const parsedHorizonDays = Math.max(1, Math.min(30, parseInt(horizonDays ?? "7", 10) || 7));
   const parsedLimit = Math.max(1, Math.min(200, parseInt(limit ?? "50", 10) || 50));
   const today = getTodayDateString();
-  const rows = await getOutreachRows();
+  const rows = filterOutreachRows(await getOutreachRows(), {
+    categorySlug,
+    city,
+    targetMarket,
+  });
   const items = buildOutreachPipelineItems(rows, {
     today,
     horizonDays: parsedHorizonDays,
@@ -581,10 +648,11 @@ router.get("/imports/runs/:id", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/export/businesses.csv", async (req, res) => {
-  const { categorySlug, city } = req.query as Record<string, string | undefined>;
+  const { categorySlug, city, targetMarket } = req.query as Record<string, string | undefined>;
   const conditions = [];
   if (categorySlug) conditions.push(eq(businessesTable.categorySlug, categorySlug));
   if (city) conditions.push(ilike(businessesTable.city, `%${city}%`));
+  if (targetMarket) conditions.push(eq(businessesTable.targetMarket, targetMarket));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const rows = await db.select().from(businessesTable).where(where).orderBy(businessesTable.name);
@@ -648,6 +716,7 @@ function serializeBusiness(r: Record<string, unknown>) {
     postalCode: r["postalCode"] ?? null,
     region: r["region"] ?? null,
     country: r["country"] ?? null,
+    targetMarket: r["targetMarket"] ?? null,
     website: r["website"] ?? null,
     phone: r["phone"] ?? null,
     osmId: r["osmId"] ?? null,
@@ -781,6 +850,32 @@ function getUrgencySortValue(bucket: string) {
     default:
       return 3;
   }
+}
+
+function filterOutreachRows(
+  rows: Awaited<ReturnType<typeof getOutreachRows>>,
+  filters: {
+    categorySlug?: string;
+    city?: string;
+    targetMarket?: string;
+  },
+) {
+  return rows.filter((row) => {
+    if (filters.categorySlug && row.categorySlug !== filters.categorySlug) {
+      return false;
+    }
+    if (
+      filters.city &&
+      !(row.city ?? "").toLowerCase().includes(filters.city.toLowerCase())
+    ) {
+      return false;
+    }
+    if (filters.targetMarket && row.targetMarket !== filters.targetMarket) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 function buildOutreachPipelineItems(

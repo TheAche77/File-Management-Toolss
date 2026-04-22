@@ -307,6 +307,12 @@ export const GetStatsResponse = zod.object({
 /**
  * @summary Outreach KPI dashboard metrics
  */
+export const GetOutreachDashboardQueryParams = zod.object({
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
+});
+
 export const GetOutreachDashboardResponse = zod.object({
   totalTargets: zod.number(),
   contacted: zod.number(),

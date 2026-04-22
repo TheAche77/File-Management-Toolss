@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import {
-  getGetOutreachDashboardQueryKey,
+  getGetCategoriesQueryKey,
+  useGetCategories,
   useGetOutreachDashboard,
 } from "@workspace/api-client-react";
 import {
@@ -11,11 +12,18 @@ import {
   TimerReset,
   Waves,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SharedBusinessFilters } from "@/components/shared-business-filters";
 import { getStoredAdminToken } from "@/lib/admin-auth";
+import {
+  buildSearchParams,
+  readSharedBusinessFilters,
+  syncSearchParams,
+} from "@/lib/business-filters";
 import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function formatPercent(value: number) {
@@ -59,12 +67,42 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const hasAdminToken = Boolean(getStoredAdminToken());
-  const { data, isLoading, isError } = useGetOutreachDashboard({
+  const initialFilters = readSharedBusinessFilters(window.location.search);
+  const [city, setCity] = useState(initialFilters.city);
+  const [category, setCategory] = useState(initialFilters.categorySlug);
+  const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
+  const dashboardParams = useMemo(
+    () => ({
+      categorySlug: category === "all" ? undefined : category,
+      city: city || undefined,
+      targetMarket: targetMarket === "all" ? undefined : targetMarket,
+    }),
+    [category, city, targetMarket],
+  );
+  const { data: categories } = useGetCategories({
+    query: { queryKey: getGetCategoriesQueryKey() },
+  });
+  const { data, isLoading, isError } = useGetOutreachDashboard(dashboardParams, {
     query: {
-      queryKey: getGetOutreachDashboardQueryKey(),
       enabled: hasAdminToken,
     },
   });
+
+  useEffect(() => {
+    const nextSearch = buildSearchParams(window.location.search, {
+      city,
+      categorySlug: category,
+      targetMarket,
+      search: undefined,
+      hasWebsite: undefined,
+      hasPhone: undefined,
+      page: undefined,
+      horizonDays: undefined,
+      limit: undefined,
+    });
+
+    syncSearchParams(nextSearch);
+  }, [category, city, targetMarket]);
 
   if (!hasAdminToken) {
     return (
@@ -162,6 +200,18 @@ export default function Dashboard() {
         <Button asChild>
           <Link href="/pipeline">Apri Follow-up Board</Link>
         </Button>
+      </div>
+
+      <div className="rounded-lg border bg-card p-4">
+        <SharedBusinessFilters
+          categories={categories}
+          city={city}
+          categorySlug={category}
+          targetMarket={targetMarket}
+          onCityChange={setCity}
+          onCategoryChange={setCategory}
+          onTargetMarketChange={setTargetMarket}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

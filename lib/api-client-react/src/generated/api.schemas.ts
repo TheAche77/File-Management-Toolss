@@ -268,6 +268,20 @@ export interface OutreachDashboardResponse {
   urgentThisWeek: OutreachPipelineItem[];
 }
 
+export interface OutreachEvent {
+  id: number;
+  businessId: number;
+  eventType: string;
+  entityType: string;
+  /** @nullable */
+  entityId?: number | null;
+  actorType: string;
+  summary: string;
+  changedFields: string[];
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface ImportRequest {
   categorySlug: string;
   city: string;
@@ -332,6 +346,12 @@ export type GetReviewQueueParams = {
 
 export type GetStatsParams = {
   categorySlug?: string;
+};
+
+export type GetOutreachDashboardParams = {
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
 };
 
 export type GetOutreachPipelineParams = {

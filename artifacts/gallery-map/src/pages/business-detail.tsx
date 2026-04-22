@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import {
-  getGetOutreachDashboardQueryKey,
-  getGetOutreachPipelineQueryKey,
   getGetBusinessOutreachQueryKey,
   getGetBusinessContactCandidatesQueryKey,
   getGetBusinessByIdQueryKey,
@@ -14,7 +12,7 @@ import {
   useUpdateBusinessContactCandidate,
   useUpdateBusinessOutreach,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Building2,
@@ -96,6 +94,22 @@ type OutreachFormState = {
   notes: string;
 };
 
+type OutreachEvent = {
+  id: number;
+  businessId: number;
+  eventType: string;
+  entityType: string;
+  entityId?: number | null;
+  actorType: string;
+  summary: string;
+  changedFields: string[];
+  payload: {
+    diffs?: Array<{ field: string; before: unknown; after: unknown }>;
+    [key: string]: unknown;
+  };
+  createdAt: string;
+};
+
 function formatDate(value?: string | null) {
   if (!value) return "Not available";
 
@@ -127,6 +141,17 @@ function formatConfidence(value?: string | null) {
   const numeric = Number(value);
   if (Number.isNaN(numeric)) return value;
   return `${Math.round(numeric * 100)}%`;
+}
+
+function formatAuditTimestamp(value: string) {
+  return new Intl.DateTimeFormat("it-IT", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatAuditChangedField(field: string) {
+  return formatPipelineValue(field);
 }
 
 function buildOutreachFormState(
@@ -311,6 +336,24 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     },
   });
 
+  const outreachEventsQuery = useQuery({
+    queryKey: ["business-outreach-events", businessId],
+    enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
+    queryFn: async (): Promise<OutreachEvent[]> => {
+      const response = await fetch(`/api/businesses/${businessId}/outreach-events`, {
+        headers: {
+          Authorization: `Bearer ${getStoredAdminToken()}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not load outreach history");
+      }
+
+      return response.json();
+    },
+  });
+
   useEffect(() => {
     if (outreachQuery.data) {
       const nextForm = buildOutreachFormState(
@@ -330,10 +373,13 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
           queryKey: getGetBusinessOutreachQueryKey(businessId),
         });
         queryClient.invalidateQueries({
-          queryKey: getGetOutreachDashboardQueryKey(),
+          queryKey: ["/api/outreach/dashboard"],
         });
         queryClient.invalidateQueries({
-          queryKey: getGetOutreachPipelineQueryKey({ horizonDays: 7, limit: 60 }),
+          queryKey: ["/api/outreach/pipeline"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["business-outreach-events", businessId],
         });
         setOutreachForm(buildOutreachFormState(data, businessQuery.data?.categorySlug ?? null));
         toast({
@@ -358,6 +404,15 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["business-outreach-events", businessId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["/api/outreach/dashboard"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["/api/outreach/pipeline"],
         });
         toast({
           title: "Contact candidate updated",
@@ -898,6 +953,77 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                     </Button>
                   </div>
                 </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Outreach Timeline</CardTitle>
+              <CardDescription>
+                Audit trail of outreach edits and contact candidate review actions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {outreachEventsQuery.isLoading ? (
+                <>
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </>
+              ) : !hasAdminToken ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Unlock admin in the <Link href="/admin" className="text-primary hover:underline">Administration</Link> page to inspect the outreach history.
+                </div>
+              ) : outreachEventsQuery.isError ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  Outreach history is unavailable with the current admin session.
+                </div>
+              ) : (outreachEventsQuery.data ?? []).length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  No outreach history has been recorded for this business yet.
+                </div>
+              ) : (
+                (outreachEventsQuery.data ?? []).map((event, index) => (
+                  <div key={event.id} className="space-y-3">
+                    {index > 0 && <Separator />}
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-2 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">{formatSourceType(event.eventType)}</Badge>
+                          <Badge variant="outline">{formatSourceType(event.entityType)}</Badge>
+                        </div>
+                        <p className="text-sm font-medium">{event.summary}</p>
+                        {event.changedFields.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {event.changedFields.map((field) => (
+                              <Badge key={field} variant="outline">
+                                {formatAuditChangedField(field)}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {event.payload?.diffs && event.payload.diffs.length > 0 && (
+                          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+                            <div className="space-y-1">
+                              {event.payload.diffs.map((diff) => (
+                                <p key={`${event.id}-${String(diff.field)}`}>
+                                  <span className="font-medium text-foreground">
+                                    {formatAuditChangedField(String(diff.field))}
+                                  </span>
+                                  {`: ${String(diff.before ?? "empty")} -> ${String(diff.after ?? "empty")}`}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatAuditTimestamp(event.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                ))
               )}
             </CardContent>
           </Card>

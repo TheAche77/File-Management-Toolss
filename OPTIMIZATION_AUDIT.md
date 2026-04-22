@@ -109,7 +109,7 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-04-22`
 
 #### 5. Ingestion still assumes Italy while product now aims wider
 
@@ -130,7 +130,7 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-04-22`
 
 #### 6. Product identity is inconsistent
 
@@ -150,7 +150,7 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-04-22`
 
 ### P1 - Scalability And Data Flow
 
@@ -170,7 +170,7 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-04-22`
 
 #### 8. Website enrichment is sequential
 
@@ -187,7 +187,7 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-04-22`
 
 ### P2 - Architecture And Cleanup
 

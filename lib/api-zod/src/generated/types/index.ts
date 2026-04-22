@@ -18,6 +18,7 @@ export * from "./contactCandidateUpdateRequest";
 export * from "./errorResponse";
 export * from "./exportBusinessesCsvParams";
 export * from "./getBusinessesParams";
+export * from "./getOutreachDashboardParams";
 export * from "./getOutreachPipelineParams";
 export * from "./getStatsParams";
 export * from "./healthStatus";

@@ -26,7 +26,7 @@ export const businessesTable = pgTable(
     city: text("city"),
     postalCode: text("postal_code"),
     region: text("region"),
-    country: text("country").default("Italy"),
+    country: text("country"),
     website: text("website"),
     phone: text("phone"),
     osmId: text("osm_id"),

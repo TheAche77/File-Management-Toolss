@@ -22,7 +22,7 @@ Apply the schema update before starting the API:
 
 ```bash
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/db run migrate
 ```
 
 This is required for:
@@ -30,6 +30,7 @@ This is required for:
 - outreach columns on `businesses`
 - `business_sources`
 - `contact_candidates`
+- `outreach_events`
 
 ## 3. Validation
 
@@ -64,6 +65,7 @@ Check these flows manually:
    - overview loads
    - tracked sources render
    - contact candidates render
+   - outreach timeline renders
    - outreach fields save and re-read
 6. `/map`
    - map still renders
@@ -75,4 +77,4 @@ Check these flows manually:
 
 - `GOOGLE_MAPS_API_KEY` does not unlock a full Google Places enrichment flow yet; the connector remains a stub.
 - Admin-protected flows depend on `ADMIN_API_TOKEN`; the API now fails fast at startup if it is missing.
-- This repo currently relies on schema push in the real environment rather than checked-in formal SQL migrations.
+- Versioned SQL migrations now live in `lib/db/migrations`, but they still need to be applied in the real environment before startup.

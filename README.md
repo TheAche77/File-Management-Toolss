@@ -24,6 +24,8 @@ The current branch supports:
 - minimal admin protection via `ADMIN_API_TOKEN`
 - business detail pages with sources, contact candidates, and outreach editing
 - outreach KPI dashboard and follow-up pipeline board
+- outreach audit timeline per business
+- versioned SQL migrations in `lib/db/migrations`
 
 The enrichment model is intentionally conservative:
 
@@ -124,6 +126,12 @@ Regenerate API client after changing `lib/api-spec/openapi.yaml`:
 pnpm --filter @workspace/api-client-react run codegen
 ```
 
+Run versioned database migrations:
+
+```bash
+pnpm --filter @workspace/db run migrate
+```
+
 ## Current Data Model
 
 Core tables in active use:
@@ -133,12 +141,14 @@ Core tables in active use:
 - `import_runs`
 - `business_sources`
 - `contact_candidates`
+- `outreach_events`
 
 Important functional roles:
 
 - `businesses`: canonical business record
 - `business_sources`: provenance and fetch tracking for source URLs
 - `contact_candidates`: suggested contact paths with confidence and review state
+- `outreach_events`: audit trail for outreach edits and contact candidate review actions
 
 ## Protected Admin Features
 
@@ -189,16 +199,16 @@ Not in scope:
 
 - The Google Places connector is still a stub even if `GOOGLE_MAPS_API_KEY` is present.
 - The current environment here did not allow running `pnpm`/`npm`, so recent changes were implemented and reviewed but not compiled in this session.
-- Any schema additions such as `business_sources` or `contact_candidates` require the corresponding database schema update in your real environment.
+- Any schema additions such as `business_sources`, `contact_candidates`, or `outreach_events` require the corresponding database migration in your real environment.
 - The optimization audit and phased fix plan lives in [OPTIMIZATION_AUDIT.md](./OPTIMIZATION_AUDIT.md).
 
 ## Post-Merge Rollout
 
-After promoting the outreach branch into `crea`, run the backend schema update before starting the apps:
+After promoting the outreach branch into `crea`, run the backend migrations before starting the apps:
 
 ```bash
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/db run migrate
 ```
 
 Recommended local validation order:
@@ -217,6 +227,7 @@ Smoke test checklist:
 4. Open `/businesses/:id` from the directory and verify:
    - sources load
    - contact candidates load
+   - outreach timeline loads
    - outreach fields save and re-read
 5. Queue an import and verify import history/progress still works.
 6. Verify directory, map, and CSV export still behave as before.
