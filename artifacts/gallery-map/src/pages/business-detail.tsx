@@ -5,14 +5,17 @@ import {
   getGetBusinessContactCandidatesQueryKey,
   getGetBusinessByIdQueryKey,
   getGetBusinessSourcesQueryKey,
+  getGetBusinessOutreachEventsQueryKey,
   useGetBusinessOutreach,
   useGetBusinessContactCandidates,
   useGetBusinessById,
   useGetBusinessSources,
+  useGetBusinessOutreachEvents,
   useUpdateBusinessContactCandidate,
   useUpdateBusinessOutreach,
+  type OutreachEvent,
 } from "@workspace/api-client-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Building2,
@@ -94,21 +97,6 @@ type OutreachFormState = {
   notes: string;
 };
 
-type OutreachEvent = {
-  id: number;
-  businessId: number;
-  eventType: string;
-  entityType: string;
-  entityId?: number | null;
-  actorType: string;
-  summary: string;
-  changedFields: string[];
-  payload: {
-    diffs?: Array<{ field: string; before: unknown; after: unknown }>;
-    [key: string]: unknown;
-  };
-  createdAt: string;
-};
 
 function formatDate(value?: string | null) {
   if (!value) return "Not available";
@@ -336,21 +324,10 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     },
   });
 
-  const outreachEventsQuery = useQuery({
-    queryKey: ["business-outreach-events", businessId],
-    enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
-    queryFn: async (): Promise<OutreachEvent[]> => {
-      const response = await fetch(`/api/businesses/${businessId}/outreach-events`, {
-        headers: {
-          Authorization: `Bearer ${getStoredAdminToken()}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Could not load outreach history");
-      }
-
-      return response.json();
+  const outreachEventsQuery = useGetBusinessOutreachEvents(businessId, {
+    query: {
+      queryKey: getGetBusinessOutreachEventsQueryKey(businessId),
+      enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
     },
   });
 
@@ -379,7 +356,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
           queryKey: ["/api/outreach/pipeline"],
         });
         queryClient.invalidateQueries({
-          queryKey: ["business-outreach-events", businessId],
+          queryKey: getGetBusinessOutreachEventsQueryKey(businessId),
         });
         setOutreachForm(buildOutreachFormState(data, businessQuery.data?.categorySlug ?? null));
         toast({
@@ -406,7 +383,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
           queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
         });
         queryClient.invalidateQueries({
-          queryKey: ["business-outreach-events", businessId],
+          queryKey: getGetBusinessOutreachEventsQueryKey(businessId),
         });
         queryClient.invalidateQueries({
           queryKey: ["/api/outreach/dashboard"],
@@ -1002,10 +979,10 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                             ))}
                           </div>
                         )}
-                        {event.payload?.diffs && event.payload.diffs.length > 0 && (
+                        {Array.isArray(event.payload?.diffs) && (event.payload.diffs as Array<{ field: unknown; before: unknown; after: unknown }>).length > 0 && (
                           <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
                             <div className="space-y-1">
-                              {event.payload.diffs.map((diff) => (
+                              {(event.payload.diffs as Array<{ field: unknown; before: unknown; after: unknown }>).map((diff) => (
                                 <p key={`${event.id}-${String(diff.field)}`}>
                                   <span className="font-medium text-foreground">
                                     {formatAuditChangedField(String(diff.field))}

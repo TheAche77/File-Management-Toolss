@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import {
   getGetCategoriesQueryKey,
+  getGetOutreachDashboardQueryKey,
   useGetCategories,
   useGetOutreachDashboard,
 } from "@workspace/api-client-react";
@@ -84,6 +85,7 @@ export default function Dashboard() {
   });
   const { data, isLoading, isError } = useGetOutreachDashboard(dashboardParams, {
     query: {
+      queryKey: getGetOutreachDashboardQueryKey(dashboardParams),
       enabled: hasAdminToken,
     },
   });

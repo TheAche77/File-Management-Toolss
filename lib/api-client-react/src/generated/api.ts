@@ -36,6 +36,7 @@ import type {
   ImportResult,
   ImportRun,
   OutreachDashboardResponse,
+  OutreachEvent,
   OutreachPipelineResponse,
   ReviewQueueItem,
   StatsResponse,
@@ -918,6 +919,94 @@ export function useGetBusinessSources<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetBusinessSourcesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List outreach audit events for one business
+ */
+export const getGetBusinessOutreachEventsUrl = (id: number) => {
+  return `/api/businesses/${id}/outreach-events`;
+};
+
+export const getBusinessOutreachEvents = async (
+  id: number,
+  options?: RequestInit,
+): Promise<OutreachEvent[]> => {
+  return customFetch<OutreachEvent[]>(getGetBusinessOutreachEventsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBusinessOutreachEventsQueryKey = (id: number) => {
+  return [`/api/businesses/${id}/outreach-events`] as const;
+};
+
+export const getGetBusinessOutreachEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBusinessOutreachEvents>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessOutreachEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetBusinessOutreachEventsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBusinessOutreachEvents>>
+  > = ({ signal }) =>
+    getBusinessOutreachEvents(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBusinessOutreachEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBusinessOutreachEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBusinessOutreachEvents>>
+>;
+export type GetBusinessOutreachEventsQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary List outreach audit events for one business
+ */
+export function useGetBusinessOutreachEvents<
+  TData = Awaited<ReturnType<typeof getBusinessOutreachEvents>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBusinessOutreachEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBusinessOutreachEventsQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

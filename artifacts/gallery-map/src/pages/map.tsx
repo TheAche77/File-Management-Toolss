@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "re
 import L from "leaflet";
 import { ExternalLink, Globe, Phone, MapPin } from "lucide-react";
 import { useQueries } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -187,7 +187,7 @@ function ClusteredMarkers({ businesses }: { businesses: MapBusiness[] }) {
                         {business.name}
                       </Link>
                       <p className="text-xs text-muted-foreground">
-                        {[business.city, business.targetMarket].filter(Boolean).join(" · ") || "No location metadata"}
+                        {business.city || "No location metadata"}
                       </p>
                     </div>
                   ))}
