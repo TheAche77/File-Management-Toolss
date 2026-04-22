@@ -7,6 +7,13 @@ import { useQueries } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -23,6 +30,8 @@ const customIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+const TARGET_MARKETS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO"] as const;
 
 const MAP_PAGE_SIZE = 100;
 type MapBusiness = Awaited<ReturnType<typeof getBusinesses>>["businesses"][number];
@@ -91,6 +100,15 @@ function buildClusters(businesses: MapBusiness[], zoom: number) {
   });
 }
 
+function TargetMarketBadge({ market }: { market: string | null | undefined }) {
+  if (!market) return null;
+  return (
+    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 ml-1">
+      {market}
+    </span>
+  );
+}
+
 function SingleBusinessMarker({ business }: { business: MapBusiness }) {
   const lat = Number.parseFloat(business.latitude);
   const lng = Number.parseFloat(business.longitude);
@@ -107,6 +125,7 @@ function SingleBusinessMarker({ business }: { business: MapBusiness }) {
               {business.addressLine || "No address"}
               {business.city ? `, ${business.city}` : ""}
             </span>
+            <TargetMarketBadge market={business.targetMarket} />
           </div>
           <div className="space-y-1 pt-2 border-t border-border/50">
             <Link
@@ -186,8 +205,9 @@ function ClusteredMarkers({ businesses }: { businesses: MapBusiness[] }) {
                       >
                         {business.name}
                       </Link>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         {business.city || "No location metadata"}
+                        <TargetMarketBadge market={business.targetMarket} />
                       </p>
                     </div>
                   ))}
@@ -207,13 +227,20 @@ function ClusteredMarkers({ businesses }: { businesses: MapBusiness[] }) {
 }
 
 export default function MapView() {
-  const firstPageQuery = useGetBusinesses({ page: 1, pageSize: MAP_PAGE_SIZE });
+  const [targetMarket, setTargetMarket] = useState<string | undefined>(undefined);
+
+  const filterParams = useMemo(
+    () => (targetMarket ? { targetMarket } : {}),
+    [targetMarket],
+  );
+
+  const firstPageQuery = useGetBusinesses({ page: 1, pageSize: MAP_PAGE_SIZE, ...filterParams });
   const totalPages = firstPageQuery.data?.totalPages ?? 1;
 
   const remainingPageQueries = useQueries({
     queries: Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
       const page = index + 2;
-      const params = { page, pageSize: MAP_PAGE_SIZE };
+      const params = { page, pageSize: MAP_PAGE_SIZE, ...filterParams };
 
       return {
         queryKey: getGetBusinessesQueryKey(params),
@@ -261,6 +288,28 @@ export default function MapView() {
             Loaded {businesses.length} of {firstPageQuery.data.total} businesses across {totalPages} page{totalPages === 1 ? "" : "s"}.
           </p>
         )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-medium text-foreground whitespace-nowrap">
+          Target market
+        </label>
+        <Select
+          value={targetMarket ?? "all"}
+          onValueChange={(value) => setTargetMarket(value === "all" ? undefined : value)}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="All markets" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All markets</SelectItem>
+            {TARGET_MARKETS.map((market) => (
+              <SelectItem key={market} value={market}>
+                {market}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex-1 border border-border relative z-0 bg-card overflow-hidden">

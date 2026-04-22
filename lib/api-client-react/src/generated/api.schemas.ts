@@ -38,6 +38,8 @@ export interface Business {
   /** @nullable */
   country?: string | null;
   /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
   website?: string | null;
   /** @nullable */
   phone?: string | null;
@@ -332,6 +334,7 @@ export type GetBusinessesParams = {
   search?: string;
   categorySlug?: string;
   city?: string;
+  targetMarket?: string;
   hasWebsite?: boolean;
   hasPhone?: boolean;
   page?: number;
