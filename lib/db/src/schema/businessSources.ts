@@ -28,6 +28,10 @@ export const businessSourcesTable = pgTable(
     contentHash: text("content_hash"),
     httpStatus: integer("http_status"),
     isOfficial: boolean("is_official").notNull().default(false),
+    sourcePriority: integer("source_priority").notNull().default(50),
+    usefulnessScore: integer("usefulness_score"),
+    nextFetchAt: timestamp("next_fetch_at"),
+    freshnessStatus: text("freshness_status").notNull().default("unknown"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -36,6 +40,8 @@ export const businessSourcesTable = pgTable(
     index("business_sources_business_idx").on(t.businessId),
     index("business_sources_type_idx").on(t.sourceType),
     index("business_sources_official_idx").on(t.isOfficial),
+    index("business_sources_next_fetch_idx").on(t.nextFetchAt),
+    index("business_sources_freshness_idx").on(t.freshnessStatus),
   ],
 );
 

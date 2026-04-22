@@ -9,6 +9,7 @@ import BusinessDetail from "@/pages/business-detail";
 import MapView from "@/pages/map";
 import PipelinePage from "@/pages/pipeline";
 import Admin from "@/pages/admin";
+import ResearchPage from "@/pages/research";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -29,6 +30,7 @@ function Router() {
         </Route>
         <Route path="/businesses" component={Businesses} />
         <Route path="/map" component={MapView} />
+        <Route path="/research" component={ResearchPage} />
         <Route path="/pipeline" component={PipelinePage} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />

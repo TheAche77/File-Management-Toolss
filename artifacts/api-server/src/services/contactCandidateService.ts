@@ -8,6 +8,34 @@ import { desc, eq, inArray } from "drizzle-orm";
 import type { MergedBusinessRecord } from "./businessSourceService";
 import { logger } from "../lib/logger";
 
+function getVerificationStatus(reviewStatus: string, email?: string | null, phone?: string | null) {
+  if (reviewStatus === "approved") return "verified";
+  if (email || phone) return "reachable";
+  return "unverified";
+}
+
+function getChannelPriority(contactType: string) {
+  if (contactType === "generic_email") return 95;
+  if (contactType === "website_contact") return 70;
+  if (contactType === "phone_contact") return 60;
+  return 50;
+}
+
+function getSourcePriority(sourceType: string) {
+  if (sourceType === "official_website_page") return 90;
+  if (sourceType === "official_website") return 85;
+  if (sourceType === "google_maps") return 40;
+  if (sourceType === "osm_record") return 25;
+  return 50;
+}
+
+function getNextVerificationAt(lastVerifiedAt: Date | null | undefined, reviewStatus: string) {
+  const base = lastVerifiedAt ?? new Date();
+  const next = new Date(base);
+  next.setDate(next.getDate() + (reviewStatus === "approved" ? 30 : 14));
+  return next;
+}
+
 function buildOsmSourceUrl(business: InsertBusiness): string | null {
   if (!business.osmType || !business.osmId) return null;
   return `https://www.openstreetmap.org/${business.osmType}/${business.osmId}`;
@@ -60,6 +88,12 @@ export function buildContactCandidatesForRecord(record: MergedBusinessRecord): I
       isPrimary: !record.business.phone,
       isPersonalData: false,
       lastVerifiedAt: new Date(),
+      verificationStatus: "reachable",
+      isReachable: true,
+      isDecisionMakerLikely: false,
+      channelPriority: getChannelPriority("website_contact"),
+      sourcePriority: getSourcePriority("official_website"),
+      nextVerificationAt: getNextVerificationAt(new Date(), "suggested"),
       reviewStatus: "suggested",
       notes: "Derived from the official website already stored on the business record.",
     });
@@ -80,6 +114,12 @@ export function buildContactCandidatesForRecord(record: MergedBusinessRecord): I
       isPrimary: !record.business.website,
       isPersonalData: false,
       lastVerifiedAt: new Date(),
+      verificationStatus: "reachable",
+      isReachable: true,
+      isDecisionMakerLikely: false,
+      channelPriority: getChannelPriority("phone_contact"),
+      sourcePriority: getSourcePriority(source.sourceType),
+      nextVerificationAt: getNextVerificationAt(new Date(), "suggested"),
       reviewStatus: "suggested",
       notes: "Derived from an imported public business phone number.",
     });
@@ -132,6 +172,23 @@ export async function upsertContactCandidates(records: InsertContactCandidate[])
             isPrimary: record.isPrimary,
             isPersonalData: record.isPersonalData,
             lastVerifiedAt: record.lastVerifiedAt ?? existingRecord.lastVerifiedAt ?? new Date(),
+            verificationStatus:
+              record.verificationStatus ??
+              getVerificationStatus(
+                record.reviewStatus ?? "suggested",
+                record.email,
+                record.phone,
+              ),
+            isReachable: record.isReachable ?? Boolean(record.email ?? record.phone ?? record.contactUrl),
+            isDecisionMakerLikely: record.isDecisionMakerLikely ?? existingRecord.isDecisionMakerLikely,
+            channelPriority:
+              record.channelPriority ?? getChannelPriority(record.contactType ?? "website_contact"),
+            sourcePriority:
+              record.sourcePriority ?? getSourcePriority(record.sourceType ?? "official_website"),
+            nextVerificationAt:
+              record.nextVerificationAt ??
+              existingRecord.nextVerificationAt ??
+              getNextVerificationAt(record.lastVerifiedAt, record.reviewStatus ?? "suggested"),
             reviewStatus: record.reviewStatus,
             notes: record.notes ?? null,
             updatedAt: new Date(),
@@ -140,7 +197,21 @@ export async function upsertContactCandidates(records: InsertContactCandidate[])
         continue;
       }
 
-      await tx.insert(contactCandidatesTable).values(record);
+      await tx.insert(contactCandidatesTable).values({
+        ...record,
+        verificationStatus:
+          record.verificationStatus ??
+          getVerificationStatus(record.reviewStatus ?? "suggested", record.email, record.phone),
+        isReachable: record.isReachable ?? Boolean(record.email ?? record.phone ?? record.contactUrl),
+        isDecisionMakerLikely: record.isDecisionMakerLikely ?? Boolean(record.fullName || record.role),
+        channelPriority:
+          record.channelPriority ?? getChannelPriority(record.contactType ?? "website_contact"),
+        sourcePriority:
+          record.sourcePriority ?? getSourcePriority(record.sourceType ?? "official_website"),
+        nextVerificationAt:
+          record.nextVerificationAt ??
+          getNextVerificationAt(record.lastVerifiedAt, record.reviewStatus ?? "suggested"),
+      });
     }
   });
 

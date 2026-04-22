@@ -52,6 +52,7 @@ function buildBusinessResearchUpdate(
     lastContactabilityCheckAt: new Date(),
     lastResearchAt: snapshot.lastResearchAt,
     nextResearchAt: snapshot.nextResearchAt,
+    lastCheckedAt: new Date(),
     hasWebsite: Boolean(aggregate.business.website),
     hasPhone: Boolean(derivedPhone),
     contactEmail: derivedEmail,

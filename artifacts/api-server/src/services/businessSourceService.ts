@@ -13,6 +13,40 @@ export interface MergedBusinessRecord {
   business: InsertBusiness;
 }
 
+function getSourcePriority(sourceType: string, isOfficial: boolean) {
+  if (sourceType === "official_website_page") return 95;
+  if (sourceType === "official_website") return 90;
+  if (isOfficial) return 80;
+  if (sourceType === "google_maps") return 45;
+  if (sourceType === "osm_record") return 35;
+  return 50;
+}
+
+function getUsefulnessScore(record: InsertBusinessSource) {
+  let score = 0;
+  if (record.fetchStatus === "fetched") score += 60;
+  if (record.httpStatus === 200) score += 20;
+  if (record.contentHash) score += 10;
+  if (record.isOfficial) score += 10;
+  return Math.min(score, 100);
+}
+
+function getFreshnessStatus(lastFetchedAt: Date | null | undefined) {
+  if (!lastFetchedAt) return "unknown";
+  const ageMs = Date.now() - lastFetchedAt.getTime();
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  if (ageDays <= 7) return "fresh";
+  if (ageDays <= 30) return "aging";
+  return "stale";
+}
+
+function getNextFetchAt(lastFetchedAt: Date | null | undefined, isOfficial: boolean) {
+  const base = lastFetchedAt ?? new Date();
+  const next = new Date(base);
+  next.setDate(next.getDate() + (isOfficial ? 14 : 30));
+  return next;
+}
+
 function getSourceDomain(url: string): string | null {
   try {
     return new URL(url).hostname.replace(/^www\./i, "").toLowerCase();
@@ -54,6 +88,10 @@ export function buildBusinessSourcesForRecord(
       contentHash: null,
       httpStatus: null,
       isOfficial,
+      sourcePriority: getSourcePriority(sourceType, isOfficial),
+      usefulnessScore: 0,
+      nextFetchAt: getNextFetchAt(new Date(), isOfficial),
+      freshnessStatus: "fresh",
     });
   };
 
@@ -104,13 +142,35 @@ export async function upsertBusinessSources(records: InsertBusinessSource[]): Pr
             contentHash: record.contentHash ?? existingRecord.contentHash ?? null,
             httpStatus: record.httpStatus ?? existingRecord.httpStatus ?? null,
             isOfficial: record.isOfficial,
+            sourcePriority: record.sourcePriority ?? existingRecord.sourcePriority,
+            usefulnessScore: getUsefulnessScore(record),
+            nextFetchAt:
+              record.nextFetchAt ??
+              existingRecord.nextFetchAt ??
+              getNextFetchAt(
+                record.lastFetchedAt ?? existingRecord.lastFetchedAt,
+                Boolean(record.isOfficial),
+              ),
+            freshnessStatus: getFreshnessStatus(
+              record.lastFetchedAt ?? existingRecord.lastFetchedAt,
+            ),
             updatedAt: new Date(),
           })
           .where(eq(businessSourcesTable.id, existingRecord.id));
         continue;
       }
 
-      await tx.insert(businessSourcesTable).values(record);
+      await tx.insert(businessSourcesTable).values({
+        ...record,
+        sourcePriority:
+          record.sourcePriority ??
+          getSourcePriority(record.sourceType, Boolean(record.isOfficial)),
+        usefulnessScore: record.usefulnessScore ?? getUsefulnessScore(record),
+        nextFetchAt:
+          record.nextFetchAt ??
+          getNextFetchAt(record.lastFetchedAt, Boolean(record.isOfficial)),
+        freshnessStatus: record.freshnessStatus ?? getFreshnessStatus(record.lastFetchedAt),
+      });
     }
   });
 

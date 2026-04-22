@@ -9,6 +9,7 @@ import {
   Compass,
   Menu,
   KanbanSquare,
+  SearchCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/research", label: "Research", icon: SearchCode },
     { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
     { href: "/businesses", label: "Directory", icon: List },
     { href: "/map", label: "Map", icon: MapIcon },

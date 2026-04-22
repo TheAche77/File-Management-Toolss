@@ -7,6 +7,8 @@ export type SharedBusinessFiltersState = {
   hasPhone: boolean;
   readyForOutreach: boolean;
   reviewRequired: boolean;
+  minPriorityScore?: number;
+  minResearchScore?: number;
   page: number;
   horizonDays?: number;
   limit?: number;
@@ -24,6 +26,12 @@ export function readSharedBusinessFilters(search: string): SharedBusinessFilters
     hasPhone: params.get("hasPhone") === "true",
     readyForOutreach: params.get("readyForOutreach") === "true",
     reviewRequired: params.get("reviewRequired") === "true",
+    minPriorityScore: params.get("minPriorityScore")
+      ? Number.parseInt(params.get("minPriorityScore") ?? "0", 10) || undefined
+      : undefined,
+    minResearchScore: params.get("minResearchScore")
+      ? Number.parseInt(params.get("minResearchScore") ?? "0", 10) || undefined
+      : undefined,
     page: Number.parseInt(params.get("page") ?? "1", 10) || 1,
     horizonDays: params.get("horizonDays")
       ? Number.parseInt(params.get("horizonDays") ?? "7", 10) || 7
@@ -56,6 +64,8 @@ export function buildSearchParams(
   if (next.hasPhone) params.set("hasPhone", "true");
   if (next.readyForOutreach) params.set("readyForOutreach", "true");
   if (next.reviewRequired) params.set("reviewRequired", "true");
+  if (next.minPriorityScore) params.set("minPriorityScore", String(next.minPriorityScore));
+  if (next.minResearchScore) params.set("minResearchScore", String(next.minResearchScore));
   if (next.page && next.page > 1) params.set("page", String(next.page));
   if (next.horizonDays) params.set("horizonDays", String(next.horizonDays));
   if (next.limit) params.set("limit", String(next.limit));

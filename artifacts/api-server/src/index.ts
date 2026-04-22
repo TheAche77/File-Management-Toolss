@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { validateServerEnv } from "./lib/env";
 import { resumePendingImportRuns } from "./services/importJobService";
+import { startResearchAutomationLoop } from "./services/researchAutomationService";
 
 const env = validateServerEnv();
 const port = env.port;
@@ -14,4 +15,5 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   void resumePendingImportRuns();
+  startResearchAutomationLoop();
 });

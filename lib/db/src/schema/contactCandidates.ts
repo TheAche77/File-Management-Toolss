@@ -34,6 +34,12 @@ export const contactCandidatesTable = pgTable(
     isPrimary: boolean("is_primary").notNull().default(false),
     isPersonalData: boolean("is_personal_data").notNull().default(false),
     lastVerifiedAt: timestamp("last_verified_at"),
+    verificationStatus: text("verification_status").notNull().default("unverified"),
+    isReachable: boolean("is_reachable").notNull().default(false),
+    isDecisionMakerLikely: boolean("is_decision_maker_likely").notNull().default(false),
+    channelPriority: integer("channel_priority").notNull().default(50),
+    sourcePriority: integer("source_priority").notNull().default(50),
+    nextVerificationAt: timestamp("next_verification_at"),
     reviewStatus: text("review_status").notNull().default("suggested"),
     notes: text("notes"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -49,6 +55,8 @@ export const contactCandidatesTable = pgTable(
     index("contact_candidates_business_idx").on(t.businessId),
     index("contact_candidates_type_idx").on(t.contactType),
     index("contact_candidates_review_idx").on(t.reviewStatus),
+    index("contact_candidates_verification_idx").on(t.verificationStatus),
+    index("contact_candidates_next_verification_idx").on(t.nextVerificationAt),
   ],
 );
 

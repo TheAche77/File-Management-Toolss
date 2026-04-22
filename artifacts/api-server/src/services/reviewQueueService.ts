@@ -1,6 +1,7 @@
 import {
   businessSourcesTable,
   businessesTable,
+  contactCandidatesTable,
   db,
   type Business,
 } from "@workspace/db";
@@ -15,7 +16,8 @@ export type ReviewReason =
   | "missing_contact"
   | "low_confidence"
   | "stale_data"
-  | "weak_sources";
+  | "weak_sources"
+  | "ambiguous_contact";
 
 export interface ReviewQueueItem {
   business: Business;
@@ -31,6 +33,17 @@ export interface ReviewQueueFilters {
   city?: string;
   targetMarket?: string;
   limit?: number;
+}
+
+export interface ReviewBucket {
+  key:
+    | "high_value_missing_contact"
+    | "weak_sources"
+    | "stale_high_priority"
+    | "low_confidence_primary_contact"
+    | "manual_review";
+  label: string;
+  items: ReviewQueueItem[];
 }
 
 function getPriorityScore(reasons: ReviewReason[], failedSourceCount: number): number {
@@ -93,13 +106,23 @@ export async function getReviewQueue(
     .select()
     .from(businessSourcesTable)
     .where(inArray(businessSourcesTable.businessId, businessIds));
+  const contactCandidates = await db
+    .select()
+    .from(contactCandidatesTable)
+    .where(inArray(contactCandidatesTable.businessId, businessIds));
 
   const sourcesByBusinessId = new Map<number, typeof sources>();
+  const candidatesByBusinessId = new Map<number, typeof contactCandidates>();
 
   for (const source of sources) {
     const bucket = sourcesByBusinessId.get(source.businessId) ?? [];
     bucket.push(source);
     sourcesByBusinessId.set(source.businessId, bucket);
+  }
+  for (const candidate of contactCandidates) {
+    const bucket = candidatesByBusinessId.get(candidate.businessId) ?? [];
+    bucket.push(candidate);
+    candidatesByBusinessId.set(candidate.businessId, bucket);
   }
 
   const queue = candidates
@@ -111,6 +134,14 @@ export async function getReviewQueue(
         if (typeof source.httpStatus === "number" && source.httpStatus >= 400) return true;
         return false;
       }).length;
+      const candidateRecords = candidatesByBusinessId.get(business.id) ?? [];
+      const approvedCandidates = candidateRecords.filter((candidate) => candidate.reviewStatus === "approved");
+      const reachableCandidates = candidateRecords.filter(
+        (candidate) =>
+          candidate.verificationStatus === "verified" ||
+          candidate.verificationStatus === "reachable" ||
+          candidate.isReachable,
+      );
 
       const reasons: ReviewReason[] = [];
 
@@ -123,6 +154,18 @@ export async function getReviewQueue(
       if (business.enrichmentStatus !== "enriched") reasons.push("pending_enrichment");
       if (officialSourceCount === 0) reasons.push("missing_official_source");
       if (failedSourceCount > 0) reasons.push("failed_source_fetch");
+      if (!business.contactEmail && reachableCandidates.length === 0) reasons.push("missing_contact");
+      if (
+        (business.confidenceScore ?? 0) < 50 ||
+        approvedCandidates.some((candidate) => Number(candidate.confidenceScore) < 0.5)
+      ) {
+        reasons.push("low_confidence");
+      }
+      if ((business.priorityScore ?? 0) >= 70 && business.nextResearchAt && business.nextResearchAt <= new Date()) {
+        reasons.push("stale_data");
+      }
+      if ((business.sourceHealth ?? "weak") === "weak") reasons.push("weak_sources");
+      if (approvedCandidates.length > 1) reasons.push("ambiguous_contact");
 
       return {
         business,
@@ -150,4 +193,42 @@ export async function getReviewQueue(
     });
 
   return queue.slice(0, requestedLimit);
+}
+
+function getReviewBucketKey(item: ReviewQueueItem): ReviewBucket["key"] {
+  if (item.reasons.includes("missing_contact")) return "high_value_missing_contact";
+  if (item.reasons.includes("low_confidence") || item.reasons.includes("ambiguous_contact")) {
+    return "low_confidence_primary_contact";
+  }
+  if (item.reasons.includes("stale_data")) return "stale_high_priority";
+  if (
+    item.reasons.includes("missing_official_source") ||
+    item.reasons.includes("failed_source_fetch") ||
+    item.reasons.includes("weak_sources")
+  ) {
+    return "weak_sources";
+  }
+  return "manual_review";
+}
+
+export async function getReviewBuckets(filters: ReviewQueueFilters = {}): Promise<ReviewBucket[]> {
+  const items = await getReviewQueue({
+    ...filters,
+    limit: Math.max(filters.limit ?? 50, 100),
+  });
+
+  const buckets: ReviewBucket[] = [
+    { key: "high_value_missing_contact", label: "High value missing contact", items: [] },
+    { key: "weak_sources", label: "Weak or missing sources", items: [] },
+    { key: "stale_high_priority", label: "Stale high priority", items: [] },
+    { key: "low_confidence_primary_contact", label: "Low confidence contact", items: [] },
+    { key: "manual_review", label: "Manual review", items: [] },
+  ];
+
+  const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+  for (const item of items) {
+    bucketMap.get(getReviewBucketKey(item))?.items.push(item);
+  }
+
+  return buckets.filter((bucket) => bucket.items.length > 0);
 }
