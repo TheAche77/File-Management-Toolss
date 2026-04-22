@@ -1079,7 +1079,8 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                 return (
                   <>
                     {(uniqueEventTypes.length > 1 || uniqueChangedFields.length > 0) && (
-                      <div className="flex flex-wrap gap-2 pb-2">
+                      <div className="flex flex-wrap items-center gap-2 pb-2">
+                        <span className="text-xs text-muted-foreground">Filtra per:</span>
                         {uniqueEventTypes.length > 1 && (
                           <Select value={filterEventType} onValueChange={(v) => { setFilterEventType(v); setFilterChangedField("all"); }}>
                             <SelectTrigger className="h-8 w-44 text-xs">
