@@ -67,7 +67,7 @@ Required for the frontend:
 Notes:
 
 - `ADMIN_API_TOKEN` protects import, review queue, contact candidate review, and import history endpoints.
-- If `ADMIN_API_TOKEN` is not set, the backend currently logs a warning and leaves admin routes open.
+- `ADMIN_API_TOKEN` is now required for API startup. The server fails fast if it is missing.
 - `BASE_PATH` must match the Vite base path expected by the frontend. In a simple local setup, `/` is usually fine.
 
 ## Example Local Setup
@@ -190,6 +190,7 @@ Not in scope:
 - The Google Places connector is still a stub even if `GOOGLE_MAPS_API_KEY` is present.
 - The current environment here did not allow running `pnpm`/`npm`, so recent changes were implemented and reviewed but not compiled in this session.
 - Any schema additions such as `business_sources` or `contact_candidates` require the corresponding database schema update in your real environment.
+- The optimization audit and phased fix plan lives in [OPTIMIZATION_AUDIT.md](./OPTIMIZATION_AUDIT.md).
 
 ## Post-Merge Rollout
 

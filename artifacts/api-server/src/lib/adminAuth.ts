@@ -1,12 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import { logger } from "./logger";
+import { getConfiguredAdminToken } from "./env";
 
 let warnedAboutMissingToken = false;
-
-function getConfiguredAdminToken(): string | null {
-  const token = process.env["ADMIN_API_TOKEN"]?.trim();
-  return token ? token : null;
-}
 
 function extractBearerToken(req: Request): string | null {
   const authorizationHeader = req.header("authorization");
@@ -29,10 +25,10 @@ export function requireAdminAuth(
     if (!warnedAboutMissingToken) {
       warnedAboutMissingToken = true;
       logger.warn(
-        "ADMIN_API_TOKEN is not configured; admin routes are not protected.",
+        "ADMIN_API_TOKEN is not configured; denying access to protected admin routes.",
       );
     }
-    next();
+    res.status(503).json({ error: "Admin auth is not configured" });
     return;
   }
 

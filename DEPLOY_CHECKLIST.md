@@ -74,5 +74,5 @@ Check these flows manually:
 ## 5. Known Constraints
 
 - `GOOGLE_MAPS_API_KEY` does not unlock a full Google Places enrichment flow yet; the connector remains a stub.
-- Admin-protected flows depend on `ADMIN_API_TOKEN`; if it is missing, backend protection falls back to warning mode.
+- Admin-protected flows depend on `ADMIN_API_TOKEN`; the API now fails fast at startup if it is missing.
 - This repo currently relies on schema push in the real environment rather than checked-in formal SQL migrations.
