@@ -3,6 +3,7 @@ import {
   getGetOutreachPipelineQueryKey,
   useGetCategories,
   getGetCategoriesQueryKey,
+  getGetOutreachPipelineQueryKey,
   useGetOutreachPipeline,
 } from "@workspace/api-client-react";
 import { CalendarClock, ExternalLink, Mail, MoveRight } from "lucide-react";
