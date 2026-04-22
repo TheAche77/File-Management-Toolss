@@ -169,9 +169,6 @@ export default function Businesses() {
                       <Badge variant="secondary" className="capitalize">
                         {business.categorySlug.replace(/_/g, ' ')}
                       </Badge>
-                      {business.targetMarket && (
-                        <Badge variant="outline">{business.targetMarket}</Badge>
-                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center text-sm text-muted-foreground">
