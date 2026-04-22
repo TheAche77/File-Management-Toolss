@@ -2,6 +2,7 @@ import { db, businessesTable } from "@workspace/db";
 import { and, eq, inArray } from "drizzle-orm";
 import type { InsertBusiness, Business } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { inferTargetMarket } from "../lib/locationProfiles";
 import {
   buildCoordNameKey,
   buildOsmKey,
@@ -100,6 +101,7 @@ function hasMeaningfulChanges(existing: Business, merged: InsertBusiness): boole
     "userRatingsTotal",
     "hasWebsite",
     "hasPhone",
+    "targetMarket",
     "enrichmentStatus",
   ];
 
@@ -117,7 +119,7 @@ function mergeBusiness(existing: Business, incoming: InsertBusiness): InsertBusi
     city: incoming.city ?? existing.city ?? null,
     postalCode: incoming.postalCode ?? existing.postalCode ?? null,
     region: incoming.region ?? existing.region ?? null,
-    country: incoming.country ?? existing.country ?? "Italy",
+    country: incoming.country ?? existing.country ?? null,
     website: incoming.website ?? existing.website ?? null,
     phone: incoming.phone ?? existing.phone ?? null,
     osmId: incoming.osmId ?? existing.osmId ?? null,
@@ -128,6 +130,13 @@ function mergeBusiness(existing: Business, incoming: InsertBusiness): InsertBusi
     userRatingsTotal: incoming.userRatingsTotal ?? existing.userRatingsTotal ?? null,
     hasWebsite: Boolean(incoming.website ?? existing.website),
     hasPhone: Boolean(incoming.phone ?? existing.phone),
+    targetMarket:
+      existing.targetMarket ??
+      incoming.targetMarket ??
+      inferTargetMarket(
+        (incoming.city ?? existing.city ?? null) as string | null,
+        (incoming.country ?? existing.country ?? null) as string | null,
+      ),
     enrichmentStatus: "pending",
     lastCheckedAt: new Date(),
   };
