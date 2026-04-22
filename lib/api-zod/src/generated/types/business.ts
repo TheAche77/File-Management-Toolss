@@ -43,6 +43,7 @@ export interface Business {
   hasPhone: boolean;
   enrichmentStatus: string;
   targetMarket?: string | null;
+  avatarType?: string | null;
   discoveryStatus?: string | null;
   qualificationStatus?: string | null;
   contactabilityStatus?: string | null;

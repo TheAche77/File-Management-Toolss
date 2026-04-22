@@ -604,6 +604,8 @@ components:
           type: string
         targetMarket:
           type: ["string", "null"]
+        avatarType:
+          type: ["string", "null"]
         discoveryStatus:
           type: ["string", "null"]
         qualificationStatus:

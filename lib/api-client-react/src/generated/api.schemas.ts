@@ -59,7 +59,7 @@ export interface Business {
   hasPhone: boolean;
   enrichmentStatus: string;
   /** @nullable */
-  targetMarket?: string | null;
+  avatarType?: string | null;
   /** @nullable */
   discoveryStatus?: string | null;
   /** @nullable */
