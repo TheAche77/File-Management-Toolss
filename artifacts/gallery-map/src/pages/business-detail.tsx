@@ -84,10 +84,83 @@ const TARGET_MARKET_OPTIONS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO"] as cons
 
 type AuditDiff = { field: unknown; before: unknown; after: unknown };
 
+const AUDIT_FIELD_LABELS: Record<string, string> = {
+  outreachStatus: "Stato outreach",
+  outreach_status: "Stato outreach",
+  contactName: "Nome contatto",
+  contact_name: "Nome contatto",
+  contactRole: "Ruolo contatto",
+  contact_role: "Ruolo contatto",
+  contactEmail: "Email contatto",
+  contact_email: "Email contatto",
+  lastContactDate: "Ultima data contatto",
+  last_contact_date: "Ultima data contatto",
+  nextActionDate: "Prossima azione",
+  next_action_date: "Prossima azione",
+  assignedArtist: "Artista assegnato",
+  assigned_artist: "Artista assegnato",
+  assignedArtistSource: "Sorgente assegnazione",
+  assigned_artist_source: "Sorgente assegnazione",
+  avatarType: "Tipo avatar",
+  avatar_type: "Tipo avatar",
+  targetMarket: "Mercato target",
+  target_market: "Mercato target",
+  warmConnection: "Connessione calda",
+  warm_connection: "Connessione calda",
+  pipelineStage: "Fase pipeline",
+  pipeline_stage: "Fase pipeline",
+  notes: "Note",
+  reviewStatus: "Stato revisione",
+  review_status: "Stato revisione",
+  isPrimary: "Contatto principale",
+  is_primary: "Contatto principale",
+  contactType: "Tipo contatto",
+  contact_type: "Tipo contatto",
+  contactUrl: "URL contatto",
+  contact_url: "URL contatto",
+  sourceType: "Tipo sorgente",
+  source_type: "Tipo sorgente",
+};
+
+const AUDIT_DATE_FIELDS = new Set([
+  "lastContactDate", "last_contact_date",
+  "nextActionDate", "next_action_date",
+  "createdAt", "created_at",
+  "updatedAt", "updated_at",
+]);
+
+const AUDIT_ENUM_FIELDS = new Set([
+  "outreachStatus", "outreach_status",
+  "avatarType", "avatar_type",
+  "warmConnection", "warm_connection",
+  "assignedArtistSource", "assigned_artist_source",
+  "pipelineStage", "pipeline_stage",
+]);
+
 function getAuditDiffs(payload: Record<string, unknown>): AuditDiff[] {
+  if (!payload || typeof payload !== "object") return [];
   const diffs = payload["diffs"];
   if (!Array.isArray(diffs) || diffs.length === 0) return [];
   return diffs as AuditDiff[];
+}
+
+function formatDiffValue(field: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return "vuoto";
+  if (typeof value === "boolean") return value ? "Sì" : "No";
+  const str = String(value);
+  if (str === "true") return "Sì";
+  if (str === "false") return "No";
+  if (AUDIT_DATE_FIELDS.has(field)) {
+    try {
+      return new Intl.DateTimeFormat("it-IT", { dateStyle: "medium" }).format(new Date(str));
+    } catch {
+      return str;
+    }
+  }
+  if (AUDIT_ENUM_FIELDS.has(field)) {
+    return formatPipelineValue(str);
+  }
+  return str;
 }
 
 type OutreachFormState = {
@@ -147,7 +220,7 @@ function formatAuditTimestamp(value: string) {
 }
 
 function formatAuditChangedField(field: string) {
-  return formatPipelineValue(field);
+  return AUDIT_FIELD_LABELS[field] ?? formatPipelineValue(field);
 }
 
 function buildOutreachFormState(
@@ -988,17 +1061,23 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                           </div>
                         )}
                         {getAuditDiffs(event.payload).length > 0 && (
-                          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-                            <div className="space-y-1">
-                              {getAuditDiffs(event.payload).map((diff) => (
-                                <p key={`${event.id}-${String(diff.field)}`}>
+                          <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
+                            {getAuditDiffs(event.payload).map((diff) => {
+                              const fieldKey = String(diff.field);
+                              const beforeLabel = formatDiffValue(fieldKey, diff.before);
+                              const afterLabel = formatDiffValue(fieldKey, diff.after);
+                              return (
+                                <div key={`${event.id}-${fieldKey}`} className="flex flex-wrap items-center gap-1.5">
                                   <span className="font-medium text-foreground">
-                                    {formatAuditChangedField(String(diff.field))}
+                                    {formatAuditChangedField(fieldKey)}
                                   </span>
-                                  {`: ${String(diff.before ?? "empty")} -> ${String(diff.after ?? "empty")}`}
-                                </p>
-                              ))}
-                            </div>
+                                  <span className="text-muted-foreground">cambiato:</span>
+                                  <span className="line-through text-muted-foreground/70">{beforeLabel}</span>
+                                  <span className="text-muted-foreground">→</span>
+                                  <span className="font-medium text-foreground">{afterLabel}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
