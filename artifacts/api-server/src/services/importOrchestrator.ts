@@ -19,31 +19,6 @@ export interface ImportStats {
 }
 
 const connectors = [new OverpassConnector(), new GooglePlacesConnector()];
-const WEBSITE_ENRICH_CONCURRENCY = 4;
-
-async function runWithConcurrency<T>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T) => Promise<void>,
-) {
-  if (items.length === 0) return;
-
-  let nextIndex = 0;
-  const workerCount = Math.min(concurrency, items.length);
-
-  await Promise.all(
-    Array.from({ length: workerCount }, async () => {
-      while (true) {
-        const currentIndex = nextIndex++;
-        if (currentIndex >= items.length) {
-          return;
-        }
-
-        await worker(items[currentIndex]!);
-      }
-    }),
-  );
-}
 
 async function updateImportRun(runId: number | null, values: Partial<InsertImportRun>) {
   if (!runId) return;
@@ -179,26 +154,20 @@ export async function runImport(categorySlug: string, city: string, existingRunI
         );
         await upsertContactCandidates(contactCandidates);
 
-        const websiteTargets = mergeResult.records.filter(
-          (record) => record.action !== "skip" && Boolean(record.business.website),
-        );
+        for (const record of mergeResult.records) {
+          if (record.action === "skip" || !record.business.website) continue;
 
-        await runWithConcurrency(
-          websiteTargets,
-          WEBSITE_ENRICH_CONCURRENCY,
-          async (record) => {
-            try {
-              const websiteEnrichment = await enrichOfficialWebsiteContacts(record);
-              await upsertBusinessSources(websiteEnrichment.sourceRecords);
-              await upsertContactCandidates(websiteEnrichment.contactCandidates);
-            } catch (err) {
-              logger.warn(
-                { err, businessId: record.id, website: record.business.website },
-                "Official website contact enrichment failed",
-              );
-            }
-          },
-        );
+          try {
+            const websiteEnrichment = await enrichOfficialWebsiteContacts(record);
+            await upsertBusinessSources(websiteEnrichment.sourceRecords);
+            await upsertContactCandidates(websiteEnrichment.contactCandidates);
+          } catch (err) {
+            logger.warn(
+              { err, businessId: record.id, website: record.business.website },
+              "Official website contact enrichment failed",
+            );
+          }
+        }
       } catch (err) {
         stats.errors += result.items.length;
         logger.warn({ err, connector: connector.name }, "Error bulk merging businesses");
