@@ -72,6 +72,21 @@ Notes:
 - `ADMIN_API_TOKEN` is now required for API startup. The server fails fast if it is missing.
 - `BASE_PATH` must match the Vite base path expected by the frontend. In a simple local setup, `/` is usually fine.
 
+## GitHub Token Rotation
+
+The `GITHUB_SSH_KEY` secret holds a fine-grained GitHub PAT scoped to this repository. It should be rotated every **90 days**.
+
+The expiry date is tracked in the `GITHUB_TOKEN_EXPIRY` environment variable (format `YYYY-MM-DD`). `scripts/restore-ssh-key.sh` checks this date on every post-merge run and prints a warning 14 days before expiry or an error once expired.
+
+**To rotate the token:**
+
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens**
+2. Generate a new token scoped to this repository with **Contents: Read and write** permission and set its expiry to 90 days from today
+3. Update the `GITHUB_SSH_KEY` secret in **Replit Secrets** with the new token value
+4. Update the `GITHUB_TOKEN_EXPIRY` environment variable in **Replit** to the new expiry date
+
+To make an expired token cause the post-merge script to abort (instead of just warning), set `ENFORCE_GITHUB_TOKEN_EXPIRY=true` in environment variables.
+
 ## Example Local Setup
 
 API shell:
