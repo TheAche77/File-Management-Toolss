@@ -11,7 +11,11 @@ export type ReviewReason =
   | "missing_phone"
   | "pending_enrichment"
   | "missing_official_source"
-  | "failed_source_fetch";
+  | "failed_source_fetch"
+  | "missing_contact"
+  | "low_confidence"
+  | "stale_data"
+  | "weak_sources";
 
 export interface ReviewQueueItem {
   business: Business;
@@ -25,6 +29,7 @@ export interface ReviewQueueItem {
 export interface ReviewQueueFilters {
   categorySlug?: string;
   city?: string;
+  targetMarket?: string;
   limit?: number;
 }
 
@@ -52,6 +57,7 @@ export async function getReviewQueue(
 
   const conditions = [
     or(
+      eq(businessesTable.reviewRequired, true),
       eq(businessesTable.hasWebsite, false),
       eq(businessesTable.hasPhone, false),
       sql`${businessesTable.enrichmentStatus} <> 'enriched'`,
@@ -64,6 +70,10 @@ export async function getReviewQueue(
 
   if (filters.city) {
     conditions.push(ilike(businessesTable.city, `%${filters.city}%`));
+  }
+
+  if (filters.targetMarket) {
+    conditions.push(eq(businessesTable.targetMarket, filters.targetMarket));
   }
 
   const candidates = await db
@@ -104,6 +114,10 @@ export async function getReviewQueue(
 
       const reasons: ReviewReason[] = [];
 
+      if (business.reviewReason) {
+        reasons.push(business.reviewReason as ReviewReason);
+      }
+
       if (!business.hasWebsite) reasons.push("missing_website");
       if (!business.hasPhone) reasons.push("missing_phone");
       if (business.enrichmentStatus !== "enriched") reasons.push("pending_enrichment");
@@ -113,7 +127,7 @@ export async function getReviewQueue(
       return {
         business,
         reasons,
-        priorityScore: getPriorityScore(reasons, failedSourceCount),
+        priorityScore: business.priorityScore ?? getPriorityScore(reasons, failedSourceCount),
         sourceCount: businessSources.length,
         officialSourceCount,
         failedSourceCount,

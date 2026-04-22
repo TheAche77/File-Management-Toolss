@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import {
   businessSourcesTable,
   db,
@@ -67,41 +67,54 @@ export function buildBusinessSourcesForRecord(
 export async function upsertBusinessSources(records: InsertBusinessSource[]): Promise<void> {
   if (records.length === 0) return;
 
-  await db.transaction(async (tx) => {
-    for (const record of records) {
-      const existing = await tx
-        .select({ id: businessSourcesTable.id })
-        .from(businessSourcesTable)
-        .where(
-          and(
-            eq(businessSourcesTable.businessId, record.businessId),
-            eq(businessSourcesTable.sourceType, record.sourceType),
-            eq(businessSourcesTable.sourceUrl, record.sourceUrl),
-          ),
-        )
-        .limit(1);
+  const dedupedRecords = Array.from(
+    new Map(
+      records.map((record) => [
+        `${record.businessId}::${record.sourceType}::${record.sourceUrl}`,
+        record,
+      ]),
+    ).values(),
+  );
+  const businessIds = Array.from(new Set(dedupedRecords.map((record) => record.businessId)));
+  const existing = await db
+    .select()
+    .from(businessSourcesTable)
+    .where(inArray(businessSourcesTable.businessId, businessIds));
+  const existingByKey = new Map(
+    existing.map((record) => [
+      `${record.businessId}::${record.sourceType}::${record.sourceUrl}`,
+      record,
+    ]),
+  );
 
-      if (existing.length > 0) {
+  await db.transaction(async (tx) => {
+    for (const record of dedupedRecords) {
+      const existingRecord = existingByKey.get(
+        `${record.businessId}::${record.sourceType}::${record.sourceUrl}`,
+      );
+
+      if (existingRecord) {
         await tx
           .update(businessSourcesTable)
           .set({
             sourceDomain: record.sourceDomain,
             discoveredVia: record.discoveredVia,
             fetchStatus: record.fetchStatus,
-            lastFetchedAt: record.lastFetchedAt ?? new Date(),
-            contentHash: record.contentHash ?? null,
-            httpStatus: record.httpStatus ?? null,
+            lastFetchedAt: record.lastFetchedAt ?? existingRecord.lastFetchedAt ?? new Date(),
+            contentHash: record.contentHash ?? existingRecord.contentHash ?? null,
+            httpStatus: record.httpStatus ?? existingRecord.httpStatus ?? null,
             isOfficial: record.isOfficial,
             updatedAt: new Date(),
           })
-          .where(eq(businessSourcesTable.id, existing[0]!.id));
-      } else {
-        await tx.insert(businessSourcesTable).values(record);
+          .where(eq(businessSourcesTable.id, existingRecord.id));
+        continue;
       }
+
+      await tx.insert(businessSourcesTable).values(record);
     }
   });
 
-  logger.info({ count: records.length }, "Business sources upserted");
+  logger.info({ count: dedupedRecords.length }, "Business sources upserted");
 }
 
 export async function getBusinessSources(businessId: number) {

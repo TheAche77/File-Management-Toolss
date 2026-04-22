@@ -69,6 +69,10 @@ paths:
           in: query
           schema:
             type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
         - name: hasWebsite
           in: query
           schema:
@@ -77,6 +81,22 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: readyForOutreach
+          in: query
+          schema:
+            type: boolean
+        - name: reviewRequired
+          in: query
+          schema:
+            type: boolean
+        - name: minPriorityScore
+          in: query
+          schema:
+            type: integer
+        - name: minResearchScore
+          in: query
+          schema:
+            type: integer
         - name: page
           in: query
           schema:
@@ -106,6 +126,10 @@ paths:
           schema:
             type: string
         - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
           in: query
           schema:
             type: string
@@ -378,6 +402,18 @@ paths:
           schema:
             type: integer
             default: 50
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: Outreach pipeline board
@@ -471,6 +507,18 @@ paths:
           in: query
           schema:
             type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
+        - name: readyForOutreach
+          in: query
+          schema:
+            type: boolean
+        - name: reviewRequired
+          in: query
+          schema:
+            type: boolean
       responses:
         "200":
           description: CSV file
@@ -554,6 +602,56 @@ components:
           type: boolean
         enrichmentStatus:
           type: string
+        targetMarket:
+          type: ["string", "null"]
+        discoveryStatus:
+          type: ["string", "null"]
+        qualificationStatus:
+          type: ["string", "null"]
+        contactabilityStatus:
+          type: ["string", "null"]
+        rankingStatus:
+          type: ["string", "null"]
+        sourceHealth:
+          type: ["string", "null"]
+        contactReadiness:
+          type: ["string", "null"]
+        relevanceScore:
+          type: ["integer", "null"]
+        contactabilityScore:
+          type: ["integer", "null"]
+        confidenceScore:
+          type: ["integer", "null"]
+        freshnessScore:
+          type: ["integer", "null"]
+        priorityScore:
+          type: ["integer", "null"]
+        researchScore:
+          type: ["integer", "null"]
+        officialSourceCount:
+          type: ["integer", "null"]
+        successfulSourceCount:
+          type: ["integer", "null"]
+        failedSourceCount:
+          type: ["integer", "null"]
+        primarySourceId:
+          type: ["integer", "null"]
+        primaryContactCandidateId:
+          type: ["integer", "null"]
+        readyForOutreach:
+          type: boolean
+        reviewRequired:
+          type: boolean
+        reviewReason:
+          type: ["string", "null"]
+        topGap:
+          type: ["string", "null"]
+        recommendedNextStep:
+          type: ["string", "null"]
+        lastResearchAt:
+          type: ["string", "null"]
+        nextResearchAt:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -568,6 +666,8 @@ components:
         - hasWebsite
         - hasPhone
         - enrichmentStatus
+        - readyForOutreach
+        - reviewRequired
         - createdAt
         - updatedAt
 
@@ -681,11 +781,21 @@ components:
           type: ["string", "null"]
         warmConnection:
           type: ["string", "null"]
+        readyForOutreach:
+          type: boolean
+        reviewRequired:
+          type: boolean
+        reviewReason:
+          type: ["string", "null"]
+        priorityScore:
+          type: ["integer", "null"]
         updatedAt:
           type: string
       required:
         - businessId
         - outreachStatus
+        - readyForOutreach
+        - reviewRequired
         - updatedAt
 
     UpdateBusinessOutreachRequest:
@@ -877,6 +987,14 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        readyForOutreach:
+          type: boolean
+        reviewRequired:
+          type: boolean
+        priorityScore:
+          type: ["integer", "null"]
+        reviewReason:
+          type: ["string", "null"]
         urgencyBucket:
           type: string
         daysUntilAction:
@@ -890,6 +1008,8 @@ components:
         - businessName
         - categorySlug
         - outreachStatus
+        - readyForOutreach
+        - reviewRequired
         - urgencyBucket
         - recommendedAction
         - updatedAt

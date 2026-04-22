@@ -453,7 +453,13 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     mutation: {
       onSuccess: (data) => {
         queryClient.invalidateQueries({
+          queryKey: getGetBusinessByIdQueryKey(businessId),
+        });
+        queryClient.invalidateQueries({
           queryKey: getGetBusinessOutreachQueryKey(businessId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["/api/businesses"],
         });
         queryClient.invalidateQueries({
           queryKey: ["/api/outreach/dashboard"],
@@ -486,10 +492,19 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({
+          queryKey: getGetBusinessByIdQueryKey(businessId),
+        });
+        queryClient.invalidateQueries({
           queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
         });
         queryClient.invalidateQueries({
           queryKey: getGetBusinessOutreachEventsQueryKey(businessId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["business-outreach-events", businessId],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["/api/businesses"],
         });
         queryClient.invalidateQueries({
           queryKey: ["/api/outreach/dashboard"],
@@ -726,6 +741,103 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                 label="Slug"
                 value={business.slug}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Research State</CardTitle>
+              <CardDescription>
+                Ranking, readiness e prossima azione della macchina di discovery.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Priority</p>
+                  <p className="mt-2 text-2xl font-serif">{business.priorityScore ?? "—"}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Research</p>
+                  <p className="mt-2 text-2xl font-serif">{business.researchScore ?? "—"}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Confidence</p>
+                  <p className="mt-2 text-2xl font-serif">{business.confidenceScore ?? "—"}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Freshness</p>
+                  <p className="mt-2 text-2xl font-serif">{business.freshnessScore ?? "—"}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {business.readyForOutreach && (
+                  <Badge variant="outline" className="bg-primary/5 text-primary">
+                    <BadgeCheck className="mr-1 h-3 w-3" />
+                    Ready for outreach
+                  </Badge>
+                )}
+                {business.reviewRequired && (
+                  <Badge variant="outline" className="text-amber-700">
+                    <CircleSlash className="mr-1 h-3 w-3" />
+                    Review required
+                  </Badge>
+                )}
+                {business.sourceHealth && (
+                  <Badge variant="outline">
+                    <Database className="mr-1 h-3 w-3" />
+                    {formatPipelineValue(business.sourceHealth)}
+                  </Badge>
+                )}
+                {business.contactReadiness && (
+                  <Badge variant="outline">
+                    {formatPipelineValue(business.contactReadiness)}
+                  </Badge>
+                )}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Top Gap</p>
+                  <p className="mt-2 font-medium">
+                    {business.topGap ? formatPipelineValue(business.topGap) : "No major gap"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Recommended Next Step</p>
+                  <p className="mt-2 font-medium">
+                    {business.recommendedNextStep
+                      ? formatPipelineValue(business.recommendedNextStep)
+                      : "No recommendation yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Primary Source</p>
+                  <p className="mt-2 font-medium">
+                    {business.primarySourceId ? `Source #${business.primarySourceId}` : "Not selected yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Primary Contact</p>
+                  <p className="mt-2 font-medium">
+                    {business.primaryContactCandidateId
+                      ? `Candidate #${business.primaryContactCandidateId}`
+                      : "Not selected yet"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                <span>Discovery: {business.discoveryStatus ?? "n/a"}</span>
+                <span>Qualification: {business.qualificationStatus ?? "n/a"}</span>
+                <span>Contactability: {business.contactabilityStatus ?? "n/a"}</span>
+                <span>Ranking: {business.rankingStatus ?? "n/a"}</span>
+                <span className="inline-flex items-center gap-1">
+                  <Clock3 className="h-3 w-3" />
+                  Next research: {business.nextResearchAt ? formatDate(business.nextResearchAt) : "Not scheduled"}
+                </span>
+              </div>
             </CardContent>
           </Card>
 

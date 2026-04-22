@@ -1,15 +1,24 @@
 import { Link } from "wouter";
 import {
+  getGetCategoriesQueryKey,
   getGetOutreachPipelineQueryKey,
+  useGetCategories,
   useGetOutreachPipeline,
 } from "@workspace/api-client-react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, ExternalLink, Mail, MoveRight } from "lucide-react";
+import { SharedBusinessFilters } from "@/components/shared-business-filters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getArtistRecommendation } from "@/lib/artist-recommendation";
 import { getStoredAdminToken } from "@/lib/admin-auth";
+import {
+  buildSearchParams,
+  readSharedBusinessFilters,
+  syncSearchParams,
+} from "@/lib/business-filters";
 import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function getUrgencyTone(bucket: string) {
@@ -81,15 +90,48 @@ function PipelineSkeleton() {
 
 export default function PipelinePage() {
   const hasAdminToken = Boolean(getStoredAdminToken());
+  const initialFilters = readSharedBusinessFilters(window.location.search);
+  const [city, setCity] = useState(initialFilters.city);
+  const [category, setCategory] = useState(initialFilters.categorySlug);
+  const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
+  const params = useMemo(
+    () => ({
+      horizonDays: 7,
+      limit: 60,
+      categorySlug: category === "all" ? undefined : category,
+      city: city || undefined,
+      targetMarket: targetMarket === "all" ? undefined : targetMarket,
+    }),
+    [category, city, targetMarket],
+  );
+  const { data: categories } = useGetCategories({
+    query: { queryKey: getGetCategoriesQueryKey() },
+  });
   const { data, isLoading, isError } = useGetOutreachPipeline(
-    { horizonDays: 7, limit: 60 },
+    params,
     {
       query: {
-        queryKey: getGetOutreachPipelineQueryKey({ horizonDays: 7, limit: 60 }),
+        queryKey: getGetOutreachPipelineQueryKey(params),
         enabled: hasAdminToken,
       },
     },
   );
+
+  useEffect(() => {
+    const nextSearch = buildSearchParams(window.location.search, {
+      city,
+      categorySlug: category,
+      targetMarket,
+      search: undefined,
+      hasWebsite: undefined,
+      hasPhone: undefined,
+      readyForOutreach: undefined,
+      reviewRequired: undefined,
+      horizonDays: 7,
+      limit: 60,
+    });
+    syncSearchParams(nextSearch);
+  }, [category, city, targetMarket]);
 
   if (!hasAdminToken) {
     return (
@@ -154,6 +196,18 @@ export default function PipelinePage() {
         <Button variant="outline" asChild>
           <Link href="/">Torna alla Dashboard</Link>
         </Button>
+      </div>
+
+      <div className="rounded-lg border bg-card p-4">
+        <SharedBusinessFilters
+          categories={categories}
+          city={city}
+          categorySlug={category}
+          targetMarket={targetMarket}
+          onCityChange={setCity}
+          onCategoryChange={setCategory}
+          onTargetMarketChange={setTargetMarket}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -225,6 +279,14 @@ export default function PipelinePage() {
                           {item.assignedArtistSource && (
                             <Badge variant="outline" className="capitalize">
                               {item.assignedArtistSource}
+                            </Badge>
+                          )}
+                          {item.priorityScore != null && (
+                            <Badge variant="outline">Priority {item.priorityScore}</Badge>
+                          )}
+                          {item.reviewRequired && (
+                            <Badge variant="outline" className="text-amber-700">
+                              Review
                             </Badge>
                           )}
                         </div>

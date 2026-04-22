@@ -1,19 +1,20 @@
-import { getBusinesses, getGetBusinessesQueryKey, useGetBusinesses } from "@workspace/api-client-react";
+import {
+  getBusinesses,
+  getGetBusinessesQueryKey,
+  getGetCategoriesQueryKey,
+  useGetBusinesses,
+  useGetCategories,
+} from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { ExternalLink, Globe, Phone, MapPin } from "lucide-react";
 import { useQueries } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SharedBusinessFilters } from "@/components/shared-business-filters";
+import { buildSearchParams, readSharedBusinessFilters, syncSearchParams } from "@/lib/business-filters";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -30,8 +31,6 @@ const customIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
-
-const TARGET_MARKETS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO"] as const;
 
 const MAP_PAGE_SIZE = 100;
 type MapBusiness = Awaited<ReturnType<typeof getBusinesses>>["businesses"][number];
@@ -227,20 +226,47 @@ function ClusteredMarkers({ businesses }: { businesses: MapBusiness[] }) {
 }
 
 export default function MapView() {
-  const [targetMarket, setTargetMarket] = useState<string | undefined>(undefined);
-
-  const filterParams = useMemo(
-    () => (targetMarket ? { targetMarket } : {}),
-    [targetMarket],
+  const initialFilters = readSharedBusinessFilters(window.location.search);
+  const [city, setCity] = useState(initialFilters.city);
+  const [category, setCategory] = useState(initialFilters.categorySlug);
+  const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
+  const sharedParams = useMemo(
+    () => ({
+      city: city || undefined,
+      categorySlug: category === "all" ? undefined : category,
+      targetMarket: targetMarket === "all" ? undefined : targetMarket,
+    }),
+    [category, city, targetMarket],
   );
 
-  const firstPageQuery = useGetBusinesses({ page: 1, pageSize: MAP_PAGE_SIZE, ...filterParams });
+  const { data: categories } = useGetCategories({
+    query: { queryKey: getGetCategoriesQueryKey() },
+  });
+
+  useEffect(() => {
+    const nextSearch = buildSearchParams(window.location.search, {
+      city,
+      categorySlug: category,
+      targetMarket,
+      search: "",
+      hasWebsite: false,
+      hasPhone: false,
+      readyForOutreach: false,
+      reviewRequired: false,
+      page: 1,
+      horizonDays: undefined,
+      limit: undefined,
+    });
+    syncSearchParams(nextSearch);
+  }, [category, city, targetMarket]);
+
+  const firstPageQuery = useGetBusinesses({ ...sharedParams, page: 1, pageSize: MAP_PAGE_SIZE });
   const totalPages = firstPageQuery.data?.totalPages ?? 1;
 
   const remainingPageQueries = useQueries({
     queries: Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
       const page = index + 2;
-      const params = { page, pageSize: MAP_PAGE_SIZE, ...filterParams };
+      const params = { ...sharedParams, page, pageSize: MAP_PAGE_SIZE };
 
       return {
         queryKey: getGetBusinessesQueryKey(params),
@@ -283,33 +309,22 @@ export default function MapView() {
         <p className="text-muted-foreground mt-2 text-lg">
           Geographic distribution of indexed businesses across the current dataset.
         </p>
+        <div className="mt-4 rounded-lg border bg-card p-4">
+          <SharedBusinessFilters
+            categories={categories}
+            city={city}
+            categorySlug={category}
+            targetMarket={targetMarket}
+            onCityChange={setCity}
+            onCategoryChange={setCategory}
+            onTargetMarketChange={setTargetMarket}
+          />
+        </div>
         {firstPageQuery.data && (
           <p className="text-sm text-muted-foreground mt-1">
             Loaded {businesses.length} of {firstPageQuery.data.total} businesses across {totalPages} page{totalPages === 1 ? "" : "s"}.
           </p>
         )}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-foreground whitespace-nowrap">
-          Target market
-        </label>
-        <Select
-          value={targetMarket ?? "all"}
-          onValueChange={(value) => setTargetMarket(value === "all" ? undefined : value)}
-        >
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="All markets" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All markets</SelectItem>
-            {TARGET_MARKETS.map((market) => (
-              <SelectItem key={market} value={market}>
-                {market}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="flex-1 border border-border relative z-0 bg-card overflow-hidden">

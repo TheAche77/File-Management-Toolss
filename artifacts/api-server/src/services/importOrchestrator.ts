@@ -7,6 +7,7 @@ import { bulkMergeBusinesses } from "./dedupeService";
 import { buildBusinessSourcesForRecord, upsertBusinessSources } from "./businessSourceService";
 import { buildContactCandidatesForRecord, upsertContactCandidates } from "./contactCandidateService";
 import { enrichOfficialWebsiteContacts } from "./officialWebsiteContactService";
+import { refreshBusinessResearchStates } from "./businessResearchPersistenceService";
 import { logger } from "../lib/logger";
 import type { ConnectorOptions } from "../connectors/types";
 
@@ -19,6 +20,7 @@ export interface ImportStats {
 }
 
 const connectors = [new OverpassConnector(), new GooglePlacesConnector()];
+const WEBSITE_ENRICHMENT_CONCURRENCY = 4;
 
 async function updateImportRun(runId: number | null, values: Partial<InsertImportRun>) {
   if (!runId) return;
@@ -27,6 +29,25 @@ async function updateImportRun(runId: number | null, values: Partial<InsertImpor
     .update(importRunsTable)
     .set(values)
     .where(eq(importRunsTable.id, runId));
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+) {
+  if (items.length === 0) return;
+
+  const queue = [...items];
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const next = queue.shift();
+      if (!next) return;
+      await worker(next);
+    }
+  });
+
+  await Promise.all(workers);
 }
 
 export async function runImport(categorySlug: string, city: string): Promise<{
@@ -143,6 +164,7 @@ export async function runImport(categorySlug: string, city: string, existingRunI
         stats.inserted += mergeResult.inserted;
         stats.updated += mergeResult.updated;
         stats.skipped += mergeResult.skipped;
+        const touchedBusinessIds = mergeResult.records.map((record) => record.id);
 
         const sourceRecords = mergeResult.records.flatMap((record) =>
           buildBusinessSourcesForRecord(record, connector.name),
@@ -154,20 +176,24 @@ export async function runImport(categorySlug: string, city: string, existingRunI
         );
         await upsertContactCandidates(contactCandidates);
 
-        for (const record of mergeResult.records) {
-          if (record.action === "skip" || !record.business.website) continue;
+        await runWithConcurrency(
+          mergeResult.records.filter((record) => record.action !== "skip" && Boolean(record.business.website)),
+          WEBSITE_ENRICHMENT_CONCURRENCY,
+          async (record) => {
+            try {
+              const websiteEnrichment = await enrichOfficialWebsiteContacts(record);
+              await upsertBusinessSources(websiteEnrichment.sourceRecords);
+              await upsertContactCandidates(websiteEnrichment.contactCandidates);
+            } catch (err) {
+              logger.warn(
+                { err, businessId: record.id, website: record.business.website },
+                "Official website contact enrichment failed",
+              );
+            }
+          },
+        );
 
-          try {
-            const websiteEnrichment = await enrichOfficialWebsiteContacts(record);
-            await upsertBusinessSources(websiteEnrichment.sourceRecords);
-            await upsertContactCandidates(websiteEnrichment.contactCandidates);
-          } catch (err) {
-            logger.warn(
-              { err, businessId: record.id, website: record.business.website },
-              "Official website contact enrichment failed",
-            );
-          }
-        }
+        await refreshBusinessResearchStates(touchedBusinessIds);
       } catch (err) {
         stats.errors += result.items.length;
         logger.warn({ err, connector: connector.name }, "Error bulk merging businesses");

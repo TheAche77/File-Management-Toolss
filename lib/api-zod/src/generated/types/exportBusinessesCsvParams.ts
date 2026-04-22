@@ -9,4 +9,7 @@
 export type ExportBusinessesCsvParams = {
   categorySlug?: string;
   city?: string;
+  targetMarket?: string;
+  readyForOutreach?: boolean;
+  reviewRequired?: boolean;
 };

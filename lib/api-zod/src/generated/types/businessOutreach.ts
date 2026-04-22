@@ -31,5 +31,11 @@ export interface BusinessOutreach {
   notes?: string | null;
   /** @nullable */
   warmConnection?: string | null;
+  readyForOutreach: boolean;
+  reviewRequired: boolean;
+  /** @nullable */
+  reviewReason?: string | null;
+  /** @nullable */
+  priorityScore?: number | null;
   updatedAt: string;
 }

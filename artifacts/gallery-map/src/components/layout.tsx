@@ -64,9 +64,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-2">
             <Compass className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-serif font-semibold text-primary">Scopri Italia</h1>
+            <h1 className="text-2xl font-serif font-semibold text-primary">Street Level Discovery</h1>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest text-[10px]">Local Discovery Engine</p>
+          <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest text-[10px]">Discovery & Outreach CRM</p>
         </div>
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           <NavLinks />
@@ -88,7 +88,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <header className="md:hidden h-14 border-b border-border bg-sidebar flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-2">
             <Compass className="h-5 w-5 text-primary" />
-            <span className="font-serif text-lg font-semibold text-primary">Scopri Italia</span>
+            <span className="font-serif text-lg font-semibold text-primary">Street Level Discovery</span>
           </div>
           <Sheet>
             <SheetTrigger asChild>
@@ -103,7 +103,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <div className="flex items-center gap-2">
                   <Compass className="h-6 w-6 text-primary" />
                   <span className="font-serif text-xl font-semibold tracking-tight text-primary">
-                    Scopri Italia
+                    Street Level Discovery
                   </span>
                 </div>
               </div>

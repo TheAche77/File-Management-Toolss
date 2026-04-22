@@ -85,6 +85,10 @@ export default function Admin() {
     return query ? `/api/export/businesses.csv?${query}` : "/api/export/businesses.csv";
   }, [category, city]);
 
+  const researchSummaryHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/business-research-summary.csv"), [exportHref]);
+  const outreachReadyHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/outreach-ready.csv"), [exportHref]);
+  const reviewQueueHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/review-queue.csv"), [exportHref]);
+
   useEffect(() => {
     if (!activeRunId) {
       const latestActiveRun = runs?.find((run) => ["queued", "running", "fetching", "merging"].includes(run.status));
@@ -203,6 +207,35 @@ export default function Admin() {
       title: "Admin session cleared",
       description: "The local admin token has been removed from this browser session.",
     });
+  };
+
+  const downloadCsv = async (url: string, filename: string, requiresAdmin = false) => {
+    try {
+      const token = getStoredAdminToken();
+      const response = await fetch(url, {
+        headers: requiresAdmin && token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not download the CSV export.");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "Could not export the CSV file.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!isAdminUnlocked) {
@@ -358,20 +391,35 @@ export default function Admin() {
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="font-serif text-xl">Data Export</CardTitle>
-            <CardDescription>Download the complete catalogue as a CSV file.</CardDescription>
+            <CardDescription>Download raw, ranked, and operational CSV outputs from the research machine.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
+          <CardContent className="space-y-3">
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(exportHref, "businesses.csv")}>
+              <Download className="mr-2 h-4 w-4" /> Export Businesses CSV
+            </Button>
+            <Button
+              variant="outline"
               className="w-full"
-              asChild
+              onClick={() => downloadCsv(researchSummaryHref, "business_research_summary.csv", true)}
             >
-              <a href={exportHref} download>
-                <Download className="mr-2 h-4 w-4" /> Export Businesses CSV
-              </a>
+              <Download className="mr-2 h-4 w-4" /> Export Research Summary
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => downloadCsv(outreachReadyHref, "outreach_ready.csv", true)}
+            >
+              <Download className="mr-2 h-4 w-4" /> Export Outreach Ready
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => downloadCsv(reviewQueueHref, "review_queue.csv", true)}
+            >
+              <Download className="mr-2 h-4 w-4" /> Export Review Queue
             </Button>
             <p className="text-xs text-muted-foreground mt-4">
-              The export will respect the selected category and city filters above.
+              The exports will respect the selected category and city filters above.
             </p>
           </CardContent>
         </Card>

@@ -58,6 +58,54 @@ export interface Business {
   hasWebsite: boolean;
   hasPhone: boolean;
   enrichmentStatus: string;
+  /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
+  discoveryStatus?: string | null;
+  /** @nullable */
+  qualificationStatus?: string | null;
+  /** @nullable */
+  contactabilityStatus?: string | null;
+  /** @nullable */
+  rankingStatus?: string | null;
+  /** @nullable */
+  sourceHealth?: string | null;
+  /** @nullable */
+  contactReadiness?: string | null;
+  /** @nullable */
+  relevanceScore?: number | null;
+  /** @nullable */
+  contactabilityScore?: number | null;
+  /** @nullable */
+  confidenceScore?: number | null;
+  /** @nullable */
+  freshnessScore?: number | null;
+  /** @nullable */
+  priorityScore?: number | null;
+  /** @nullable */
+  researchScore?: number | null;
+  /** @nullable */
+  officialSourceCount?: number | null;
+  /** @nullable */
+  successfulSourceCount?: number | null;
+  /** @nullable */
+  failedSourceCount?: number | null;
+  /** @nullable */
+  primarySourceId?: number | null;
+  /** @nullable */
+  primaryContactCandidateId?: number | null;
+  readyForOutreach: boolean;
+  reviewRequired: boolean;
+  /** @nullable */
+  reviewReason?: string | null;
+  /** @nullable */
+  topGap?: string | null;
+  /** @nullable */
+  recommendedNextStep?: string | null;
+  /** @nullable */
+  lastResearchAt?: string | null;
+  /** @nullable */
+  nextResearchAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -144,6 +192,12 @@ export interface BusinessOutreach {
   notes?: string | null;
   /** @nullable */
   warmConnection?: string | null;
+  readyForOutreach: boolean;
+  reviewRequired: boolean;
+  /** @nullable */
+  reviewReason?: string | null;
+  /** @nullable */
+  priorityScore?: number | null;
   updatedAt: string;
 }
 
@@ -238,6 +292,12 @@ export interface OutreachPipelineItem {
   warmConnection?: string | null;
   /** @nullable */
   notes?: string | null;
+  readyForOutreach: boolean;
+  reviewRequired: boolean;
+  /** @nullable */
+  priorityScore?: number | null;
+  /** @nullable */
+  reviewReason?: string | null;
   urgencyBucket: string;
   /** @nullable */
   daysUntilAction?: number | null;
@@ -337,6 +397,10 @@ export type GetBusinessesParams = {
   targetMarket?: string;
   hasWebsite?: boolean;
   hasPhone?: boolean;
+  readyForOutreach?: boolean;
+  reviewRequired?: boolean;
+  minPriorityScore?: number;
+  minResearchScore?: number;
   page?: number;
   pageSize?: number;
 };
@@ -344,6 +408,7 @@ export type GetBusinessesParams = {
 export type GetReviewQueueParams = {
   categorySlug?: string;
   city?: string;
+  targetMarket?: string;
   limit?: number;
 };
 
@@ -360,9 +425,15 @@ export type GetOutreachDashboardParams = {
 export type GetOutreachPipelineParams = {
   horizonDays?: number;
   limit?: number;
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
 };
 
 export type ExportBusinessesCsvParams = {
   categorySlug?: string;
   city?: string;
+  targetMarket?: string;
+  readyForOutreach?: boolean;
+  reviewRequired?: boolean;
 };

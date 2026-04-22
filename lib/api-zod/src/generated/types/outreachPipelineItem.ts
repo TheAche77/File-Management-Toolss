@@ -37,6 +37,12 @@ export interface OutreachPipelineItem {
   warmConnection?: string | null;
   /** @nullable */
   notes?: string | null;
+  readyForOutreach: boolean;
+  reviewRequired: boolean;
+  /** @nullable */
+  priorityScore?: number | null;
+  /** @nullable */
+  reviewReason?: string | null;
   urgencyBucket: string;
   /** @nullable */
   daysUntilAction?: number | null;

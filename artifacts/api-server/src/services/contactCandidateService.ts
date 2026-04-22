@@ -4,7 +4,7 @@ import {
   type InsertBusiness,
   type InsertContactCandidate,
 } from "@workspace/db";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import type { MergedBusinessRecord } from "./businessSourceService";
 import { logger } from "../lib/logger";
 
@@ -91,52 +91,35 @@ export function buildContactCandidatesForRecord(record: MergedBusinessRecord): I
 export async function upsertContactCandidates(records: InsertContactCandidate[]): Promise<void> {
   if (records.length === 0) return;
 
+  const dedupedRecords = Array.from(
+    new Map(
+      records.map((record) => {
+        const uniqueValue = record.email ?? record.phone ?? `${record.sourceType}::${record.sourceUrl}`;
+        return [`${record.businessId}::${record.contactType}::${uniqueValue}`, record];
+      }),
+    ).values(),
+  );
+  const businessIds = Array.from(new Set(dedupedRecords.map((record) => record.businessId)));
+  const existing = await db
+    .select()
+    .from(contactCandidatesTable)
+    .where(inArray(contactCandidatesTable.businessId, businessIds));
+  const existingByKey = new Map(
+    existing.map((record) => {
+      const uniqueValue =
+        record.email ?? record.phone ?? `${record.sourceType}::${record.sourceUrl}`;
+      return [`${record.businessId}::${record.contactType}::${uniqueValue}`, record];
+    }),
+  );
+
   await db.transaction(async (tx) => {
-    for (const record of records) {
-      const existing = await (async () => {
-        if (record.email) {
-          return tx
-            .select({ id: contactCandidatesTable.id })
-            .from(contactCandidatesTable)
-            .where(
-              and(
-                eq(contactCandidatesTable.businessId, record.businessId),
-                eq(contactCandidatesTable.contactType, record.contactType),
-                eq(contactCandidatesTable.email, record.email),
-              ),
-            )
-            .limit(1);
-        }
+    for (const record of dedupedRecords) {
+      const uniqueValue = record.email ?? record.phone ?? `${record.sourceType}::${record.sourceUrl}`;
+      const existingRecord = existingByKey.get(
+        `${record.businessId}::${record.contactType}::${uniqueValue}`,
+      );
 
-        if (record.phone) {
-          return tx
-            .select({ id: contactCandidatesTable.id })
-            .from(contactCandidatesTable)
-            .where(
-              and(
-                eq(contactCandidatesTable.businessId, record.businessId),
-                eq(contactCandidatesTable.contactType, record.contactType),
-                eq(contactCandidatesTable.phone, record.phone),
-              ),
-            )
-            .limit(1);
-        }
-
-        return tx
-          .select({ id: contactCandidatesTable.id })
-          .from(contactCandidatesTable)
-          .where(
-            and(
-              eq(contactCandidatesTable.businessId, record.businessId),
-              eq(contactCandidatesTable.contactType, record.contactType),
-              eq(contactCandidatesTable.sourceType, record.sourceType),
-              eq(contactCandidatesTable.sourceUrl, record.sourceUrl),
-            ),
-          )
-          .limit(1);
-      })();
-
-      if (existing.length > 0) {
+      if (existingRecord) {
         await tx
           .update(contactCandidatesTable)
           .set({
@@ -148,19 +131,20 @@ export async function upsertContactCandidates(records: InsertContactCandidate[])
             confidenceScore: record.confidenceScore,
             isPrimary: record.isPrimary,
             isPersonalData: record.isPersonalData,
-            lastVerifiedAt: record.lastVerifiedAt ?? new Date(),
+            lastVerifiedAt: record.lastVerifiedAt ?? existingRecord.lastVerifiedAt ?? new Date(),
             reviewStatus: record.reviewStatus,
             notes: record.notes ?? null,
             updatedAt: new Date(),
           })
-          .where(eq(contactCandidatesTable.id, existing[0]!.id));
-      } else {
-        await tx.insert(contactCandidatesTable).values(record);
+          .where(eq(contactCandidatesTable.id, existingRecord.id));
+        continue;
       }
+
+      await tx.insert(contactCandidatesTable).values(record);
     }
   });
 
-  logger.info({ count: records.length }, "Contact candidates upserted");
+  logger.info({ count: dedupedRecords.length }, "Contact candidates upserted");
 }
 
 export async function getContactCandidates(businessId: number) {

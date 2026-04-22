@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, businessesTable, importRunsTable, categoriesTable, contactCandidatesTable } from "@workspace/db";
 import type { ImportRun as DbImportRun } from "@workspace/db";
-import { eq, ilike, and, sql, count, desc, or, ne } from "drizzle-orm";
+import { eq, ilike, and, sql, count, desc, or, ne, gte } from "drizzle-orm";
 import { queueImportRun } from "../services/importJobService";
 import { getBusinessSources } from "../services/businessSourceService";
 import { getContactCandidates } from "../services/contactCandidateService";
@@ -11,6 +11,11 @@ import {
   recordOutreachUpdate,
 } from "../services/outreachAuditService";
 import { getReviewQueue } from "../services/reviewQueueService";
+import {
+  previewBusinessResearchSnapshots,
+  refreshBusinessResearchState,
+  refreshBusinessResearchStates,
+} from "../services/businessResearchPersistenceService";
 import { requireAdminAuth } from "../lib/adminAuth";
 
 const router = Router();
@@ -51,6 +56,59 @@ function normalizeNullableDateString(value: unknown): string | null | undefined 
   return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : undefined;
 }
 
+function parseOptionalBoolean(value: string | undefined) {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return undefined;
+}
+
+function parseOptionalNumber(value: string | undefined) {
+  if (!value) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function buildBusinessFilters(query: Record<string, string | undefined>) {
+  const conditions = [];
+
+  if (query["search"]) {
+    conditions.push(
+      or(
+        ilike(businessesTable.name, `%${query["search"]}%`),
+        ilike(businessesTable.addressLine, `%${query["search"]}%`),
+        ilike(businessesTable.city, `%${query["search"]}%`),
+      ),
+    );
+  }
+  if (query["categorySlug"]) conditions.push(eq(businessesTable.categorySlug, query["categorySlug"]));
+  if (query["city"]) conditions.push(ilike(businessesTable.city, `%${query["city"]}%`));
+  if (query["targetMarket"]) conditions.push(eq(businessesTable.targetMarket, query["targetMarket"]));
+
+  const hasWebsite = parseOptionalBoolean(query["hasWebsite"]);
+  const hasPhone = parseOptionalBoolean(query["hasPhone"]);
+  const readyForOutreach = parseOptionalBoolean(query["readyForOutreach"]);
+  const reviewRequired = parseOptionalBoolean(query["reviewRequired"]);
+  const minPriorityScore = parseOptionalNumber(query["minPriorityScore"]);
+  const minResearchScore = parseOptionalNumber(query["minResearchScore"]);
+
+  if (hasWebsite !== undefined) conditions.push(eq(businessesTable.hasWebsite, hasWebsite));
+  if (hasPhone !== undefined) conditions.push(eq(businessesTable.hasPhone, hasPhone));
+  if (readyForOutreach !== undefined) {
+    conditions.push(eq(businessesTable.readyForOutreach, readyForOutreach));
+  }
+  if (reviewRequired !== undefined) {
+    conditions.push(eq(businessesTable.reviewRequired, reviewRequired));
+  }
+  if (minPriorityScore !== undefined) {
+    conditions.push(gte(businessesTable.priorityScore, minPriorityScore));
+  }
+  if (minResearchScore !== undefined) {
+    conditions.push(gte(businessesTable.researchScore, minResearchScore));
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
 router.get("/categories", async (_req, res) => {
   const rows = await db.select().from(categoriesTable).orderBy(categoriesTable.label);
   res.json(rows.map((r) => ({
@@ -66,12 +124,6 @@ router.get("/categories", async (_req, res) => {
 
 router.get("/businesses", async (req, res) => {
   const {
-    search,
-    categorySlug,
-    city,
-    targetMarket,
-    hasWebsite,
-    hasPhone,
     page = "1",
     pageSize = "50",
   } = req.query as Record<string, string | undefined>;
@@ -79,36 +131,39 @@ router.get("/businesses", async (req, res) => {
   const pageNum = Math.max(1, parseInt(page ?? "1", 10));
   const size = Math.min(100, Math.max(1, parseInt(pageSize ?? "50", 10)));
   const offset = (pageNum - 1) * size;
-
-  const conditions = [];
-
-  if (search) {
-    conditions.push(
-      or(
-        ilike(businessesTable.name, `%${search}%`),
-        ilike(businessesTable.addressLine, `%${search}%`),
-        ilike(businessesTable.city, `%${search}%`),
-      ),
-    );
-  }
-  if (categorySlug) conditions.push(eq(businessesTable.categorySlug, categorySlug));
-  if (city) conditions.push(ilike(businessesTable.city, `%${city}%`));
-  if (targetMarket) conditions.push(eq(businessesTable.targetMarket, targetMarket));
-  if (hasWebsite === "true") conditions.push(eq(businessesTable.hasWebsite, true));
-  if (hasWebsite === "false") conditions.push(eq(businessesTable.hasWebsite, false));
-  if (hasPhone === "true") conditions.push(eq(businessesTable.hasPhone, true));
-  if (hasPhone === "false") conditions.push(eq(businessesTable.hasPhone, false));
-
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const where = buildBusinessFilters(req.query as Record<string, string | undefined>);
 
   const [rows, totalResult] = await Promise.all([
-    db.select().from(businessesTable).where(where).orderBy(businessesTable.name).limit(size).offset(offset),
+    db
+      .select()
+      .from(businessesTable)
+      .where(where)
+      .orderBy(desc(businessesTable.readyForOutreach), desc(businessesTable.priorityScore), businessesTable.name)
+      .limit(size)
+      .offset(offset),
     db.select({ count: count() }).from(businessesTable).where(where),
   ]);
 
+  let normalizedRows = rows;
+  const rowsNeedingRefresh = rows
+    .filter((row) => row.priorityScore == null || row.lastResearchAt == null)
+    .map((row) => row.id);
+  if (rowsNeedingRefresh.length > 0) {
+    const refreshed = await refreshBusinessResearchStates(rowsNeedingRefresh);
+    if (refreshed.length > 0) {
+      const refreshedById = new Map(
+        refreshed
+          .map((entry) => entry.business)
+          .filter((business): business is NonNullable<typeof business> => Boolean(business))
+          .map((business) => [business.id, business]),
+      );
+      normalizedRows = rows.map((row) => refreshedById.get(row.id) ?? row);
+    }
+  }
+
   const total = Number(totalResult[0]?.count ?? 0);
   res.json({
-    businesses: rows.map(serializeBusiness),
+    businesses: normalizedRows.map(serializeBusiness),
     total,
     page: pageNum,
     pageSize: size,
@@ -120,12 +175,14 @@ router.get("/businesses/review-queue", requireAdminAuth, async (req, res) => {
   const {
     categorySlug,
     city,
+    targetMarket,
     limit = "25",
   } = req.query as Record<string, string | undefined>;
 
   const items = await getReviewQueue({
     categorySlug,
     city,
+    targetMarket,
     limit: parseInt(limit ?? "25", 10),
   });
 
@@ -145,9 +202,15 @@ router.get("/businesses/:id", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
-  const rows = await db.select().from(businessesTable).where(eq(businessesTable.id, id)).limit(1);
-  if (rows.length === 0) { res.status(404).json({ error: "Business not found" }); return; }
-  res.json(serializeBusiness(rows[0]!));
+  const refreshed = await refreshBusinessResearchState(id);
+  if (!refreshed?.business) {
+    const rows = await db.select().from(businessesTable).where(eq(businessesTable.id, id)).limit(1);
+    if (rows.length === 0) { res.status(404).json({ error: "Business not found" }); return; }
+    res.json(serializeBusiness(rows[0]!));
+    return;
+  }
+
+  res.json(serializeBusiness(refreshed.business));
 });
 
 router.get("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
@@ -280,7 +343,8 @@ router.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
   }
 
   await recordOutreachUpdate(existingRows[0]!, updated);
-  res.json(serializeBusinessOutreach(updated));
+  const refreshed = await refreshBusinessResearchState(id);
+  res.json(serializeBusinessOutreach(refreshed?.business ?? updated));
 });
 
 router.get("/businesses/:id/outreach-events", requireAdminAuth, async (req, res) => {
@@ -463,7 +527,43 @@ router.patch("/businesses/:id/contact-candidates/:candidateId", requireAdminAuth
   }
 
   await recordContactCandidateUpdate(businessId, existing, updated);
+  await refreshBusinessResearchState(businessId);
   res.json(serializeContactCandidate(updated));
+});
+
+router.post("/businesses/:id/research/refresh", requireAdminAuth, async (req, res) => {
+  const businessId = parseInt(String(req.params["id"] ?? "0"), 10);
+  if (!businessId || isNaN(businessId)) {
+    res.status(400).json({ error: "Invalid business identifier" });
+    return;
+  }
+
+  const refreshed = await refreshBusinessResearchState(businessId);
+  if (!refreshed?.business) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+
+  res.json(serializeBusiness(refreshed.business));
+});
+
+router.post("/research/refresh", requireAdminAuth, async (req, res) => {
+  const body = (req.body ?? {}) as { businessIds?: number[] };
+
+  let businessIds = Array.isArray(body.businessIds)
+    ? body.businessIds.filter((value): value is number => Number.isFinite(value))
+    : [];
+
+  if (businessIds.length === 0) {
+    const rows = await db.select({ id: businessesTable.id }).from(businessesTable);
+    businessIds = rows.map((row) => row.id);
+  }
+
+  const refreshed = await refreshBusinessResearchStates(businessIds);
+  res.json({
+    refreshed: refreshed.length,
+    businessIds,
+  });
 });
 
 router.get("/stats", async (req, res) => {
@@ -648,14 +748,12 @@ router.get("/imports/runs/:id", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/export/businesses.csv", async (req, res) => {
-  const { categorySlug, city, targetMarket } = req.query as Record<string, string | undefined>;
-  const conditions = [];
-  if (categorySlug) conditions.push(eq(businessesTable.categorySlug, categorySlug));
-  if (city) conditions.push(ilike(businessesTable.city, `%${city}%`));
-  if (targetMarket) conditions.push(eq(businessesTable.targetMarket, targetMarket));
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const rows = await db.select().from(businessesTable).where(where).orderBy(businessesTable.name);
+  const where = buildBusinessFilters(req.query as Record<string, string | undefined>);
+  const rows = await db
+    .select()
+    .from(businessesTable)
+    .where(where)
+    .orderBy(desc(businessesTable.readyForOutreach), desc(businessesTable.priorityScore), businessesTable.name);
 
   const headers = [
     "id", "categoria", "nome", "citta", "indirizzo", "cap", "latitudine", "longitudine",
@@ -665,36 +763,272 @@ router.get("/export/businesses.csv", async (req, res) => {
     "ultima_data_contatto", "prossima_azione",
     "artista_assegnato", "fonte_assegnazione_artista",
     "tipo_avatar", "mercato_target", "connessione_calda", "note",
+    "relevance_score", "contactability_score", "confidence_score", "freshness_score",
+    "priority_score", "research_score", "ready_for_outreach", "review_required",
+    "review_reason", "top_gap", "recommended_next_step",
     "creato_il", "aggiornato_il",
-  ];
-
-  const esc = (v: unknown): string => {
-    if (v == null) return "";
-    const s = String(v);
-    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-
-  // UTF-8 BOM for Excel compatibility
-  const BOM = "\uFEFF";
-
-  const lines = [
-    headers.join(","),
-    ...rows.map((r) => [
-      r.id, esc(r.categorySlug), esc(r.name), esc(r.city), esc(r.addressLine), esc(r.postalCode),
-      esc(r.latitude), esc(r.longitude), esc(r.website), esc(r.phone), esc(r.osmId),
-      esc(r.rating), esc(r.userRatingsTotal),
-      esc(r.enrichmentStatus), r.hasWebsite ? "sì" : "no", r.hasPhone ? "sì" : "no",
-      esc(r.outreachStatus), esc(r.contactName), esc(r.contactRole), esc(r.contactEmail),
-      esc(r.lastContactDate), esc(r.nextActionDate),
-      esc(r.assignedArtist), esc(r.assignedArtistSource),
-      esc(r.avatarType), esc(r.targetMarket), esc(r.warmConnection), esc(r.notes),
-      r.createdAt.toISOString(), r.updatedAt.toISOString(),
-    ].join(",")),
   ];
 
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="businesses.csv"');
-  res.send(BOM + lines.join("\n"));
+  res.send(
+    buildCsv(
+      headers,
+      rows.map((r) => [
+        r.id, r.categorySlug, r.name, r.city, r.addressLine, r.postalCode,
+        r.latitude, r.longitude, r.website, r.phone, r.osmId,
+        r.rating, r.userRatingsTotal,
+        r.enrichmentStatus, r.hasWebsite ? "sì" : "no", r.hasPhone ? "sì" : "no",
+        r.outreachStatus, r.contactName, r.contactRole, r.contactEmail,
+        r.lastContactDate, r.nextActionDate,
+        r.assignedArtist, r.assignedArtistSource,
+        r.avatarType, r.targetMarket, r.warmConnection, r.notes,
+        r.relevanceScore, r.contactabilityScore, r.confidenceScore, r.freshnessScore,
+        r.priorityScore, r.researchScore, r.readyForOutreach ? "true" : "false",
+        r.reviewRequired ? "true" : "false", r.reviewReason, r.topGap, r.recommendedNextStep,
+        r.createdAt.toISOString(), r.updatedAt.toISOString(),
+      ]),
+    ),
+  );
+});
+
+router.get("/export/business-research-summary.csv", requireAdminAuth, async (req, res) => {
+  const where = buildBusinessFilters(req.query as Record<string, string | undefined>);
+  const rows = await db
+    .select()
+    .from(businessesTable)
+    .where(where)
+    .orderBy(desc(businessesTable.readyForOutreach), desc(businessesTable.priorityScore), businessesTable.name);
+
+  const businessIds = rows.map((row) => row.id);
+  await refreshBusinessResearchStates(businessIds);
+  const previews = await previewBusinessResearchSnapshots(businessIds);
+  const previewByBusinessId = new Map(previews.map((entry) => [entry.aggregate.business.id, entry]));
+
+  const headers = [
+    "business_id", "business_name", "city", "country", "category_slug", "avatar_type",
+    "target_market", "website", "phone", "official_source_count", "successful_source_count",
+    "failed_source_count", "has_official_website", "has_contact_email", "has_primary_contact",
+    "primary_contact_type", "primary_contact_value", "primary_source_type", "primary_source_url",
+    "source_health", "contact_readiness", "relevance_score", "contactability_score",
+    "confidence_score", "freshness_score", "priority_score", "research_score",
+    "ready_for_outreach", "review_required", "review_reason", "top_gap",
+    "recommended_next_step", "discovery_status", "qualification_status",
+    "contactability_status", "ranking_status", "last_research_at", "next_research_at",
+  ];
+
+  const exportRows = rows.map((row) => {
+    const preview = previewByBusinessId.get(row.id);
+    const snapshot = preview?.snapshot;
+    return [
+      row.id,
+      row.name,
+      row.city,
+      row.country,
+      row.categorySlug,
+      row.avatarType,
+      row.targetMarket,
+      row.website,
+      row.phone,
+      snapshot?.officialSourceCount ?? row.officialSourceCount,
+      snapshot?.successfulSourceCount ?? row.successfulSourceCount,
+      snapshot?.failedSourceCount ?? row.failedSourceCount,
+      (snapshot?.officialSourceCount ?? row.officialSourceCount ?? 0) > 0 ? "true" : "false",
+      row.contactEmail ? "true" : "false",
+      snapshot?.primaryContactCandidateId ? "true" : "false",
+      snapshot?.primaryContactType,
+      snapshot?.primaryContactValue,
+      snapshot?.primarySourceType,
+      snapshot?.primarySourceUrl,
+      snapshot?.sourceHealth ?? row.sourceHealth,
+      snapshot?.contactReadiness ?? row.contactReadiness,
+      snapshot?.relevanceScore ?? row.relevanceScore,
+      snapshot?.contactabilityScore ?? row.contactabilityScore,
+      snapshot?.confidenceScore ?? row.confidenceScore,
+      snapshot?.freshnessScore ?? row.freshnessScore,
+      snapshot?.priorityScore ?? row.priorityScore,
+      snapshot?.researchScore ?? row.researchScore,
+      (snapshot?.readyForOutreach ?? row.readyForOutreach) ? "true" : "false",
+      (snapshot?.reviewRequired ?? row.reviewRequired) ? "true" : "false",
+      snapshot?.reviewReason ?? row.reviewReason,
+      snapshot?.topGap ?? row.topGap,
+      snapshot?.recommendedNextStep ?? row.recommendedNextStep,
+      snapshot?.discoveryStatus ?? row.discoveryStatus,
+      snapshot?.qualificationStatus ?? row.qualificationStatus,
+      snapshot?.contactabilityStatus ?? row.contactabilityStatus,
+      snapshot?.rankingStatus ?? row.rankingStatus,
+      (snapshot?.lastResearchAt ?? row.lastResearchAt)?.toISOString?.() ?? null,
+      (snapshot?.nextResearchAt ?? row.nextResearchAt)?.toISOString?.() ?? null,
+    ];
+  });
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="business_research_summary.csv"');
+  res.send(buildCsv(headers, exportRows));
+});
+
+router.get("/export/outreach-ready.csv", requireAdminAuth, async (req, res) => {
+  const baseQuery = req.query as Record<string, string | undefined>;
+  const where = buildBusinessFilters({
+    ...baseQuery,
+    readyForOutreach: undefined,
+    reviewRequired: undefined,
+  });
+
+  const rows = await db
+    .select()
+    .from(businessesTable)
+    .where(where)
+    .orderBy(desc(businessesTable.priorityScore), businessesTable.name);
+
+  await refreshBusinessResearchStates(rows.map((row) => row.id));
+  const previews = await previewBusinessResearchSnapshots(rows.map((row) => row.id));
+  const previewByBusinessId = new Map(previews.map((entry) => [entry.aggregate.business.id, entry]));
+
+  const headers = [
+    "business_id", "business_name", "city", "country", "category_slug", "avatar_type",
+    "target_market", "assigned_artist", "assigned_artist_source", "website", "phone",
+    "contact_name", "contact_role", "contact_type", "contact_value", "contact_source_type",
+    "contact_source_url", "is_primary_contact", "relevance_score", "contactability_score",
+    "confidence_score", "priority_score", "ready_for_outreach", "outreach_status",
+    "last_contact_date", "next_action_date", "warm_connection", "review_required",
+    "review_reason", "recommended_next_step", "notes", "last_research_at",
+  ];
+
+  const exportRows = rows
+    .filter((row) => {
+      const preview = previewByBusinessId.get(row.id);
+      return preview?.snapshot.readyForOutreach || row.outreachStatus !== "not_contacted";
+    })
+    .map((row) => {
+    const preview = previewByBusinessId.get(row.id);
+    const primaryCandidate = preview?.aggregate.contactCandidates.find(
+      (candidate) => candidate.id === preview.snapshot.primaryContactCandidateId,
+    );
+
+    return [
+      row.id,
+      row.name,
+      row.city,
+      row.country,
+      row.categorySlug,
+      row.avatarType,
+      row.targetMarket,
+      row.assignedArtist,
+      row.assignedArtistSource,
+      row.website,
+      row.phone,
+      row.contactName ?? preview?.snapshot.primaryContactName,
+      row.contactRole ?? preview?.snapshot.primaryContactRole,
+      preview?.snapshot.primaryContactType,
+      preview?.snapshot.primaryContactValue,
+      primaryCandidate?.sourceType ?? null,
+      primaryCandidate?.sourceUrl ?? null,
+      preview?.snapshot.primaryContactCandidateId ? "true" : "false",
+      preview?.snapshot.relevanceScore ?? row.relevanceScore,
+      preview?.snapshot.contactabilityScore ?? row.contactabilityScore,
+      preview?.snapshot.confidenceScore ?? row.confidenceScore,
+      preview?.snapshot.priorityScore ?? row.priorityScore,
+      (preview?.snapshot.readyForOutreach ?? row.readyForOutreach) ? "true" : "false",
+      row.outreachStatus,
+      row.lastContactDate,
+      row.nextActionDate,
+      row.warmConnection,
+      (preview?.snapshot.reviewRequired ?? row.reviewRequired) ? "true" : "false",
+      preview?.snapshot.reviewReason ?? row.reviewReason,
+      preview?.snapshot.recommendedNextStep ?? row.recommendedNextStep,
+      row.notes,
+      preview?.snapshot.lastResearchAt?.toISOString?.() ?? row.lastResearchAt?.toISOString?.() ?? null,
+    ];
+    });
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="outreach_ready.csv"');
+  res.send(buildCsv(headers, exportRows));
+});
+
+router.get("/export/review-queue.csv", requireAdminAuth, async (req, res) => {
+  const baseQuery = req.query as Record<string, string | undefined>;
+  const where = buildBusinessFilters({
+    ...baseQuery,
+    readyForOutreach: undefined,
+    reviewRequired: undefined,
+  });
+
+  const rows = await db
+    .select()
+    .from(businessesTable)
+    .where(where)
+    .orderBy(desc(businessesTable.priorityScore), businessesTable.name);
+
+  await refreshBusinessResearchStates(rows.map((row) => row.id));
+  const previews = await previewBusinessResearchSnapshots(rows.map((row) => row.id));
+  const previewByBusinessId = new Map(previews.map((entry) => [entry.aggregate.business.id, entry]));
+
+  const headers = [
+    "business_id", "business_name", "city", "country", "category_slug", "avatar_type",
+    "target_market", "website", "primary_source_type", "primary_source_url",
+    "official_source_count", "successful_source_count", "failed_source_count",
+    "contact_type", "contact_value", "contact_confidence_score", "relevance_score",
+    "contactability_score", "confidence_score", "priority_score", "review_required",
+    "review_reason", "review_bucket", "top_gap", "recommended_next_step", "research_depth",
+    "ready_for_outreach", "outreach_status", "warm_connection", "last_research_at", "next_research_at",
+  ];
+
+  const exportRows = rows
+    .filter((row) => {
+      const preview = previewByBusinessId.get(row.id);
+      return Boolean(preview?.snapshot.reviewRequired) && !preview?.snapshot.readyForOutreach;
+    })
+    .map((row) => {
+    const preview = previewByBusinessId.get(row.id);
+    const primaryCandidate = preview?.aggregate.contactCandidates.find(
+      (candidate) => candidate.id === preview.snapshot.primaryContactCandidateId,
+    );
+    const researchDepth = preview?.snapshot.primaryContactCandidateId
+      ? "L3"
+      : preview?.snapshot.primarySourceId
+        ? "L1"
+        : "L0";
+
+    return [
+      row.id,
+      row.name,
+      row.city,
+      row.country,
+      row.categorySlug,
+      row.avatarType,
+      row.targetMarket,
+      row.website,
+      preview?.snapshot.primarySourceType,
+      preview?.snapshot.primarySourceUrl,
+      preview?.snapshot.officialSourceCount ?? row.officialSourceCount,
+      preview?.snapshot.successfulSourceCount ?? row.successfulSourceCount,
+      preview?.snapshot.failedSourceCount ?? row.failedSourceCount,
+      preview?.snapshot.primaryContactType,
+      preview?.snapshot.primaryContactValue,
+      primaryCandidate?.confidenceScore ?? null,
+      preview?.snapshot.relevanceScore ?? row.relevanceScore,
+      preview?.snapshot.contactabilityScore ?? row.contactabilityScore,
+      preview?.snapshot.confidenceScore ?? row.confidenceScore,
+      preview?.snapshot.priorityScore ?? row.priorityScore,
+      (preview?.snapshot.reviewRequired ?? row.reviewRequired) ? "true" : "false",
+      preview?.snapshot.reviewReason ?? row.reviewReason,
+      preview?.snapshot.reviewReason ?? row.reviewReason,
+      preview?.snapshot.topGap ?? row.topGap,
+      preview?.snapshot.recommendedNextStep ?? row.recommendedNextStep,
+      researchDepth,
+      (preview?.snapshot.readyForOutreach ?? row.readyForOutreach) ? "true" : "false",
+      row.outreachStatus,
+      row.warmConnection,
+      preview?.snapshot.lastResearchAt?.toISOString?.() ?? row.lastResearchAt?.toISOString?.() ?? null,
+      preview?.snapshot.nextResearchAt?.toISOString?.() ?? row.nextResearchAt?.toISOString?.() ?? null,
+    ];
+    });
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="review_queue.csv"');
+  res.send(buildCsv(headers, exportRows));
 });
 
 // Legacy redirect - galleries was the old path
@@ -728,6 +1062,30 @@ function serializeBusiness(r: Record<string, unknown>) {
     hasWebsite: r["hasWebsite"],
     hasPhone: r["hasPhone"],
     enrichmentStatus: r["enrichmentStatus"],
+    discoveryStatus: r["discoveryStatus"] ?? null,
+    qualificationStatus: r["qualificationStatus"] ?? null,
+    contactabilityStatus: r["contactabilityStatus"] ?? null,
+    rankingStatus: r["rankingStatus"] ?? null,
+    sourceHealth: r["sourceHealth"] ?? null,
+    contactReadiness: r["contactReadiness"] ?? null,
+    relevanceScore: r["relevanceScore"] ?? null,
+    contactabilityScore: r["contactabilityScore"] ?? null,
+    confidenceScore: r["confidenceScore"] ?? null,
+    freshnessScore: r["freshnessScore"] ?? null,
+    priorityScore: r["priorityScore"] ?? null,
+    researchScore: r["researchScore"] ?? null,
+    officialSourceCount: r["officialSourceCount"] ?? null,
+    successfulSourceCount: r["successfulSourceCount"] ?? null,
+    failedSourceCount: r["failedSourceCount"] ?? null,
+    primarySourceId: r["primarySourceId"] ?? null,
+    primaryContactCandidateId: r["primaryContactCandidateId"] ?? null,
+    readyForOutreach: r["readyForOutreach"] ?? false,
+    reviewRequired: r["reviewRequired"] ?? false,
+    reviewReason: r["reviewReason"] ?? null,
+    topGap: r["topGap"] ?? null,
+    recommendedNextStep: r["recommendedNextStep"] ?? null,
+    lastResearchAt: (r["lastResearchAt"] as Date | null | undefined)?.toISOString() ?? null,
+    nextResearchAt: (r["nextResearchAt"] as Date | null | undefined)?.toISOString() ?? null,
     createdAt: (r["createdAt"] as Date).toISOString(),
     updatedAt: (r["updatedAt"] as Date).toISOString(),
   };
@@ -748,8 +1106,31 @@ function serializeBusinessOutreach(r: Record<string, unknown>) {
     targetMarket: r["targetMarket"] ?? null,
     notes: r["notes"] ?? null,
     warmConnection: r["warmConnection"] ?? null,
+    readyForOutreach: r["readyForOutreach"] ?? false,
+    reviewRequired: r["reviewRequired"] ?? false,
+    reviewReason: r["reviewReason"] ?? null,
+    priorityScore: r["priorityScore"] ?? null,
     updatedAt: (r["updatedAt"] as Date).toISOString(),
   };
+}
+
+function escapeCsvValue(value: unknown): string {
+  if (value == null) return "";
+  const stringValue = String(value);
+  return stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")
+    ? `"${stringValue.replace(/"/g, '""')}"`
+    : stringValue;
+}
+
+function buildCsv(headers: string[], rows: unknown[][]) {
+  const BOM = "\uFEFF";
+  return (
+    BOM +
+    [
+      headers.join(","),
+      ...rows.map((row) => row.map((value) => escapeCsvValue(value)).join(",")),
+    ].join("\n")
+  );
 }
 
 function getTodayDateString() {
@@ -801,6 +1182,10 @@ async function getOutreachRows() {
       contactEmail: businessesTable.contactEmail,
       warmConnection: businessesTable.warmConnection,
       notes: businessesTable.notes,
+      readyForOutreach: businessesTable.readyForOutreach,
+      reviewRequired: businessesTable.reviewRequired,
+      priorityScore: businessesTable.priorityScore,
+      reviewReason: businessesTable.reviewReason,
       updatedAt: businessesTable.updatedAt,
     })
     .from(businessesTable);
@@ -914,6 +1299,10 @@ function buildOutreachPipelineItems(
         contactEmail: row.contactEmail ?? null,
         warmConnection: row.warmConnection ?? null,
         notes: row.notes ?? null,
+        readyForOutreach: row.readyForOutreach ?? false,
+        reviewRequired: row.reviewRequired ?? false,
+        priorityScore: row.priorityScore ?? null,
+        reviewReason: row.reviewReason ?? null,
         urgencyBucket,
         daysUntilAction,
         recommendedAction: getRecommendedAction(status),

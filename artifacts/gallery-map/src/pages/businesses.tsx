@@ -1,197 +1,322 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { useGetBusinesses, getGetBusinessesQueryKey, useGetCategories, getGetCategoriesQueryKey } from "@workspace/api-client-react";
-import { Search, MapPin, Globe, Phone, ExternalLink } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getGetBusinessesQueryKey,
+  getGetCategoriesQueryKey,
+  useGetBusinesses,
+  useGetCategories,
+} from "@workspace/api-client-react";
+import { ExternalLink, Globe, MapPin, Phone, Radar, ShieldAlert } from "lucide-react";
+import { SharedBusinessFilters } from "@/components/shared-business-filters";
 import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  buildSearchParams,
+  readSharedBusinessFilters,
+  syncSearchParams,
+} from "@/lib/business-filters";
+import { formatPipelineValue } from "@/lib/outreach-formatting";
+
+function ScoreBadge({
+  label,
+  value,
+}: {
+  label: string;
+  value?: number | null;
+}) {
+  if (value == null) return null;
+  return (
+    <Badge variant="outline">
+      {label} {value}
+    </Badge>
+  );
+}
 
 export default function Businesses() {
-  const [search, setSearch] = useState("");
-  const [city, setCity] = useState("");
-  const [category, setCategory] = useState("all");
-  const [hasWebsite, setHasWebsite] = useState(false);
-  const [hasPhone, setHasPhone] = useState(false);
-  const [page, setPage] = useState(1);
+  const initialFilters = readSharedBusinessFilters(window.location.search);
+  const [search, setSearch] = useState(initialFilters.search);
+  const [city, setCity] = useState(initialFilters.city);
+  const [category, setCategory] = useState(initialFilters.categorySlug);
+  const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
+  const [hasWebsite, setHasWebsite] = useState(initialFilters.hasWebsite);
+  const [hasPhone, setHasPhone] = useState(initialFilters.hasPhone);
+  const [readyOnly, setReadyOnly] = useState(initialFilters.readyForOutreach);
+  const [reviewOnly, setReviewOnly] = useState(initialFilters.reviewRequired);
+  const [page, setPage] = useState(initialFilters.page);
   const pageSize = 20;
 
   const { data: categories } = useGetCategories({
-    query: { queryKey: getGetCategoriesQueryKey() }
+    query: { queryKey: getGetCategoriesQueryKey() },
   });
 
-  const queryParams = {
-    search: search || undefined,
-    city: city || undefined,
-    categorySlug: category === "all" ? undefined : category,
-    hasWebsite: hasWebsite || undefined,
-    hasPhone: hasPhone || undefined,
-    page,
-    pageSize
-  };
+  const queryParams = useMemo(
+    () => ({
+      search: search || undefined,
+      city: city || undefined,
+      categorySlug: category === "all" ? undefined : category,
+      targetMarket: targetMarket === "all" ? undefined : targetMarket,
+      hasWebsite: hasWebsite || undefined,
+      hasPhone: hasPhone || undefined,
+      readyForOutreach: readyOnly || undefined,
+      reviewRequired: reviewOnly || undefined,
+      page,
+      pageSize,
+    }),
+    [category, city, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetMarket],
+  );
 
   const { data, isLoading } = useGetBusinesses(queryParams, {
-    query: { queryKey: getGetBusinessesQueryKey(queryParams) }
+    query: { queryKey: getGetBusinessesQueryKey(queryParams) },
   });
+
+  useEffect(() => {
+    const nextSearch = buildSearchParams(window.location.search, {
+      search,
+      city,
+      categorySlug: category,
+      targetMarket,
+      hasWebsite,
+      hasPhone,
+      readyForOutreach: readyOnly,
+      reviewRequired: reviewOnly,
+      page,
+      horizonDays: undefined,
+      limit: undefined,
+    });
+
+    syncSearchParams(nextSearch);
+  }, [category, city, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetMarket]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-serif font-bold tracking-tight">Directory</h1>
-        <p className="text-muted-foreground mt-1">Browse and filter indexed businesses</p>
+        <p className="text-muted-foreground mt-1">
+          Vista canonica dei business con readiness, priorità e bisogno di review.
+        </p>
       </div>
 
-      <div className="bg-card border rounded-lg p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div>
-            <Input 
-              placeholder="Search names..." 
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              data-testid="input-search"
-            />
-          </div>
-          <div>
-            <Input 
-              placeholder="Filter by city..." 
-              value={city}
-              onChange={(e) => { setCity(e.target.value); setPage(1); }}
-            />
-          </div>
-          <div>
-            <Select 
-              value={category} 
-              onValueChange={(val) => { setCategory(val); setPage(1); }}
-            >
-              <SelectTrigger data-testid="select-category">
-                <SelectValue placeholder="All categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories?.map(c => (
-                  <SelectItem key={c.id} value={c.slug}>{c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="has-website" 
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <SharedBusinessFilters
+          categories={categories}
+          city={city}
+          categorySlug={category}
+          targetMarket={targetMarket}
+          onCityChange={(value) => {
+            setCity(value);
+            setPage(1);
+          }}
+          onCategoryChange={(value) => {
+            setCategory(value);
+            setPage(1);
+          }}
+          onTargetMarketChange={(value) => {
+            setTargetMarket(value);
+            setPage(1);
+          }}
+        />
+
+        <div className="grid gap-4 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
+          <Input
+            placeholder="Search names, addresses, cities..."
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+          />
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
               checked={hasWebsite}
-              onCheckedChange={(checked) => { setHasWebsite(checked as boolean); setPage(1); }}
+              onCheckedChange={(checked) => {
+                setHasWebsite(Boolean(checked));
+                setPage(1);
+              }}
             />
-            <label htmlFor="has-website" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Has Website
-            </label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="has-phone" 
+            Has website
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
               checked={hasPhone}
-              onCheckedChange={(checked) => { setHasPhone(checked as boolean); setPage(1); }}
+              onCheckedChange={(checked) => {
+                setHasPhone(Boolean(checked));
+                setPage(1);
+              }}
             />
-            <label htmlFor="has-phone" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Has Phone
-            </label>
-          </div>
+            Has phone
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={readyOnly}
+              onCheckedChange={(checked) => {
+                setReadyOnly(Boolean(checked));
+                setPage(1);
+              }}
+            />
+            Ready only
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={reviewOnly}
+              onCheckedChange={(checked) => {
+                setReviewOnly(Boolean(checked));
+                setPage(1);
+              }}
+            />
+            Review only
+          </label>
         </div>
       </div>
 
       <div className="bg-card border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <Table data-testid="table-businesses">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead>Contactability</TableHead>
+                <TableHead>Research State</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
+                Array.from({ length: 6 }).map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell><Skeleton className="h-4 w-[220px]" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-[180px]" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-[140px]" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                   </TableRow>
                 ))
               ) : data?.businesses.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No businesses found matching your criteria.
+                    No businesses found matching the current research filters.
                   </TableCell>
                 </TableRow>
               ) : (
                 data?.businesses.map((business) => (
-                    <TableRow key={business.id}>
-                      <TableCell className="font-medium">
+                  <TableRow key={business.id}>
+                    <TableCell className="align-top">
+                      <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/businesses/${business.id}`} className="hover:text-primary transition-colors">
+                          <Link href={`/businesses/${business.id}`} className="font-medium hover:text-primary transition-colors">
                             {business.name}
                           </Link>
-                          {business.enrichmentStatus === 'enriched' && (
-                            <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary">Enriched</Badge>
+                          <Badge variant="secondary" className="capitalize">
+                            {business.categorySlug.replace(/_/g, " ")}
+                          </Badge>
+                          {business.readyForOutreach && (
+                            <Badge variant="outline" className="bg-primary/5 text-primary">
+                              Ready
+                            </Badge>
+                          )}
+                          {business.reviewRequired && (
+                            <Badge variant="outline" className="text-amber-700">
+                              Review
+                            </Badge>
                           )}
                         </div>
-                      </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {business.categorySlug.replace(/_/g, ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <MapPin className="mr-1 h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[200px]">
-                          {business.addressLine || business.city || 'Unknown'}
-                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <ScoreBadge label="Priority" value={business.priorityScore} />
+                          <ScoreBadge label="Research" value={business.researchScore} />
+                          <ScoreBadge label="Confidence" value={business.confidenceScore} />
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+
+                    <TableCell className="align-top">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          {[business.city, business.country, business.targetMarket]
+                            .filter(Boolean)
+                            .join(" · ") || "No location metadata"}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {business.avatarType && (
+                            <Badge variant="outline">{formatPipelineValue(business.avatarType)}</Badge>
+                          )}
+                          {business.sourceHealth && (
+                            <Badge variant="outline">{formatPipelineValue(business.sourceHealth)}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="align-top">
+                      <div className="space-y-2 text-sm">
                         {business.website ? (
-                          <a href={business.website} target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-primary transition-colors">
-                            <Globe className="mr-1 h-3 w-3 shrink-0" />
-                            <span className="truncate max-w-[150px]">Website</span>
+                          <a
+                            href={business.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                          >
+                            <Globe className="h-3 w-3" />
+                            Website
+                            <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : (
-                          <span className="flex items-center opacity-50">
-                            <Globe className="mr-1 h-3 w-3 shrink-0" />
+                          <div className="inline-flex items-center gap-1 text-muted-foreground">
+                            <Globe className="h-3 w-3" />
                             No website
-                          </span>
+                          </div>
                         )}
-                        {business.phone && (
-                          <span className="flex items-center">
-                            <Phone className="mr-1 h-3 w-3 shrink-0" />
-                            {business.phone}
-                          </span>
-                        )}
+                        <div className="inline-flex items-center gap-1 text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          {business.phone || "No phone"}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {business.contactReadiness && (
+                            <Badge variant="outline">{formatPipelineValue(business.contactReadiness)}</Badge>
+                          )}
+                          {business.contactabilityScore != null && (
+                            <Badge variant="outline">Contact {business.contactabilityScore}</Badge>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+
+                    <TableCell className="align-top">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex flex-wrap gap-2">
+                          {business.recommendedNextStep && (
+                            <Badge variant="outline" className="bg-primary/5 text-primary">
+                              <Radar className="mr-1 h-3 w-3" />
+                              {formatPipelineValue(business.recommendedNextStep)}
+                            </Badge>
+                          )}
+                          {business.reviewReason && (
+                            <Badge variant="outline" className="text-amber-700">
+                              <ShieldAlert className="mr-1 h-3 w-3" />
+                              {formatPipelineValue(business.reviewReason)}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground">
+                          {business.topGap
+                            ? `Top gap: ${formatPipelineValue(business.topGap)}`
+                            : "No blocking research gap detected."}
+                        </p>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-right align-top">
+                      <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/businesses/${business.id}`}
                           className={buttonVariants({ variant: "ghost", size: "sm" })}
                         >
                           Details
                         </Link>
-                        {business.googleMapsUrl && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <a href={business.googleMapsUrl} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                              <span className="sr-only">View on Google Maps</span>
-                            </a>
-                          </Button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -200,25 +325,25 @@ export default function Businesses() {
             </TableBody>
           </Table>
         </div>
-        
+
         {data && data.totalPages > 1 && (
           <div className="border-t p-4 flex items-center justify-between bg-muted/20">
             <span className="text-sm text-muted-foreground">
               Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, data.total)} of {data.total}
             </span>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={page === 1 || isLoading}
               >
                 Previous
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setPage(p => p + 1)}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((current) => current + 1)}
                 disabled={page >= data.totalPages || isLoading}
               >
                 Next
