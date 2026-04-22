@@ -166,6 +166,9 @@ function getPayloadContext(payload: Record<string, unknown>): PayloadEntry[] {
 function formatDiffValue(field: string, value: unknown): string {
   if (value === null || value === undefined || value === "") return "vuoto";
   if (typeof value === "boolean") return value ? "Sì" : "No";
+  if (typeof value === "object") {
+    try { return JSON.stringify(value); } catch { return "[oggetto]"; }
+  }
   const str = String(value);
   if (str === "true") return "Sì";
   if (str === "false") return "No";
@@ -1060,64 +1063,68 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                   No outreach history has been recorded for this business yet.
                 </div>
               ) : (
-                (outreachEventsQuery.data ?? []).map((event, index) => (
-                  <div key={event.id} className="space-y-3">
-                    {index > 0 && <Separator />}
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="space-y-2 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="secondary">{formatSourceType(event.eventType)}</Badge>
-                          <Badge variant="outline">{formatSourceType(event.entityType)}</Badge>
-                        </div>
-                        <p className="text-sm font-medium">{event.summary}</p>
-                        {event.changedFields.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {event.changedFields.map((field) => (
-                              <Badge key={field} variant="outline">
-                                {formatAuditChangedField(field)}
-                              </Badge>
-                            ))}
+                (outreachEventsQuery.data ?? []).map((event, index) => {
+                  const diffs = getAuditDiffs(event.payload);
+                  const context = getPayloadContext(event.payload);
+                  return (
+                    <div key={event.id} className="space-y-3">
+                      {index > 0 && <Separator />}
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-2 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary">{formatSourceType(event.eventType)}</Badge>
+                            <Badge variant="outline">{formatSourceType(event.entityType)}</Badge>
                           </div>
-                        )}
-                        {getAuditDiffs(event.payload).length > 0 ? (
-                          <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
-                            {getAuditDiffs(event.payload).map((diff) => {
-                              const fieldKey = String(diff.field);
-                              const beforeLabel = formatDiffValue(fieldKey, diff.before);
-                              const afterLabel = formatDiffValue(fieldKey, diff.after);
-                              return (
-                                <div key={`${event.id}-${fieldKey}`} className="flex flex-wrap items-center gap-1.5">
+                          <p className="text-sm font-medium">{event.summary}</p>
+                          {event.changedFields.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {event.changedFields.map((field) => (
+                                <Badge key={field} variant="outline">
+                                  {formatAuditChangedField(field)}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {diffs.length > 0 ? (
+                            <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
+                              {diffs.map((diff) => {
+                                const fieldKey = String(diff.field);
+                                const beforeLabel = formatDiffValue(fieldKey, diff.before);
+                                const afterLabel = formatDiffValue(fieldKey, diff.after);
+                                return (
+                                  <div key={`${event.id}-${fieldKey}`} className="flex flex-wrap items-center gap-1.5">
+                                    <span className="font-medium text-foreground">
+                                      {formatAuditChangedField(fieldKey)}
+                                    </span>
+                                    <span className="text-muted-foreground">cambiato:</span>
+                                    <span className="line-through text-muted-foreground/70">{beforeLabel}</span>
+                                    <span className="text-muted-foreground">→</span>
+                                    <span className="font-medium text-foreground">{afterLabel}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : context.length > 0 ? (
+                            <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
+                              {context.map((entry) => (
+                                <div key={`${event.id}-ctx-${entry.key}`} className="flex flex-wrap items-center gap-1.5">
                                   <span className="font-medium text-foreground">
-                                    {formatAuditChangedField(fieldKey)}
+                                    {formatAuditChangedField(entry.key)}:
                                   </span>
-                                  <span className="text-muted-foreground">cambiato:</span>
-                                  <span className="line-through text-muted-foreground/70">{beforeLabel}</span>
-                                  <span className="text-muted-foreground">→</span>
-                                  <span className="font-medium text-foreground">{afterLabel}</span>
+                                  <span className="text-foreground">{entry.value}</span>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        ) : getPayloadContext(event.payload).length > 0 ? (
-                          <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1.5">
-                            {getPayloadContext(event.payload).map((entry) => (
-                              <div key={`${event.id}-ctx-${entry.key}`} className="flex flex-wrap items-center gap-1.5">
-                                <span className="font-medium text-foreground">
-                                  {formatAuditChangedField(entry.key)}:
-                                </span>
-                                <span className="text-foreground">{entry.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
 
-                      <div className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatAuditTimestamp(event.createdAt)}
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatAuditTimestamp(event.createdAt)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
