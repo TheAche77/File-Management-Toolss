@@ -28,6 +28,7 @@ router.get("/businesses", async (req, res) => {
     search,
     categorySlug,
     city,
+    targetMarket,
     hasWebsite,
     hasPhone,
     page = "1",
@@ -51,6 +52,7 @@ router.get("/businesses", async (req, res) => {
   }
   if (categorySlug) conditions.push(eq(businessesTable.categorySlug, categorySlug));
   if (city) conditions.push(ilike(businessesTable.city, `%${city}%`));
+  if (targetMarket) conditions.push(eq(businessesTable.targetMarket, targetMarket));
   if (hasWebsite === "true") conditions.push(eq(businessesTable.hasWebsite, true));
   if (hasWebsite === "false") conditions.push(eq(businessesTable.hasWebsite, false));
   if (hasPhone === "true") conditions.push(eq(businessesTable.hasPhone, true));
@@ -196,10 +198,11 @@ router.get("/stats", async (req, res) => {
 });
 
 router.get("/export/businesses.csv", async (req, res) => {
-  const { categorySlug, city } = req.query as Record<string, string | undefined>;
+  const { categorySlug, city, targetMarket } = req.query as Record<string, string | undefined>;
   const conditions = [];
   if (categorySlug) conditions.push(eq(businessesTable.categorySlug, categorySlug));
   if (city) conditions.push(ilike(businessesTable.city, `%${city}%`));
+  if (targetMarket) conditions.push(eq(businessesTable.targetMarket, targetMarket));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const rows = await db.select().from(businessesTable).where(where).orderBy(businessesTable.name);
@@ -207,6 +210,7 @@ router.get("/export/businesses.csv", async (req, res) => {
   const headers = [
     "id",
     "category",
+    "target_market",
     "name",
     "city",
     "address",
@@ -235,6 +239,7 @@ router.get("/export/businesses.csv", async (req, res) => {
       [
         r.id,
         esc(r.categorySlug),
+        esc(r.targetMarket),
         esc(r.name),
         esc(r.city),
         esc(r.addressLine),
@@ -254,13 +259,6 @@ router.get("/export/businesses.csv", async (req, res) => {
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", 'attachment; filename="businesses.csv"');
   res.send(lines.join("\n"));
-});
-
-router.get("/galleries", async (req, res) => {
-  const newUrl = `/api/businesses?categorySlug=art_gallery&${new URLSearchParams(
-    req.query as Record<string, string>,
-  ).toString()}`;
-  res.redirect(301, newUrl);
 });
 
 export default router;

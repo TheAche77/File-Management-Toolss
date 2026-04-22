@@ -51,6 +51,7 @@ export function serializeBusiness(r: Record<string, unknown>) {
     postalCode: r["postalCode"] ?? null,
     region: r["region"] ?? null,
     country: r["country"] ?? null,
+    targetMarket: r["targetMarket"] ?? null,
     website: r["website"] ?? null,
     phone: r["phone"] ?? null,
     osmId: r["osmId"] ?? null,
@@ -231,12 +232,28 @@ export async function buildOutreachPipelineResponse(options: {
   today?: string;
   horizonDays: number;
   limit: number;
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
 }) {
   const today = options.today ?? getTodayDateString();
   const rows = await getOutreachRows();
 
   const items = rows
     .map((row) => {
+      if (options.categorySlug && row.categorySlug !== options.categorySlug) {
+        return null;
+      }
+      if (
+        options.city &&
+        !(row.city ?? "").toLowerCase().includes(options.city.toLowerCase())
+      ) {
+        return null;
+      }
+      if (options.targetMarket && row.targetMarket !== options.targetMarket) {
+        return null;
+      }
+
       const status = row.outreachStatus as string;
       const nextActionDate = row.nextActionDate as string | null | undefined;
       const urgencyBucket = getUrgencyBucket(status, nextActionDate, today);

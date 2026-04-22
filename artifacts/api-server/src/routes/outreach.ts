@@ -270,7 +270,13 @@ router.get("/outreach/dashboard", requireAdminAuth, async (_req, res) => {
 });
 
 router.get("/outreach/pipeline", requireAdminAuth, async (req, res) => {
-  const { horizonDays = "7", limit = "50" } = req.query as Record<string, string | undefined>;
+  const {
+    horizonDays = "7",
+    limit = "50",
+    categorySlug,
+    city,
+    targetMarket,
+  } = req.query as Record<string, string | undefined>;
 
   const parsedHorizonDays = Math.max(1, Math.min(30, parseInt(horizonDays ?? "7", 10) || 7));
   const parsedLimit = Math.max(1, Math.min(200, parseInt(limit ?? "50", 10) || 50));
@@ -278,6 +284,9 @@ router.get("/outreach/pipeline", requireAdminAuth, async (req, res) => {
   const { today, items } = await buildOutreachPipelineResponse({
     horizonDays: parsedHorizonDays,
     limit: parsedLimit,
+    categorySlug,
+    city,
+    targetMarket,
   });
 
   res.json({

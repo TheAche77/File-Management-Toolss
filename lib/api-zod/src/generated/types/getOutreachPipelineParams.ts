@@ -9,4 +9,7 @@
 export interface GetOutreachPipelineParams {
   horizonDays?: number;
   limit?: number;
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
 }
