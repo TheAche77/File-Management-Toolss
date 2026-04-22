@@ -38,6 +38,7 @@ export const GetBusinessesQueryParams = zod.object({
   search: zod.coerce.string().optional(),
   categorySlug: zod.coerce.string().optional(),
   city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
   hasWebsite: zod.coerce.boolean().optional(),
   hasPhone: zod.coerce.boolean().optional(),
   page: zod.coerce.number().default(getBusinessesQueryPageDefault),
@@ -58,6 +59,7 @@ export const GetBusinessesResponse = zod.object({
       postalCode: zod.string().nullish(),
       region: zod.string().nullish(),
       country: zod.string().nullish(),
+      targetMarket: zod.string().nullish(),
       website: zod.string().nullish(),
       phone: zod.string().nullish(),
       osmId: zod.string().nullish(),
@@ -103,6 +105,7 @@ export const GetReviewQueueResponseItem = zod.object({
     postalCode: zod.string().nullish(),
     region: zod.string().nullish(),
     country: zod.string().nullish(),
+    targetMarket: zod.string().nullish(),
     website: zod.string().nullish(),
     phone: zod.string().nullish(),
     osmId: zod.string().nullish(),
@@ -141,10 +144,11 @@ export const GetBusinessByIdResponse = zod.object({
   longitude: zod.string(),
   addressLine: zod.string().nullish(),
   city: zod.string().nullish(),
-  postalCode: zod.string().nullish(),
-  region: zod.string().nullish(),
-  country: zod.string().nullish(),
-  website: zod.string().nullish(),
+    postalCode: zod.string().nullish(),
+    region: zod.string().nullish(),
+    country: zod.string().nullish(),
+    targetMarket: zod.string().nullish(),
+    website: zod.string().nullish(),
   phone: zod.string().nullish(),
   osmId: zod.string().nullish(),
   osmType: zod.string().nullish(),
@@ -351,6 +355,9 @@ export const getOutreachPipelineQueryLimitDefault = 50;
 export const GetOutreachPipelineQueryParams = zod.object({
   horizonDays: zod.coerce.number().default(getOutreachPipelineQueryHorizonDaysDefault),
   limit: zod.coerce.number().default(getOutreachPipelineQueryLimitDefault),
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
 });
 
 export const GetOutreachPipelineResponse = zod.object({
@@ -437,4 +444,5 @@ export const GetImportRunByIdResponse = GetImportRunsResponseItem;
 export const ExportBusinessesCsvQueryParams = zod.object({
   categorySlug: zod.coerce.string().optional(),
   city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
 });

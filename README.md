@@ -1,6 +1,6 @@
-# Scopri Italia
+# Street Level Discovery
 
-Local business discovery and enrichment platform for Italy.
+Business discovery, enrichment, and outreach CRM for Street Level Gallery workflows.
 
 The app is built as a `pnpm` monorepo with:
 

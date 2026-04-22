@@ -24,6 +24,8 @@ export interface Business {
   /** @nullable */
   country?: string | null;
   /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
   website?: string | null;
   /** @nullable */
   phone?: string | null;

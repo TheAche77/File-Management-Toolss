@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import {
   businessSourcesTable,
   db,
@@ -11,6 +11,14 @@ export interface MergedBusinessRecord {
   id: number;
   action: "insert" | "update" | "skip";
   business: InsertBusiness;
+}
+
+function buildSourceIdentityKey(record: {
+  businessId: number;
+  sourceType: string;
+  sourceUrl: string;
+}) {
+  return `${record.businessId}::${record.sourceType}::${record.sourceUrl}`;
 }
 
 function getSourceDomain(url: string): string | null {
@@ -67,21 +75,34 @@ export function buildBusinessSourcesForRecord(
 export async function upsertBusinessSources(records: InsertBusinessSource[]): Promise<void> {
   if (records.length === 0) return;
 
-  await db.transaction(async (tx) => {
-    for (const record of records) {
-      const existing = await tx
-        .select({ id: businessSourcesTable.id })
-        .from(businessSourcesTable)
-        .where(
-          and(
-            eq(businessSourcesTable.businessId, record.businessId),
-            eq(businessSourcesTable.sourceType, record.sourceType),
-            eq(businessSourcesTable.sourceUrl, record.sourceUrl),
-          ),
-        )
-        .limit(1);
+  const uniqueRecords = Array.from(
+    new Map(records.map((record) => [buildSourceIdentityKey(record), record])).values(),
+  );
+  const businessIds = Array.from(new Set(uniqueRecords.map((record) => record.businessId)));
 
-      if (existing.length > 0) {
+  await db.transaction(async (tx) => {
+    const existingRows = businessIds.length
+      ? await tx
+          .select({
+            id: businessSourcesTable.id,
+            businessId: businessSourcesTable.businessId,
+            sourceType: businessSourcesTable.sourceType,
+            sourceUrl: businessSourcesTable.sourceUrl,
+          })
+          .from(businessSourcesTable)
+          .where(inArray(businessSourcesTable.businessId, businessIds))
+      : [];
+
+    const existingByKey = new Map(
+      existingRows.map((row) => [buildSourceIdentityKey(row), row]),
+    );
+
+    const inserts: InsertBusinessSource[] = [];
+
+    for (const record of uniqueRecords) {
+      const existing = existingByKey.get(buildSourceIdentityKey(record));
+
+      if (existing) {
         await tx
           .update(businessSourcesTable)
           .set({
@@ -94,14 +115,18 @@ export async function upsertBusinessSources(records: InsertBusinessSource[]): Pr
             isOfficial: record.isOfficial,
             updatedAt: new Date(),
           })
-          .where(eq(businessSourcesTable.id, existing[0]!.id));
+          .where(eq(businessSourcesTable.id, existing.id));
       } else {
-        await tx.insert(businessSourcesTable).values(record);
+        inserts.push(record);
       }
+    }
+
+    if (inserts.length > 0) {
+      await tx.insert(businessSourcesTable).values(inserts);
     }
   });
 
-  logger.info({ count: records.length }, "Business sources upserted");
+  logger.info({ count: uniqueRecords.length }, "Business sources upserted");
 }
 
 export async function getBusinessSources(businessId: number) {

@@ -1,22 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useGetBusinesses, getGetBusinessesQueryKey, useGetCategories, getGetCategoriesQueryKey } from "@workspace/api-client-react";
-import { Search, MapPin, Globe, Phone, ExternalLink } from "lucide-react";
+import { MapPin, Globe, Phone, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { SharedBusinessFilters } from "@/components/shared-business-filters";
+import {
+  buildSearchParams,
+  readBooleanSearchParam,
+  readNumberSearchParam,
+  readSearchParam,
+  readSharedBusinessFilters,
+  syncSearchParams,
+} from "@/lib/business-filters";
 
 export default function Businesses() {
-  const [search, setSearch] = useState("");
-  const [city, setCity] = useState("");
-  const [category, setCategory] = useState("all");
-  const [hasWebsite, setHasWebsite] = useState(false);
-  const [hasPhone, setHasPhone] = useState(false);
-  const [page, setPage] = useState(1);
+  const initialFilters = readSharedBusinessFilters(window.location.search);
+  const [search, setSearch] = useState(() => readSearchParam(window.location.search, "search"));
+  const [city, setCity] = useState(initialFilters.city);
+  const [category, setCategory] = useState(initialFilters.categorySlug);
+  const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
+  const [hasWebsite, setHasWebsite] = useState(() =>
+    readBooleanSearchParam(window.location.search, "hasWebsite"),
+  );
+  const [hasPhone, setHasPhone] = useState(() =>
+    readBooleanSearchParam(window.location.search, "hasPhone"),
+  );
+  const [page, setPage] = useState(() =>
+    readNumberSearchParam(window.location.search, "page", 1),
+  );
   const pageSize = 20;
 
   const { data: categories } = useGetCategories({
@@ -27,6 +43,7 @@ export default function Businesses() {
     search: search || undefined,
     city: city || undefined,
     categorySlug: category === "all" ? undefined : category,
+    targetMarket: targetMarket === "all" ? undefined : targetMarket,
     hasWebsite: hasWebsite || undefined,
     hasPhone: hasPhone || undefined,
     page,
@@ -37,6 +54,22 @@ export default function Businesses() {
     query: { queryKey: getGetBusinessesQueryKey(queryParams) }
   });
 
+  useEffect(() => {
+    const nextSearch = buildSearchParams(window.location.search, {
+      search,
+      city,
+      categorySlug: category,
+      targetMarket,
+      hasWebsite,
+      hasPhone,
+      page,
+      horizonDays: undefined,
+      limit: undefined,
+    });
+
+    syncSearchParams(nextSearch);
+  }, [category, city, hasPhone, hasWebsite, page, search, targetMarket]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -45,7 +78,7 @@ export default function Businesses() {
       </div>
 
       <div className="bg-card border rounded-lg p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Input 
               placeholder="Search names..." 
@@ -54,29 +87,19 @@ export default function Businesses() {
               data-testid="input-search"
             />
           </div>
-          <div>
-            <Input 
-              placeholder="Filter by city..." 
-              value={city}
-              onChange={(e) => { setCity(e.target.value); setPage(1); }}
+          <div className="md:col-span-2">
+            <SharedBusinessFilters
+              categories={categories}
+              city={city}
+              categorySlug={category}
+              targetMarket={targetMarket}
+              onCityChange={(value) => { setCity(value); setPage(1); }}
+              onCategoryChange={(value) => { setCategory(value); setPage(1); }}
+              onTargetMarketChange={(value) => { setTargetMarket(value); setPage(1); }}
             />
           </div>
-          <div>
-            <Select 
-              value={category} 
-              onValueChange={(val) => { setCategory(val); setPage(1); }}
-            >
-              <SelectTrigger data-testid="select-category">
-                <SelectValue placeholder="All categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories?.map(c => (
-                  <SelectItem key={c.id} value={c.slug}>{c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex items-center space-x-2">
             <Checkbox 
               id="has-website" 
@@ -146,6 +169,9 @@ export default function Businesses() {
                       <Badge variant="secondary" className="capitalize">
                         {business.categorySlug.replace(/_/g, ' ')}
                       </Badge>
+                      {business.targetMarket && (
+                        <Badge variant="outline">{business.targetMarket}</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center text-sm text-muted-foreground">

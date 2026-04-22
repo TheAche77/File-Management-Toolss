@@ -10,6 +10,7 @@ export type GetBusinessesParams = {
   search?: string;
   categorySlug?: string;
   city?: string;
+  targetMarket?: string;
   hasWebsite?: boolean;
   hasPhone?: boolean;
   page?: number;

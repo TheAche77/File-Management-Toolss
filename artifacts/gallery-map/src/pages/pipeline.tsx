@@ -1,15 +1,24 @@
 import { Link } from "wouter";
 import {
   getGetOutreachPipelineQueryKey,
+  useGetCategories,
+  getGetCategoriesQueryKey,
   useGetOutreachPipeline,
 } from "@workspace/api-client-react";
 import { CalendarClock, ExternalLink, Mail, MoveRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SharedBusinessFilters } from "@/components/shared-business-filters";
 import { getArtistRecommendation } from "@/lib/artist-recommendation";
 import { getStoredAdminToken } from "@/lib/admin-auth";
+import {
+  buildSearchParams,
+  readSharedBusinessFilters,
+  syncSearchParams,
+} from "@/lib/business-filters";
 import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function getUrgencyTone(bucket: string) {
@@ -81,15 +90,48 @@ function PipelineSkeleton() {
 
 export default function PipelinePage() {
   const hasAdminToken = Boolean(getStoredAdminToken());
+  const initialFilters = readSharedBusinessFilters(window.location.search);
+  const [city, setCity] = useState(initialFilters.city);
+  const [category, setCategory] = useState(initialFilters.categorySlug);
+  const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
+  const pipelineParams = useMemo(
+    () => ({
+      horizonDays: 7,
+      limit: 60,
+      categorySlug: category === "all" ? undefined : category,
+      city: city || undefined,
+      targetMarket: targetMarket === "all" ? undefined : targetMarket,
+    }),
+    [category, city, targetMarket],
+  );
+  const { data: categories } = useGetCategories({
+    query: { queryKey: getGetCategoriesQueryKey() },
+  });
   const { data, isLoading, isError } = useGetOutreachPipeline(
-    { horizonDays: 7, limit: 60 },
+    pipelineParams,
     {
       query: {
-        queryKey: getGetOutreachPipelineQueryKey({ horizonDays: 7, limit: 60 }),
+        queryKey: getGetOutreachPipelineQueryKey(pipelineParams),
         enabled: hasAdminToken,
       },
     },
   );
+
+  useEffect(() => {
+    const nextSearch = buildSearchParams(window.location.search, {
+      city,
+      categorySlug: category,
+      targetMarket,
+      search: undefined,
+      hasWebsite: undefined,
+      hasPhone: undefined,
+      page: undefined,
+      horizonDays: undefined,
+      limit: undefined,
+    });
+
+    syncSearchParams(nextSearch);
+  }, [category, city, targetMarket]);
 
   if (!hasAdminToken) {
     return (
@@ -154,6 +196,18 @@ export default function PipelinePage() {
         <Button variant="outline" asChild>
           <Link href="/">Torna alla Dashboard</Link>
         </Button>
+      </div>
+
+      <div className="rounded-lg border bg-card p-4">
+        <SharedBusinessFilters
+          categories={categories}
+          city={city}
+          categorySlug={category}
+          targetMarket={targetMarket}
+          onCityChange={setCity}
+          onCategoryChange={setCategory}
+          onTargetMarketChange={setTargetMarket}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
