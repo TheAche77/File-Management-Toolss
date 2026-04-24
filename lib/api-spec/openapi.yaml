@@ -604,6 +604,12 @@ components:
           type: string
         targetMarket:
           type: ["string", "null"]
+        engineType:
+          type: ["string", "null"]
+        targetType:
+          type: ["string", "null"]
+        targetCluster:
+          type: ["string", "null"]
         avatarType:
           type: ["string", "null"]
         discoveryStatus:
@@ -630,6 +636,22 @@ components:
           type: ["integer", "null"]
         researchScore:
           type: ["integer", "null"]
+        economicValueScore:
+          type: ["integer", "null"]
+        strategicValueScore:
+          type: ["integer", "null"]
+        referralValueScore:
+          type: ["integer", "null"]
+        prestigeValueScore:
+          type: ["integer", "null"]
+        continuityRevenuePotential:
+          type: ["integer", "null"]
+        offerFitScore:
+          type: ["integer", "null"]
+        relationshipPathScore:
+          type: ["integer", "null"]
+        actionabilityScore:
+          type: ["integer", "null"]
         officialSourceCount:
           type: ["integer", "null"]
         successfulSourceCount:
@@ -640,6 +662,40 @@ components:
           type: ["integer", "null"]
         primaryContactCandidateId:
           type: ["integer", "null"]
+        bestOfferId:
+          type: ["integer", "null"]
+        bestNarrativeId:
+          type: ["integer", "null"]
+        secondaryNarrativeId:
+          type: ["integer", "null"]
+        bestCredibilityAssetId:
+          type: ["integer", "null"]
+        bestCaseStudyId:
+          type: ["integer", "null"]
+        proofAngle:
+          type: ["string", "null"]
+        riskReductionReason:
+          type: ["string", "null"]
+        toneOfApproach:
+          type: ["string", "null"]
+        recommendedPitchAngle:
+          type: ["string", "null"]
+        nextBestContactWindow:
+          type: ["string", "null"]
+        accountTier:
+          type: ["string", "null"]
+        seasonalityFit:
+          type: ["string", "null"]
+        warmPathExists:
+          type: boolean
+        readyForRelationship:
+          type: boolean
+        readyForInstitutionalPitch:
+          type: boolean
+        prestigeWatchlist:
+          type: boolean
+        cultivationRequired:
+          type: boolean
         readyForOutreach:
           type: boolean
         reviewRequired:
@@ -668,6 +724,11 @@ components:
         - hasWebsite
         - hasPhone
         - enrichmentStatus
+        - warmPathExists
+        - readyForRelationship
+        - readyForInstitutionalPitch
+        - prestigeWatchlist
+        - cultivationRequired
         - readyForOutreach
         - reviewRequired
         - createdAt
@@ -715,6 +776,14 @@ components:
           type: ["integer", "null"]
         isOfficial:
           type: boolean
+        sourcePriority:
+          type: integer
+        usefulnessScore:
+          type: ["integer", "null"]
+        nextFetchAt:
+          type: ["string", "null"]
+        freshnessStatus:
+          type: string
         createdAt:
           type: string
         updatedAt:
@@ -726,6 +795,8 @@ components:
         - sourceUrl
         - fetchStatus
         - isOfficial
+        - sourcePriority
+        - freshnessStatus
         - createdAt
         - updatedAt
 
@@ -859,6 +930,18 @@ components:
           type: boolean
         lastVerifiedAt:
           type: ["string", "null"]
+        verificationStatus:
+          type: string
+        isReachable:
+          type: boolean
+        isDecisionMakerLikely:
+          type: boolean
+        channelPriority:
+          type: integer
+        sourcePriority:
+          type: integer
+        nextVerificationAt:
+          type: ["string", "null"]
         reviewStatus:
           type: string
         notes:
@@ -876,6 +959,11 @@ components:
         - confidenceScore
         - isPrimary
         - isPersonalData
+        - verificationStatus
+        - isReachable
+        - isDecisionMakerLikely
+        - channelPriority
+        - sourcePriority
         - reviewStatus
         - createdAt
         - updatedAt

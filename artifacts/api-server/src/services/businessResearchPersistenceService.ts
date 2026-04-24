@@ -9,6 +9,7 @@ import {
   computeBusinessResearchSnapshot,
   type BusinessResearchSnapshot,
 } from "./businessResearchScoringService";
+import { loadSlgScoringContext } from "./slgScoringContextService";
 
 function buildBusinessResearchUpdate(
   aggregate: BusinessResearchAggregate,
@@ -37,11 +38,39 @@ function buildBusinessResearchUpdate(
     freshnessScore: snapshot.freshnessScore,
     priorityScore: snapshot.priorityScore,
     researchScore: snapshot.researchScore,
+    engineType: snapshot.engineType,
+    targetType: snapshot.targetType,
+    targetCluster: snapshot.targetCluster,
+    economicValueScore: snapshot.economicValueScore,
+    strategicValueScore: snapshot.strategicValueScore,
+    referralValueScore: snapshot.referralValueScore,
+    prestigeValueScore: snapshot.prestigeValueScore,
+    continuityRevenuePotential: snapshot.continuityRevenuePotential,
+    offerFitScore: snapshot.offerFitScore,
+    relationshipPathScore: snapshot.relationshipPathScore,
+    actionabilityScore: snapshot.actionabilityScore,
     officialSourceCount: snapshot.officialSourceCount,
     successfulSourceCount: snapshot.successfulSourceCount,
     failedSourceCount: snapshot.failedSourceCount,
     primarySourceId: snapshot.primarySourceId,
     primaryContactCandidateId: snapshot.primaryContactCandidateId,
+    bestOfferId: snapshot.bestOfferId,
+    bestNarrativeId: snapshot.bestNarrativeId,
+    secondaryNarrativeId: snapshot.secondaryNarrativeId,
+    bestCredibilityAssetId: snapshot.bestCredibilityAssetId,
+    bestCaseStudyId: snapshot.bestCaseStudyId,
+    proofAngle: snapshot.proofAngle,
+    riskReductionReason: snapshot.riskReductionReason,
+    toneOfApproach: snapshot.toneOfApproach,
+    recommendedPitchAngle: snapshot.recommendedPitchAngle,
+    nextBestContactWindow: snapshot.nextBestContactWindow,
+    accountTier: snapshot.accountTier,
+    seasonalityFit: snapshot.seasonalityFit,
+    readyForRelationship: snapshot.readyForRelationship,
+    readyForInstitutionalPitch: snapshot.readyForInstitutionalPitch,
+    prestigeWatchlist: snapshot.prestigeWatchlist,
+    cultivationRequired: snapshot.cultivationRequired,
+    warmPathExists: snapshot.warmPathExists,
     readyForOutreach: snapshot.readyForOutreach,
     reviewRequired: snapshot.reviewRequired,
     reviewReason: snapshot.reviewReason,
@@ -68,7 +97,8 @@ export async function refreshBusinessResearchState(
   const aggregate = await loadBusinessResearchAggregateById(businessId);
   if (!aggregate) return null;
 
-  const snapshot = computeBusinessResearchSnapshot(aggregate);
+  const context = await loadSlgScoringContext([businessId]);
+  const snapshot = computeBusinessResearchSnapshot(aggregate, context);
   const [updated] = await db
     .update(businessesTable)
     .set(buildBusinessResearchUpdate(aggregate, snapshot))
@@ -86,10 +116,11 @@ export async function refreshBusinessResearchStates(
 ) {
   const aggregates = await loadBusinessResearchAggregatesByIds(businessIds);
   if (aggregates.length === 0) return [];
+  const context = await loadSlgScoringContext(aggregates.map((aggregate) => aggregate.business.id));
 
   const results = [];
   for (const aggregate of aggregates) {
-    const snapshot = computeBusinessResearchSnapshot(aggregate);
+    const snapshot = computeBusinessResearchSnapshot(aggregate, context);
     const [updated] = await db
       .update(businessesTable)
       .set(buildBusinessResearchUpdate(aggregate, snapshot))
@@ -107,8 +138,9 @@ export async function refreshBusinessResearchStates(
 
 export async function previewBusinessResearchSnapshots(businessIds: number[]) {
   const aggregates = await loadBusinessResearchAggregatesByIds(businessIds);
+  const context = await loadSlgScoringContext(aggregates.map((aggregate) => aggregate.business.id));
   return aggregates.map((aggregate) => ({
     aggregate,
-    snapshot: computeBusinessResearchSnapshot(aggregate),
+    snapshot: computeBusinessResearchSnapshot(aggregate, context),
   }));
 }

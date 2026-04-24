@@ -3,6 +3,8 @@ export type SharedBusinessFiltersState = {
   city: string;
   categorySlug: string;
   targetMarket: string;
+  engineType: string;
+  targetCluster: string;
   hasWebsite: boolean;
   hasPhone: boolean;
   readyForOutreach: boolean;
@@ -22,6 +24,8 @@ export function readSharedBusinessFilters(search: string): SharedBusinessFilters
     city: params.get("city") ?? "",
     categorySlug: params.get("categorySlug") ?? "all",
     targetMarket: params.get("targetMarket") ?? "all",
+    engineType: params.get("engineType") ?? "all",
+    targetCluster: params.get("targetCluster") ?? "all",
     hasWebsite: params.get("hasWebsite") === "true",
     hasPhone: params.get("hasPhone") === "true",
     readyForOutreach: params.get("readyForOutreach") === "true",
@@ -60,6 +64,8 @@ export function buildSearchParams(
   setString("city", next.city);
   setString("categorySlug", next.categorySlug, "all");
   setString("targetMarket", next.targetMarket, "all");
+  setString("engineType", next.engineType, "all");
+  setString("targetCluster", next.targetCluster, "all");
   if (next.hasWebsite) params.set("hasWebsite", "true");
   if (next.hasPhone) params.set("hasPhone", "true");
   if (next.readyForOutreach) params.set("readyForOutreach", "true");

@@ -60,6 +60,12 @@ import {
 import { getStoredAdminToken } from "@/lib/admin-auth";
 import { formatPipelineValue } from "@/lib/outreach-formatting";
 
+type SlgReferenceEntry = {
+  id: number;
+  name?: string | null;
+  title?: string | null;
+};
+
 const OUTREACH_STATUS_OPTIONS = [
   "not_contacted",
   "emailed",
@@ -398,6 +404,17 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const hasAdminToken = Boolean(getStoredAdminToken());
   const [outreachForm, setOutreachForm] = useState<OutreachFormState>(() => buildOutreachFormState());
   const [assignedArtistMode, setAssignedArtistMode] = useState<"auto" | "manual">("auto");
+  const [referenceLabels, setReferenceLabels] = useState<{
+    offers: Record<number, string>;
+    narratives: Record<number, string>;
+    assets: Record<number, string>;
+    caseStudies: Record<number, string>;
+  }>({
+    offers: {},
+    narratives: {},
+    assets: {},
+    caseStudies: {},
+  });
 
   const businessQuery = useGetBusinessById(businessId, {
     query: {
@@ -448,6 +465,53 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
       setAssignedArtistMode(getAssignedArtistMode(nextForm, businessQuery.data?.categorySlug ?? null));
     }
   }, [outreachQuery.data, businessQuery.data?.categorySlug]);
+
+  useEffect(() => {
+    if (!hasAdminToken) return;
+
+    let cancelled = false;
+    const token = getStoredAdminToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
+    const fetchEntries = async (path: string) => {
+      const response = await fetch(path, { headers });
+      if (!response.ok) throw new Error(`Failed to load ${path}`);
+      return (await response.json()) as SlgReferenceEntry[];
+    };
+
+    void Promise.all([
+      fetchEntries("/api/offers"),
+      fetchEntries("/api/narratives"),
+      fetchEntries("/api/credibility-assets"),
+      fetchEntries("/api/case-studies"),
+    ])
+      .then(([offers, narratives, assets, caseStudies]) => {
+        if (cancelled) return;
+        setReferenceLabels({
+          offers: Object.fromEntries(offers.map((entry) => [entry.id, entry.name ?? `Offer #${entry.id}`])),
+          narratives: Object.fromEntries(
+            narratives.map((entry) => [entry.id, entry.name ?? `Narrative #${entry.id}`]),
+          ),
+          assets: Object.fromEntries(assets.map((entry) => [entry.id, entry.name ?? `Asset #${entry.id}`])),
+          caseStudies: Object.fromEntries(
+            caseStudies.map((entry) => [entry.id, entry.title ?? `Case Study #${entry.id}`]),
+          ),
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setReferenceLabels({
+          offers: {},
+          narratives: {},
+          assets: {},
+          caseStudies: {},
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAdminToken]);
 
   const updateOutreachMutation = useUpdateBusinessOutreach({
     mutation: {
@@ -769,14 +833,55 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">Freshness</p>
                   <p className="mt-2 text-2xl font-serif">{business.freshnessScore ?? "—"}</p>
                 </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Economic Value</p>
+                  <p className="mt-2 text-2xl font-serif">{business.economicValueScore ?? "—"}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Strategic Value</p>
+                  <p className="mt-2 text-2xl font-serif">{business.strategicValueScore ?? "—"}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Referral Value</p>
+                  <p className="mt-2 text-2xl font-serif">{business.referralValueScore ?? "—"}</p>
+                </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Actionability</p>
+                  <p className="mt-2 text-2xl font-serif">{business.actionabilityScore ?? "—"}</p>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
+                {business.engineType && (
+                  <Badge variant="outline">{formatPipelineValue(business.engineType)}</Badge>
+                )}
+                {business.targetType && (
+                  <Badge variant="outline">{formatPipelineValue(business.targetType)}</Badge>
+                )}
+                {business.targetCluster && (
+                  <Badge variant="outline">{formatPipelineValue(business.targetCluster)}</Badge>
+                )}
                 {business.readyForOutreach && (
                   <Badge variant="outline" className="bg-primary/5 text-primary">
                     <BadgeCheck className="mr-1 h-3 w-3" />
                     Ready for outreach
                   </Badge>
+                )}
+                {business.readyForRelationship && (
+                  <Badge variant="outline" className="text-emerald-700">
+                    Relationship-ready
+                  </Badge>
+                )}
+                {business.readyForInstitutionalPitch && (
+                  <Badge variant="outline" className="text-sky-700">
+                    Institutional pitch
+                  </Badge>
+                )}
+                {business.prestigeWatchlist && (
+                  <Badge variant="outline">Prestige watchlist</Badge>
+                )}
+                {business.cultivationRequired && (
+                  <Badge variant="outline">Cultivation required</Badge>
                 )}
                 {business.reviewRequired && (
                   <Badge variant="outline" className="text-amber-700">
@@ -824,6 +929,52 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                     {business.primaryContactCandidateId
                       ? `Candidate #${business.primaryContactCandidateId}`
                       : "Not selected yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Best Offer</p>
+                  <p className="mt-2 font-medium">
+                    {business.bestOfferId
+                      ? referenceLabels.offers[business.bestOfferId] ?? `Offer #${business.bestOfferId}`
+                      : "Not assigned yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Best Narrative</p>
+                  <p className="mt-2 font-medium">
+                    {business.bestNarrativeId
+                      ? referenceLabels.narratives[business.bestNarrativeId] ?? `Narrative #${business.bestNarrativeId}`
+                      : "Not assigned yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Best Proof</p>
+                  <p className="mt-2 font-medium">
+                    {business.bestCredibilityAssetId
+                      ? referenceLabels.assets[business.bestCredibilityAssetId] ??
+                        `Asset #${business.bestCredibilityAssetId}`
+                      : business.bestCaseStudyId
+                        ? referenceLabels.caseStudies[business.bestCaseStudyId] ??
+                          `Case Study #${business.bestCaseStudyId}`
+                        : "Not assigned yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Pitch Angle</p>
+                  <p className="mt-2 font-medium">
+                    {business.recommendedPitchAngle ?? business.proofAngle ?? "No angle selected yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Timing</p>
+                  <p className="mt-2 font-medium">
+                    {business.nextBestContactWindow ?? "Always-on"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Account Tier</p>
+                  <p className="mt-2 font-medium">
+                    {business.accountTier ?? "Not tiered"}
                   </p>
                 </div>
               </div>

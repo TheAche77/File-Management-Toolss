@@ -88,6 +88,12 @@ export default function Admin() {
   const researchSummaryHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/business-research-summary.csv"), [exportHref]);
   const outreachReadyHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/outreach-ready.csv"), [exportHref]);
   const reviewQueueHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/review-queue.csv"), [exportHref]);
+  const slgRevenueHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/slg-revenue-targets.csv"), [exportHref]);
+  const slgInstitutionalHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/slg-institutional-targets.csv"), [exportHref]);
+  const slgAuthorityHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/slg-authority-targets.csv"), [exportHref]);
+  const slgReferralHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/slg-referral-paths.csv"), [exportHref]);
+  const slgHospitalityHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/slg-hospitality-targets.csv"), [exportHref]);
+  const slgLabirintoHref = useMemo(() => exportHref.replace("/api/export/businesses.csv", "/api/export/slg-labirinto-fit.csv"), [exportHref]);
 
   useEffect(() => {
     if (!activeRunId) {
@@ -417,6 +423,24 @@ export default function Admin() {
               onClick={() => downloadCsv(reviewQueueHref, "review_queue.csv", true)}
             >
               <Download className="mr-2 h-4 w-4" /> Export Review Queue
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgRevenueHref, "slg_revenue_targets.csv", true)}>
+              <Download className="mr-2 h-4 w-4" /> Export SLG Revenue Targets
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgInstitutionalHref, "slg_institutional_targets.csv", true)}>
+              <Download className="mr-2 h-4 w-4" /> Export SLG Institutional Targets
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgAuthorityHref, "slg_authority_targets.csv", true)}>
+              <Download className="mr-2 h-4 w-4" /> Export SLG Authority Targets
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgReferralHref, "slg_referral_paths.csv", true)}>
+              <Download className="mr-2 h-4 w-4" /> Export SLG Referral Paths
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgHospitalityHref, "slg_hospitality_targets.csv", true)}>
+              <Download className="mr-2 h-4 w-4" /> Export SLG Hospitality Targets
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgLabirintoHref, "slg_labirinto_fit.csv", true)}>
+              <Download className="mr-2 h-4 w-4" /> Export SLG LABirinto Fit
             </Button>
             <p className="text-xs text-muted-foreground mt-4">
               The exports will respect the selected category and city filters above.

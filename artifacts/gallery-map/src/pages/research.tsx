@@ -20,6 +20,15 @@ type ResearchMetrics = {
   readyBusinesses: number;
   reviewBusinesses: number;
   staleHighPriorityBusinesses: number;
+  engineBreakdown: {
+    revenue: number;
+    institutional: number;
+    authority: number;
+  };
+  relationshipBreakdown: {
+    warmPaths: number;
+    prestigeWatchlist: number;
+  };
   topNextSteps: { recommendedNextStep: string; total: number }[];
   jobCounts: {
     queued: number;
@@ -127,6 +136,8 @@ export default function ResearchPage() {
   const [city, setCity] = useState(initial.city);
   const [category, setCategory] = useState(initial.categorySlug);
   const [targetMarket, setTargetMarket] = useState(initial.targetMarket);
+  const [engineType, setEngineType] = useState(initial.engineType);
+  const [targetCluster, setTargetCluster] = useState(initial.targetCluster);
   const [minPriorityScore, setMinPriorityScore] = useState(initial.minPriorityScore?.toString() ?? "60");
   const [minResearchScore, setMinResearchScore] = useState(initial.minResearchScore?.toString() ?? "60");
   const [metrics, setMetrics] = useState<ResearchMetrics | null>(null);
@@ -147,6 +158,8 @@ export default function ResearchPage() {
       city,
       categorySlug: category,
       targetMarket,
+      engineType,
+      targetCluster,
       minPriorityScore: minPriorityScore ? Number(minPriorityScore) : undefined,
       minResearchScore: minResearchScore ? Number(minResearchScore) : undefined,
       hasWebsite: false,
@@ -158,7 +171,7 @@ export default function ResearchPage() {
       limit: undefined,
     });
     return nextSearch;
-  }, [category, city, minPriorityScore, minResearchScore, search, targetMarket]);
+  }, [category, city, engineType, minPriorityScore, minResearchScore, search, targetCluster, targetMarket]);
 
   useEffect(() => {
     syncSearchParams(queryString);
@@ -245,6 +258,8 @@ export default function ResearchPage() {
             city,
             categorySlug: category,
             targetMarket,
+            engineType,
+            targetCluster,
             minPriorityScore: minPriorityScore ? Number(minPriorityScore) : undefined,
             minResearchScore: minResearchScore ? Number(minResearchScore) : undefined,
           },
@@ -270,6 +285,8 @@ export default function ResearchPage() {
     setCity(String(filters["city"] ?? ""));
     setCategory(String(filters["categorySlug"] ?? "all"));
     setTargetMarket(String(filters["targetMarket"] ?? "all"));
+    setEngineType(String(filters["engineType"] ?? "all"));
+    setTargetCluster(String(filters["targetCluster"] ?? "all"));
     setMinPriorityScore(filters["minPriorityScore"] ? String(filters["minPriorityScore"]) : "");
     setMinResearchScore(filters["minResearchScore"] ? String(filters["minResearchScore"]) : "");
   };
@@ -320,6 +337,11 @@ export default function ResearchPage() {
         { label: "Contactable", value: metrics.contactableBusinesses },
         { label: "Ready", value: metrics.readyBusinesses },
         { label: "Review", value: metrics.reviewBusinesses },
+        { label: "Revenue Engine", value: metrics.engineBreakdown.revenue },
+        { label: "Institutional Engine", value: metrics.engineBreakdown.institutional },
+        { label: "Authority Engine", value: metrics.engineBreakdown.authority },
+        { label: "Warm Paths", value: metrics.relationshipBreakdown.warmPaths },
+        { label: "Prestige Watchlist", value: metrics.relationshipBreakdown.prestigeWatchlist },
         { label: "Queued Jobs", value: metrics.jobCounts.queued + metrics.jobCounts.retrying },
         { label: "Manual Overrides", value: metrics.feedback.manualArtistOverrides + metrics.feedback.primaryContactOverrides },
       ]
@@ -347,9 +369,13 @@ export default function ResearchPage() {
           city={city}
           categorySlug={category}
           targetMarket={targetMarket}
+          engineType={engineType}
+          targetCluster={targetCluster}
           onCityChange={setCity}
           onCategoryChange={setCategory}
           onTargetMarketChange={setTargetMarket}
+          onEngineTypeChange={setEngineType}
+          onTargetClusterChange={setTargetCluster}
         />
         <div className="grid gap-4 md:grid-cols-3">
           <Input

@@ -6,6 +6,8 @@ export interface ResearchMetricsFilters {
   categorySlug?: string;
   city?: string;
   targetMarket?: string;
+  engineType?: string;
+  targetCluster?: string;
 }
 
 function buildFilters(filters: ResearchMetricsFilters) {
@@ -13,6 +15,8 @@ function buildFilters(filters: ResearchMetricsFilters) {
   if (filters.categorySlug) conditions.push(eq(businessesTable.categorySlug, filters.categorySlug));
   if (filters.city) conditions.push(ilike(businessesTable.city, `%${filters.city}%`));
   if (filters.targetMarket) conditions.push(eq(businessesTable.targetMarket, filters.targetMarket));
+  if (filters.engineType) conditions.push(eq(businessesTable.engineType, filters.engineType));
+  if (filters.targetCluster) conditions.push(eq(businessesTable.targetCluster, filters.targetCluster));
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
@@ -27,6 +31,11 @@ export async function getResearchMetrics(filters: ResearchMetricsFilters = {}) {
         ready: sql<number>`count(*) filter (where ${businessesTable.readyForOutreach} = true)`,
         review: sql<number>`count(*) filter (where ${businessesTable.reviewRequired} = true)`,
         stale: sql<number>`count(*) filter (where ${businessesTable.priorityScore} >= 70 and ${businessesTable.nextResearchAt} <= now())`,
+        revenue: sql<number>`count(*) filter (where ${businessesTable.engineType} = 'revenue')`,
+        institutional: sql<number>`count(*) filter (where ${businessesTable.engineType} = 'institutional')`,
+        authority: sql<number>`count(*) filter (where ${businessesTable.engineType} = 'authority')`,
+        warmPaths: sql<number>`count(*) filter (where ${businessesTable.warmPathExists} = true)`,
+        prestigeWatchlist: sql<number>`count(*) filter (where ${businessesTable.prestigeWatchlist} = true)`,
       })
       .from(businessesTable)
       .where(where),
@@ -60,6 +69,15 @@ export async function getResearchMetrics(filters: ResearchMetricsFilters = {}) {
     readyBusinesses: Number(row?.ready ?? 0),
     reviewBusinesses: Number(row?.review ?? 0),
     staleHighPriorityBusinesses: Number(row?.stale ?? 0),
+    engineBreakdown: {
+      revenue: Number(row?.revenue ?? 0),
+      institutional: Number(row?.institutional ?? 0),
+      authority: Number(row?.authority ?? 0),
+    },
+    relationshipBreakdown: {
+      warmPaths: Number(row?.warmPaths ?? 0),
+      prestigeWatchlist: Number(row?.prestigeWatchlist ?? 0),
+    },
     topNextSteps: topNextSteps.map((item) => ({
       recommendedNextStep: item.recommendedNextStep ?? "unspecified",
       total: Number(item.total),

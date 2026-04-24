@@ -42,6 +42,8 @@ export default function Businesses() {
   const [city, setCity] = useState(initialFilters.city);
   const [category, setCategory] = useState(initialFilters.categorySlug);
   const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
+  const [engineType, setEngineType] = useState(initialFilters.engineType);
+  const [targetCluster, setTargetCluster] = useState(initialFilters.targetCluster);
   const [hasWebsite, setHasWebsite] = useState(initialFilters.hasWebsite);
   const [hasPhone, setHasPhone] = useState(initialFilters.hasPhone);
   const [readyOnly, setReadyOnly] = useState(initialFilters.readyForOutreach);
@@ -59,6 +61,8 @@ export default function Businesses() {
       city: city || undefined,
       categorySlug: category === "all" ? undefined : category,
       targetMarket: targetMarket === "all" ? undefined : targetMarket,
+      engineType: engineType === "all" ? undefined : engineType,
+      targetCluster: targetCluster === "all" ? undefined : targetCluster,
       hasWebsite: hasWebsite || undefined,
       hasPhone: hasPhone || undefined,
       readyForOutreach: readyOnly || undefined,
@@ -66,7 +70,7 @@ export default function Businesses() {
       page,
       pageSize,
     }),
-    [category, city, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetMarket],
+    [category, city, engineType, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetCluster, targetMarket],
   );
 
   const { data, isLoading } = useGetBusinesses(queryParams, {
@@ -79,6 +83,8 @@ export default function Businesses() {
       city,
       categorySlug: category,
       targetMarket,
+      engineType,
+      targetCluster,
       hasWebsite,
       hasPhone,
       readyForOutreach: readyOnly,
@@ -89,7 +95,7 @@ export default function Businesses() {
     });
 
     syncSearchParams(nextSearch);
-  }, [category, city, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetMarket]);
+  }, [category, city, engineType, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetCluster, targetMarket]);
 
   return (
     <div className="space-y-6">
@@ -106,6 +112,8 @@ export default function Businesses() {
           city={city}
           categorySlug={category}
           targetMarket={targetMarket}
+          engineType={engineType}
+          targetCluster={targetCluster}
           onCityChange={(value) => {
             setCity(value);
             setPage(1);
@@ -116,6 +124,14 @@ export default function Businesses() {
           }}
           onTargetMarketChange={(value) => {
             setTargetMarket(value);
+            setPage(1);
+          }}
+          onEngineTypeChange={(value) => {
+            setEngineType(value);
+            setPage(1);
+          }}
+          onTargetClusterChange={(value) => {
+            setTargetCluster(value);
             setPage(1);
           }}
         />
@@ -218,6 +234,9 @@ export default function Businesses() {
                               Ready
                             </Badge>
                           )}
+                          {business.engineType && (
+                            <Badge variant="outline">{formatPipelineValue(business.engineType)}</Badge>
+                          )}
                           {business.reviewRequired && (
                             <Badge variant="outline" className="text-amber-700">
                               Review
@@ -228,6 +247,8 @@ export default function Businesses() {
                           <ScoreBadge label="Priority" value={business.priorityScore} />
                           <ScoreBadge label="Research" value={business.researchScore} />
                           <ScoreBadge label="Confidence" value={business.confidenceScore} />
+                          <ScoreBadge label="Economic" value={business.economicValueScore} />
+                          <ScoreBadge label="Strategic" value={business.strategicValueScore} />
                         </div>
                       </div>
                     </TableCell>
@@ -246,6 +267,12 @@ export default function Businesses() {
                           )}
                           {business.sourceHealth && (
                             <Badge variant="outline">{formatPipelineValue(business.sourceHealth)}</Badge>
+                          )}
+                          {business.targetCluster && (
+                            <Badge variant="outline">{formatPipelineValue(business.targetCluster)}</Badge>
+                          )}
+                          {business.warmPathExists && (
+                            <Badge variant="outline" className="text-emerald-700">Warm path</Badge>
                           )}
                         </div>
                       </div>
@@ -281,6 +308,9 @@ export default function Businesses() {
                           {business.contactabilityScore != null && (
                             <Badge variant="outline">Contact {business.contactabilityScore}</Badge>
                           )}
+                          {business.nextBestContactWindow && (
+                            <Badge variant="outline">{formatPipelineValue(business.nextBestContactWindow)}</Badge>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -299,6 +329,12 @@ export default function Businesses() {
                               <ShieldAlert className="mr-1 h-3 w-3" />
                               {formatPipelineValue(business.reviewReason)}
                             </Badge>
+                          )}
+                          {business.cultivationRequired && (
+                            <Badge variant="outline">Cultivate</Badge>
+                          )}
+                          {business.prestigeWatchlist && (
+                            <Badge variant="outline">Prestige</Badge>
                           )}
                         </div>
                         <p className="text-muted-foreground">

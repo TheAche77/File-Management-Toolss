@@ -1,5 +1,12 @@
 import type { BusinessSource, ContactCandidate } from "@workspace/db";
 import type { BusinessResearchAggregate } from "./businessResearchAggregateService";
+import type { SlgScoringContext } from "./slgScoringContextService";
+import { classifyBusinessForSlg } from "./slgClassificationService";
+import { matchBestOffer } from "./offerMatchingService";
+import { selectBestProof } from "./proofSelectionService";
+import { selectBestNarratives } from "./narrativeSelectionService";
+import { scoreRelationshipPaths } from "./relationshipPathService";
+import { getSeasonalityForClassification } from "./seasonalityService";
 
 const CORE_CATEGORY_WEIGHTS: Record<string, number> = {
   art_gallery: 35,
@@ -54,6 +61,34 @@ export interface BusinessResearchSnapshot {
   freshnessScore: number;
   priorityScore: number;
   researchScore: number;
+  engineType: "revenue" | "institutional" | "authority";
+  targetType: "buyer" | "funder" | "host" | "referrer" | "prestige" | "hybrid";
+  targetCluster: string;
+  economicValueScore: number;
+  strategicValueScore: number;
+  referralValueScore: number;
+  prestigeValueScore: number;
+  continuityRevenuePotential: number;
+  offerFitScore: number;
+  relationshipPathScore: number;
+  actionabilityScore: number;
+  bestOfferId: number | null;
+  bestNarrativeId: number | null;
+  secondaryNarrativeId: number | null;
+  bestCredibilityAssetId: number | null;
+  bestCaseStudyId: number | null;
+  proofAngle: string | null;
+  riskReductionReason: string | null;
+  toneOfApproach: string | null;
+  recommendedPitchAngle: string | null;
+  nextBestContactWindow: string | null;
+  accountTier: string | null;
+  seasonalityFit: string | null;
+  warmPathExists: boolean;
+  readyForRelationship: boolean;
+  readyForInstitutionalPitch: boolean;
+  prestigeWatchlist: boolean;
+  cultivationRequired: boolean;
   readyForOutreach: boolean;
   reviewRequired: boolean;
   reviewReason: string | null;
@@ -313,12 +348,18 @@ function computePriorityScore(scores: {
   contactabilityScore: number;
   confidenceScore: number;
   freshnessScore: number;
+  strategicValueScore: number;
+  economicValueScore: number;
+  continuityRevenuePotential: number;
 }) {
   return clampScore(
     scores.relevanceScore * 0.35 +
-      scores.contactabilityScore * 0.3 +
-      scores.confidenceScore * 0.2 +
-      scores.freshnessScore * 0.15,
+      scores.contactabilityScore * 0.2 +
+      scores.confidenceScore * 0.1 +
+      scores.freshnessScore * 0.1 +
+      scores.strategicValueScore * 0.1 +
+      scores.economicValueScore * 0.1 +
+      scores.continuityRevenuePotential * 0.05,
   );
 }
 
@@ -382,6 +423,9 @@ function computeReviewState(input: {
 
 function computeRecommendedNextStep(input: {
   readyForOutreach: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
   officialSourceCount: number;
   primaryContact: ContactCandidate | null;
   reviewReason: string | null;
@@ -389,6 +433,9 @@ function computeRecommendedNextStep(input: {
   sourceHealth: "good" | "mixed" | "weak";
 }) {
   if (input.readyForOutreach) return "move_to_outreach";
+  if (input.readyForRelationship) return "use_warm_intro";
+  if (input.readyForInstitutionalPitch) return "prepare_institutional_pitch";
+  if (input.prestigeWatchlist) return "cultivate_prestige_account";
   if (input.officialSourceCount === 0 || input.sourceHealth === "weak") return "fetch_official_site";
   if (!input.primaryContact) return "find_contact";
   if (input.reviewReason === "low_confidence") return "review_contact";
@@ -440,7 +487,9 @@ function getNextResearchAt(input: {
 
 export function computeBusinessResearchSnapshot(
   aggregate: BusinessResearchAggregate,
+  context?: SlgScoringContext,
 ): BusinessResearchSnapshot {
+  const classification = classifyBusinessForSlg(aggregate);
   const officialSourceCount = getOfficialSourceCount(aggregate.sources);
   const successfulSourceCount = getSuccessfulSourceCount(aggregate.sources);
   const failedSourceCount = getFailedSourceCount(aggregate.sources);
@@ -466,11 +515,64 @@ export function computeBusinessResearchSnapshot(
     contactabilityScore,
     officialSourceCount,
   );
+  const offerMatch = context
+    ? matchBestOffer(aggregate, classification, context.offers)
+    : { bestOffer: null, offerFitScore: 0, continuityRevenuePotential: 0 };
+  const proofMatch = context
+    ? selectBestProof(classification, context.credibilityAssets, context.caseStudies)
+    : {
+        bestCredibilityAsset: null,
+        bestCaseStudy: null,
+        proofAngle: null,
+        riskReductionReason: null,
+      };
+  const narrativeMatch = context
+    ? selectBestNarratives(classification, context.narratives)
+    : {
+        bestNarrative: null,
+        secondaryNarrative: null,
+        toneOfApproach: null,
+        recommendedPitchAngle: null,
+      };
+  const relationshipMatch = scoreRelationshipPaths(
+    context?.relationshipPathsByBusinessId.get(aggregate.business.id) ?? [],
+  );
+  const seasonality = getSeasonalityForClassification(
+    classification,
+    context?.seasonalWindows ?? [],
+  );
+  const economicValueScore = clampScore(
+    (classification.engineType === "revenue" ? 40 : 20) +
+      offerMatch.offerFitScore * 0.35 +
+      contactabilityScore * 0.25 +
+      (aggregate.business.targetMarket ? 10 : 0),
+  );
+  const strategicValueScore = clampScore(
+    (classification.engineType === "authority" ? 35 : 20) +
+      (classification.targetType === "prestige" ? 20 : 0) +
+      relevanceScore * 0.25 +
+      confidenceScore * 0.2 +
+      (proofMatch.bestCredibilityAsset ? 10 : 0),
+  );
+  const referralValueScore = clampScore(
+    relationshipMatch.relationshipPathScore * 0.7 +
+      (classification.targetType === "referrer" ? 20 : 0) +
+      (classification.engineType === "authority" ? 10 : 0),
+  );
+  const prestigeValueScore = clampScore(
+    (classification.targetType === "prestige" ? 35 : 10) +
+      (classification.engineType === "authority" ? 20 : 5) +
+      relevanceScore * 0.2 +
+      (proofMatch.bestCredibilityAsset ? 15 : 0),
+  );
   const priorityScore = computePriorityScore({
     relevanceScore,
     contactabilityScore,
     confidenceScore,
     freshnessScore,
+    strategicValueScore,
+    economicValueScore,
+    continuityRevenuePotential: offerMatch.continuityRevenuePotential,
   });
   const researchScore = computeResearchScore({
     relevanceScore,
@@ -493,8 +595,29 @@ export function computeBusinessResearchSnapshot(
     confidenceScore >= 65 &&
     freshnessScore >= 45 &&
     !reviewState.reviewRequired;
+  const readyForRelationship = relationshipMatch.warmPathExists && strategicValueScore >= 60;
+  const readyForInstitutionalPitch =
+    classification.engineType === "institutional" &&
+    strategicValueScore >= 65 &&
+    proofMatch.bestCredibilityAsset != null;
+  const prestigeWatchlist =
+    classification.targetType === "prestige" && prestigeValueScore >= 65;
+  const cultivationRequired =
+    !readyForOutreach &&
+    (strategicValueScore >= 60 || economicValueScore >= 60 || referralValueScore >= 60);
+  const actionabilityScore = clampScore(
+    priorityScore * 0.45 +
+      offerMatch.offerFitScore * 0.15 +
+      relationshipMatch.relationshipPathScore * 0.15 +
+      economicValueScore * 0.1 +
+      strategicValueScore * 0.1 +
+      (seasonality.seasonalityFit === "high" ? 5 : 0),
+  );
   const recommendedNextStep = computeRecommendedNextStep({
     readyForOutreach,
+    readyForRelationship,
+    readyForInstitutionalPitch,
+    prestigeWatchlist,
     officialSourceCount,
     primaryContact,
     reviewReason: reviewState.reviewReason,
@@ -527,6 +650,35 @@ export function computeBusinessResearchSnapshot(
     freshnessScore,
     priorityScore,
     researchScore,
+    engineType: classification.engineType,
+    targetType: classification.targetType,
+    targetCluster: classification.targetCluster,
+    economicValueScore,
+    strategicValueScore,
+    referralValueScore,
+    prestigeValueScore,
+    continuityRevenuePotential: offerMatch.continuityRevenuePotential,
+    offerFitScore: offerMatch.offerFitScore,
+    relationshipPathScore: relationshipMatch.relationshipPathScore,
+    actionabilityScore,
+    bestOfferId: offerMatch.bestOffer?.id ?? null,
+    bestNarrativeId: narrativeMatch.bestNarrative?.id ?? null,
+    secondaryNarrativeId: narrativeMatch.secondaryNarrative?.id ?? null,
+    bestCredibilityAssetId: proofMatch.bestCredibilityAsset?.id ?? null,
+    bestCaseStudyId: proofMatch.bestCaseStudy?.id ?? null,
+    proofAngle: proofMatch.proofAngle,
+    riskReductionReason: proofMatch.riskReductionReason,
+    toneOfApproach: narrativeMatch.toneOfApproach,
+    recommendedPitchAngle: narrativeMatch.recommendedPitchAngle,
+    nextBestContactWindow: seasonality.nextBestContactWindow,
+    accountTier:
+      priorityScore >= 85 ? "tier_1" : priorityScore >= 70 ? "tier_2" : priorityScore >= 55 ? "tier_3" : null,
+    seasonalityFit: seasonality.seasonalityFit,
+    warmPathExists: relationshipMatch.warmPathExists,
+    readyForRelationship,
+    readyForInstitutionalPitch,
+    prestigeWatchlist,
+    cultivationRequired,
     readyForOutreach,
     reviewRequired: reviewState.reviewRequired,
     reviewReason: reviewState.reviewReason,

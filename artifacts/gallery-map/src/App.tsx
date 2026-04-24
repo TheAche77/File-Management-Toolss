@@ -10,6 +10,10 @@ import MapView from "@/pages/map";
 import PipelinePage from "@/pages/pipeline";
 import Admin from "@/pages/admin";
 import ResearchPage from "@/pages/research";
+import OffersPage from "@/pages/offers";
+import ProofPage from "@/pages/proof";
+import AccountsPage from "@/pages/accounts";
+import RelationshipsPage from "@/pages/relationships";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -31,6 +35,10 @@ function Router() {
         <Route path="/businesses" component={Businesses} />
         <Route path="/map" component={MapView} />
         <Route path="/research" component={ResearchPage} />
+        <Route path="/offers" component={OffersPage} />
+        <Route path="/proof" component={ProofPage} />
+        <Route path="/accounts" component={AccountsPage} />
+        <Route path="/relationships" component={RelationshipsPage} />
         <Route path="/pipeline" component={PipelinePage} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />

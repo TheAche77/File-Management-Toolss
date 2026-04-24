@@ -108,8 +108,12 @@ function buildBusinessFilters(query: Record<string, string | undefined>) {
   const hasPhone = parseOptionalBoolean(query["hasPhone"]);
   const readyForOutreach = parseOptionalBoolean(query["readyForOutreach"]);
   const reviewRequired = parseOptionalBoolean(query["reviewRequired"]);
+  const warmPathExists = parseOptionalBoolean(query["warmPathExists"]);
+  const prestigeWatchlist = parseOptionalBoolean(query["prestigeWatchlist"]);
+  const cultivationRequired = parseOptionalBoolean(query["cultivationRequired"]);
   const minPriorityScore = parseOptionalNumber(query["minPriorityScore"]);
   const minResearchScore = parseOptionalNumber(query["minResearchScore"]);
+  const bestOfferId = parseOptionalNumber(query["bestOfferId"]);
 
   if (hasWebsite !== undefined) conditions.push(eq(businessesTable.hasWebsite, hasWebsite));
   if (hasPhone !== undefined) conditions.push(eq(businessesTable.hasPhone, hasPhone));
@@ -119,6 +123,20 @@ function buildBusinessFilters(query: Record<string, string | undefined>) {
   if (reviewRequired !== undefined) {
     conditions.push(eq(businessesTable.reviewRequired, reviewRequired));
   }
+  if (warmPathExists !== undefined) {
+    conditions.push(eq(businessesTable.warmPathExists, warmPathExists));
+  }
+  if (prestigeWatchlist !== undefined) {
+    conditions.push(eq(businessesTable.prestigeWatchlist, prestigeWatchlist));
+  }
+  if (cultivationRequired !== undefined) {
+    conditions.push(eq(businessesTable.cultivationRequired, cultivationRequired));
+  }
+  if (query["engineType"]) conditions.push(eq(businessesTable.engineType, query["engineType"]));
+  if (query["targetType"]) conditions.push(eq(businessesTable.targetType, query["targetType"]));
+  if (query["targetCluster"]) conditions.push(eq(businessesTable.targetCluster, query["targetCluster"]));
+  if (query["accountTier"]) conditions.push(eq(businessesTable.accountTier, query["accountTier"]));
+  if (bestOfferId !== undefined) conditions.push(eq(businessesTable.bestOfferId, bestOfferId));
   if (minPriorityScore !== undefined) {
     conditions.push(gte(businessesTable.priorityScore, minPriorityScore));
   }
@@ -158,7 +176,12 @@ router.get("/businesses", async (req, res) => {
       .select()
       .from(businessesTable)
       .where(where)
-      .orderBy(desc(businessesTable.readyForOutreach), desc(businessesTable.priorityScore), businessesTable.name)
+      .orderBy(
+        desc(businessesTable.readyForOutreach),
+        desc(businessesTable.actionabilityScore),
+        desc(businessesTable.priorityScore),
+        businessesTable.name,
+      )
       .limit(size)
       .offset(offset),
     db.select({ count: count() }).from(businessesTable).where(where),
@@ -234,7 +257,12 @@ router.get("/research/feed", requireAdminAuth, async (req, res) => {
       .select()
       .from(businessesTable)
       .where(where)
-      .orderBy(desc(businessesTable.researchScore), desc(businessesTable.priorityScore), businessesTable.name)
+      .orderBy(
+        desc(businessesTable.actionabilityScore),
+        desc(businessesTable.researchScore),
+        desc(businessesTable.priorityScore),
+        businessesTable.name,
+      )
       .limit(size)
       .offset(offset),
     db.select({ count: count() }).from(businessesTable).where(where),
@@ -250,17 +278,19 @@ router.get("/research/feed", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/research/metrics", requireAdminAuth, async (req, res) => {
-  const { categorySlug, city, targetMarket } = req.query as Record<string, string | undefined>;
-  const metrics = await getResearchMetrics({ categorySlug, city, targetMarket });
+  const { categorySlug, city, targetMarket, engineType, targetCluster } = req.query as Record<string, string | undefined>;
+  const metrics = await getResearchMetrics({ categorySlug, city, targetMarket, engineType, targetCluster });
   res.json(metrics);
 });
 
 router.get("/research/review-buckets", requireAdminAuth, async (req, res) => {
-  const { categorySlug, city, targetMarket, limit = "100" } = req.query as Record<string, string | undefined>;
+  const { categorySlug, city, targetMarket, engineType, targetCluster, limit = "100" } = req.query as Record<string, string | undefined>;
   const buckets = await getReviewBuckets({
     categorySlug,
     city,
     targetMarket,
+    engineType,
+    targetCluster,
     limit: parseInt(limit ?? "100", 10),
   });
 
@@ -1266,6 +1296,142 @@ router.get("/export/review-queue.csv", requireAdminAuth, async (req, res) => {
   res.send(buildCsv(headers, exportRows));
 });
 
+async function exportSlgBusinessCsv(
+  req: any,
+  res: any,
+  options: {
+    filename: string;
+    engineType?: string;
+    targetCluster?: string;
+    extraWhere?: any;
+  },
+) {
+  const where = buildBusinessFilters(req.query as Record<string, string | undefined>);
+  const conditions = [
+    where,
+    options.engineType ? eq(businessesTable.engineType, options.engineType) : undefined,
+    options.targetCluster ? eq(businessesTable.targetCluster, options.targetCluster) : undefined,
+    options.extraWhere,
+  ].filter((condition): condition is NonNullable<typeof condition> => Boolean(condition));
+  const rows = await db
+    .select()
+    .from(businessesTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(businessesTable.actionabilityScore), desc(businessesTable.priorityScore), businessesTable.name);
+
+  const headers = [
+    "business_id",
+    "business_name",
+    "engine_type",
+    "target_type",
+    "target_cluster",
+    "city",
+    "country",
+    "target_market",
+    "best_offer_id",
+    "best_narrative_id",
+    "best_credibility_asset_id",
+    "best_case_study_id",
+    "economic_value_score",
+    "strategic_value_score",
+    "referral_value_score",
+    "prestige_value_score",
+    "continuity_revenue_potential",
+    "offer_fit_score",
+    "relationship_path_score",
+    "actionability_score",
+    "priority_score",
+    "research_score",
+    "recommended_next_step",
+    "next_best_contact_window",
+    "warm_path_exists",
+    "ready_for_outreach",
+    "ready_for_relationship",
+    "ready_for_institutional_pitch",
+    "prestige_watchlist",
+    "cultivation_required",
+  ];
+
+  const exportRows = rows.map((row) => [
+    row.id,
+    row.name,
+    row.engineType ?? "",
+    row.targetType ?? "",
+    row.targetCluster ?? "",
+    row.city ?? "",
+    row.country ?? "",
+    row.targetMarket ?? "",
+    row.bestOfferId ?? "",
+    row.bestNarrativeId ?? "",
+    row.bestCredibilityAssetId ?? "",
+    row.bestCaseStudyId ?? "",
+    row.economicValueScore ?? "",
+    row.strategicValueScore ?? "",
+    row.referralValueScore ?? "",
+    row.prestigeValueScore ?? "",
+    row.continuityRevenuePotential ?? "",
+    row.offerFitScore ?? "",
+    row.relationshipPathScore ?? "",
+    row.actionabilityScore ?? "",
+    row.priorityScore ?? "",
+    row.researchScore ?? "",
+    row.recommendedNextStep ?? "",
+    row.nextBestContactWindow ?? "",
+    row.warmPathExists ? "true" : "false",
+    row.readyForOutreach ? "true" : "false",
+    row.readyForRelationship ? "true" : "false",
+    row.readyForInstitutionalPitch ? "true" : "false",
+    row.prestigeWatchlist ? "true" : "false",
+    row.cultivationRequired ? "true" : "false",
+  ]);
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${options.filename}"`);
+  res.send(buildCsv(headers, exportRows));
+}
+
+router.get("/export/slg-revenue-targets.csv", requireAdminAuth, async (req, res) => {
+  await exportSlgBusinessCsv(req, res, {
+    filename: "slg_revenue_targets.csv",
+    engineType: "revenue",
+  });
+});
+
+router.get("/export/slg-institutional-targets.csv", requireAdminAuth, async (req, res) => {
+  await exportSlgBusinessCsv(req, res, {
+    filename: "slg_institutional_targets.csv",
+    engineType: "institutional",
+  });
+});
+
+router.get("/export/slg-authority-targets.csv", requireAdminAuth, async (req, res) => {
+  await exportSlgBusinessCsv(req, res, {
+    filename: "slg_authority_targets.csv",
+    engineType: "authority",
+  });
+});
+
+router.get("/export/slg-referral-paths.csv", requireAdminAuth, async (req, res) => {
+  await exportSlgBusinessCsv(req, res, {
+    filename: "slg_referral_paths.csv",
+    extraWhere: eq(businessesTable.warmPathExists, true),
+  });
+});
+
+router.get("/export/slg-labirinto-fit.csv", requireAdminAuth, async (req, res) => {
+  await exportSlgBusinessCsv(req, res, {
+    filename: "slg_labirinto_fit.csv",
+    targetCluster: "residency_exchange_diplomacy",
+  });
+});
+
+router.get("/export/slg-hospitality-targets.csv", requireAdminAuth, async (req, res) => {
+  await exportSlgBusinessCsv(req, res, {
+    filename: "slg_hospitality_targets.csv",
+    targetCluster: "boutique_hotel_hospitality",
+  });
+});
+
 // Legacy redirect - galleries was the old path
 router.get("/galleries", async (req, res) => {
   const newUrl = `/api/businesses?categorySlug=art_gallery&${new URLSearchParams(req.query as Record<string, string>).toString()}`;
@@ -1286,6 +1452,7 @@ function serializeBusiness(r: Record<string, unknown>) {
     region: r["region"] ?? null,
     country: r["country"] ?? null,
     targetMarket: r["targetMarket"] ?? null,
+    avatarType: r["avatarType"] ?? null,
     website: r["website"] ?? null,
     phone: r["phone"] ?? null,
     osmId: r["osmId"] ?? null,
@@ -1309,11 +1476,39 @@ function serializeBusiness(r: Record<string, unknown>) {
     freshnessScore: r["freshnessScore"] ?? null,
     priorityScore: r["priorityScore"] ?? null,
     researchScore: r["researchScore"] ?? null,
+    engineType: r["engineType"] ?? null,
+    targetType: r["targetType"] ?? null,
+    targetCluster: r["targetCluster"] ?? null,
+    economicValueScore: r["economicValueScore"] ?? null,
+    strategicValueScore: r["strategicValueScore"] ?? null,
+    referralValueScore: r["referralValueScore"] ?? null,
+    prestigeValueScore: r["prestigeValueScore"] ?? null,
+    continuityRevenuePotential: r["continuityRevenuePotential"] ?? null,
+    offerFitScore: r["offerFitScore"] ?? null,
+    relationshipPathScore: r["relationshipPathScore"] ?? null,
+    actionabilityScore: r["actionabilityScore"] ?? null,
     officialSourceCount: r["officialSourceCount"] ?? null,
     successfulSourceCount: r["successfulSourceCount"] ?? null,
     failedSourceCount: r["failedSourceCount"] ?? null,
     primarySourceId: r["primarySourceId"] ?? null,
     primaryContactCandidateId: r["primaryContactCandidateId"] ?? null,
+    bestOfferId: r["bestOfferId"] ?? null,
+    bestNarrativeId: r["bestNarrativeId"] ?? null,
+    secondaryNarrativeId: r["secondaryNarrativeId"] ?? null,
+    bestCredibilityAssetId: r["bestCredibilityAssetId"] ?? null,
+    bestCaseStudyId: r["bestCaseStudyId"] ?? null,
+    proofAngle: r["proofAngle"] ?? null,
+    riskReductionReason: r["riskReductionReason"] ?? null,
+    toneOfApproach: r["toneOfApproach"] ?? null,
+    recommendedPitchAngle: r["recommendedPitchAngle"] ?? null,
+    nextBestContactWindow: r["nextBestContactWindow"] ?? null,
+    accountTier: r["accountTier"] ?? null,
+    seasonalityFit: r["seasonalityFit"] ?? null,
+    warmPathExists: r["warmPathExists"] ?? false,
+    readyForRelationship: r["readyForRelationship"] ?? false,
+    readyForInstitutionalPitch: r["readyForInstitutionalPitch"] ?? false,
+    prestigeWatchlist: r["prestigeWatchlist"] ?? false,
+    cultivationRequired: r["cultivationRequired"] ?? false,
     readyForOutreach: r["readyForOutreach"] ?? false,
     reviewRequired: r["reviewRequired"] ?? false,
     reviewReason: r["reviewReason"] ?? null,

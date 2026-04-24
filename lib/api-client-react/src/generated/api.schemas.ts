@@ -40,6 +40,12 @@ export interface Business {
   /** @nullable */
   targetMarket?: string | null;
   /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
+  /** @nullable */
   website?: string | null;
   /** @nullable */
   phone?: string | null;
@@ -85,6 +91,22 @@ export interface Business {
   /** @nullable */
   researchScore?: number | null;
   /** @nullable */
+  economicValueScore?: number | null;
+  /** @nullable */
+  strategicValueScore?: number | null;
+  /** @nullable */
+  referralValueScore?: number | null;
+  /** @nullable */
+  prestigeValueScore?: number | null;
+  /** @nullable */
+  continuityRevenuePotential?: number | null;
+  /** @nullable */
+  offerFitScore?: number | null;
+  /** @nullable */
+  relationshipPathScore?: number | null;
+  /** @nullable */
+  actionabilityScore?: number | null;
+  /** @nullable */
   officialSourceCount?: number | null;
   /** @nullable */
   successfulSourceCount?: number | null;
@@ -94,6 +116,35 @@ export interface Business {
   primarySourceId?: number | null;
   /** @nullable */
   primaryContactCandidateId?: number | null;
+  /** @nullable */
+  bestOfferId?: number | null;
+  /** @nullable */
+  bestNarrativeId?: number | null;
+  /** @nullable */
+  secondaryNarrativeId?: number | null;
+  /** @nullable */
+  bestCredibilityAssetId?: number | null;
+  /** @nullable */
+  bestCaseStudyId?: number | null;
+  /** @nullable */
+  proofAngle?: string | null;
+  /** @nullable */
+  riskReductionReason?: string | null;
+  /** @nullable */
+  toneOfApproach?: string | null;
+  /** @nullable */
+  recommendedPitchAngle?: string | null;
+  /** @nullable */
+  nextBestContactWindow?: string | null;
+  /** @nullable */
+  accountTier?: string | null;
+  /** @nullable */
+  seasonalityFit?: string | null;
+  warmPathExists: boolean;
+  readyForRelationship: boolean;
+  readyForInstitutionalPitch: boolean;
+  prestigeWatchlist: boolean;
+  cultivationRequired: boolean;
   readyForOutreach: boolean;
   reviewRequired: boolean;
   /** @nullable */
@@ -135,6 +186,12 @@ export interface BusinessSource {
   /** @nullable */
   httpStatus?: number | null;
   isOfficial: boolean;
+  sourcePriority: number;
+  /** @nullable */
+  usefulnessScore?: number | null;
+  /** @nullable */
+  nextFetchAt?: string | null;
+  freshnessStatus: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -160,6 +217,13 @@ export interface ContactCandidate {
   isPersonalData: boolean;
   /** @nullable */
   lastVerifiedAt?: string | null;
+  verificationStatus: string;
+  isReachable: boolean;
+  isDecisionMakerLikely: boolean;
+  channelPriority: number;
+  sourcePriority: number;
+  /** @nullable */
+  nextVerificationAt?: string | null;
   reviewStatus: string;
   /** @nullable */
   notes?: string | null;

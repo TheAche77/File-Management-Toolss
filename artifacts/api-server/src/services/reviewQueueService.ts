@@ -32,6 +32,8 @@ export interface ReviewQueueFilters {
   categorySlug?: string;
   city?: string;
   targetMarket?: string;
+  engineType?: string;
+  targetCluster?: string;
   limit?: number;
 }
 
@@ -87,6 +89,12 @@ export async function getReviewQueue(
 
   if (filters.targetMarket) {
     conditions.push(eq(businessesTable.targetMarket, filters.targetMarket));
+  }
+  if (filters.engineType) {
+    conditions.push(eq(businessesTable.engineType, filters.engineType));
+  }
+  if (filters.targetCluster) {
+    conditions.push(eq(businessesTable.targetCluster, filters.targetCluster));
   }
 
   const candidates = await db
