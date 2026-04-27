@@ -84,8 +84,26 @@ function parseOptionalBoolean(value: string | undefined) {
 
 function parseOptionalNumber(value: string | undefined) {
   if (!value) return undefined;
+  if (!/^-?\d+$/.test(value)) return undefined;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseBoundedInt(
+  value: string | undefined,
+  fallback: number,
+  {
+    min = Number.MIN_SAFE_INTEGER,
+    max = Number.MAX_SAFE_INTEGER,
+  }: {
+    min?: number;
+    max?: number;
+  } = {},
+) {
+  if (!value || !/^-?\d+$/.test(value.trim())) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
 }
 
 function buildBusinessFilters(query: Record<string, string | undefined>) {
@@ -166,8 +184,8 @@ router.get("/businesses", async (req, res) => {
     pageSize = "50",
   } = req.query as Record<string, string | undefined>;
 
-  const pageNum = Math.max(1, parseInt(page ?? "1", 10));
-  const size = Math.min(100, Math.max(1, parseInt(pageSize ?? "50", 10)));
+  const pageNum = parseBoundedInt(page, 1, { min: 1 });
+  const size = parseBoundedInt(pageSize, 50, { min: 1, max: 100 });
   const offset = (pageNum - 1) * size;
   const where = buildBusinessFilters(req.query as Record<string, string | undefined>);
 
@@ -226,7 +244,7 @@ router.get("/businesses/review-queue", requireAdminAuth, async (req, res) => {
     categorySlug,
     city,
     targetMarket,
-    limit: parseInt(limit ?? "25", 10),
+    limit: parseBoundedInt(limit, 25, { min: 1, max: 100 }),
   });
 
   res.json(
@@ -247,8 +265,8 @@ router.get("/research/feed", requireAdminAuth, async (req, res) => {
     pageSize = "25",
   } = req.query as Record<string, string | undefined>;
 
-  const pageNum = Math.max(1, parseInt(page ?? "1", 10));
-  const size = Math.min(100, Math.max(1, parseInt(pageSize ?? "25", 10)));
+  const pageNum = parseBoundedInt(page, 1, { min: 1 });
+  const size = parseBoundedInt(pageSize, 25, { min: 1, max: 100 });
   const offset = (pageNum - 1) * size;
   const where = buildBusinessFilters(req.query as Record<string, string | undefined>);
 
@@ -291,7 +309,7 @@ router.get("/research/review-buckets", requireAdminAuth, async (req, res) => {
     targetMarket,
     engineType,
     targetCluster,
-    limit: parseInt(limit ?? "100", 10),
+    limit: parseBoundedInt(limit, 100, { min: 1, max: 100 }),
   });
 
   res.json(
@@ -315,7 +333,7 @@ router.get("/research/jobs", requireAdminAuth, async (req, res) => {
   const { status, limit = "50" } = req.query as Record<string, string | undefined>;
   const jobs = await listResearchJobs({
     status,
-    limit: parseInt(limit ?? "50", 10),
+    limit: parseBoundedInt(limit, 50, { min: 1, max: 200 }),
   });
 
   res.json(
@@ -360,7 +378,7 @@ router.post("/research/jobs", requireAdminAuth, async (req, res) => {
     jobType: jobType as (typeof RESEARCH_JOB_TYPES)[number],
     businessId: Number.isFinite(businessId) && businessId > 0 ? businessId : null,
     sourceId: Number.isFinite(sourceId) && sourceId > 0 ? sourceId : null,
-    priority: Number.isFinite(priority) ? priority : 50,
+    priority: Number.isFinite(priority) ? Math.max(1, Math.min(100, priority)) : 50,
     payload: typeof body["payload"] === "object" && body["payload"] ? (body["payload"] as Record<string, unknown>) : undefined,
   });
 
