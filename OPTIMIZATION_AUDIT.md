@@ -206,7 +206,9 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-05-05`
+- `lib/db/src/schema/galleries.ts` has been removed
+- legacy `/api/galleries` remains as a compatibility redirect to `/api/businesses`
 
 #### 10. Route ownership is too concentrated
 
@@ -226,7 +228,9 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-05-05`
+- `routes/businesses.ts` is now a thin composition router
+- catalog, research, outreach, imports, exports, and shared serializers/filters are split under `artifacts/api-server/src/routes/businesses/`
 
 #### 11. Unused/oversized UI surface
 
@@ -267,6 +271,7 @@ Status:
 
 - checked-in DB migrations exist through `0004_slg_growth_engine.sql`
 - CI validation added on `2026-04-24`
+- route modularization, SLG aliases, export contract coverage, advanced research filters, and operating console improvements completed on `2026-05-05`
 
 ## Phase 1 - Fix Current Broken User Flows
 
@@ -297,6 +302,36 @@ Status:
 - expose outreach status directly in directory
 - add lightweight audit log for outreach actions
 - tighten route/module ownership on the backend
+
+Status:
+
+- completed for shared filter state and URL persistence across dashboard, directory, map, research, and pipeline
+- completed for route/module ownership on the backend
+- completed for outreach audit trail from prior pass
+- directory now exposes SLG target type, best offer, actionability, offer fit, and relationship/institutional/prestige/cultivation flags
+
+## SLG Growth Operating System Completion - 2026-05-05
+
+Completed:
+
+- `/api/slg/*` aliases added while preserving legacy `/api/offers`, `/api/narratives`, `/api/credibility-assets`, `/api/case-studies`, `/api/seasonal-windows`, `/api/content-assets`, `/api/relationship-paths`, and `/api/strategic-accounts`
+- OpenAPI now documents advanced research filters and all operational CSV exports
+- generated React client and Zod contracts regenerated from OpenAPI
+- research filters now support `targetType`, `warmPathExists`, `readyForRelationship`, `readyForInstitutionalPitch`, `prestigeWatchlist`, and `cultivationRequired`
+- dashboard now shows operational SLG queues for top revenue, institutional pitch, prestige watchlist, cultivation, referral-first, and LABirinto-fit opportunities
+- business detail now surfaces relationship path, pitch snippet, proof snippet, CTA suggestion, offer, narrative, proof, timing, and next action
+- SLG scoring improved for target type, category, market, narrative family, proof family, relationship strategy, and seasonality defaults
+
+Verification commands:
+
+- `./node_modules/.bin/orval --config ./orval.config.ts` from `lib/api-spec`
+- `./node_modules/.bin/tsc --build`
+- `./node_modules/.bin/tsc -p artifacts/api-server/tsconfig.json --noEmit`
+- `./node_modules/.bin/tsc -p artifacts/gallery-map/tsconfig.json --noEmit`
+- `/Users/streetlevelsgallery/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node artifacts/api-server/build.mjs`
+- `PATH=/Users/streetlevelsgallery/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH artifacts/gallery-map/node_modules/.bin/vite build --config artifacts/gallery-map/vite.config.ts`
+
+Runtime smoke tests remain environment-dependent because this local shell has no confirmed running Postgres/API process.
 
 ## Phase 5 - Optional Strategic Improvements
 
