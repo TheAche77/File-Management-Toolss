@@ -22,6 +22,10 @@ tags:
     description: Statistics operations
   - name: outreach
     description: Outreach operations
+  - name: research
+    description: Research operations
+  - name: slg
+    description: Street Levels Gallery strategic operations
 paths:
   /healthz:
     get:
@@ -307,6 +311,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /businesses/{id}/contact-candidates/{candidateId}:
     patch:
       operationId: updateBusinessContactCandidate
       tags: [businesses]
@@ -341,6 +347,407 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /research/metrics:
+    get:
+      operationId: getResearchMetrics
+      tags: [research]
+      summary: Research metrics for the current filtered target set
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
+        - name: engineType
+          in: query
+          schema:
+            type: string
+        - name: targetCluster
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Research metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchMetricsResponse"
+
+  /research/feed:
+    get:
+      operationId: getResearchFeed
+      tags: [research]
+      summary: Ranked research feed for the current filters
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
+        - name: engineType
+          in: query
+          schema:
+            type: string
+        - name: targetCluster
+          in: query
+          schema:
+            type: string
+        - name: minPriorityScore
+          in: query
+          schema:
+            type: integer
+        - name: minResearchScore
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Research feed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchFeedResponse"
+
+  /research/review-buckets:
+    get:
+      operationId: getResearchReviewBuckets
+      tags: [research]
+      summary: Review buckets grouped by blocker type
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
+        - name: engineType
+          in: query
+          schema:
+            type: string
+        - name: targetCluster
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Review buckets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReviewBucket"
+
+  /research/jobs:
+    get:
+      operationId: getResearchJobs
+      tags: [research]
+      summary: List research jobs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Research jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResearchJob"
+    post:
+      operationId: createResearchJob
+      tags: [research]
+      summary: Enqueue a research job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResearchJobCreateRequest"
+      responses:
+        "201":
+          description: Research job queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchJob"
+        "400":
+          description: Invalid research job request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /research/jobs/run:
+    post:
+      operationId: runResearchJobs
+      tags: [research]
+      summary: Trigger one automation tick for research jobs
+      responses:
+        "200":
+          description: Automation tick completed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /research/views:
+    get:
+      operationId: getResearchViews
+      tags: [research]
+      summary: List saved research views
+      responses:
+        "200":
+          description: Saved views
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResearchView"
+    post:
+      operationId: createResearchView
+      tags: [research]
+      summary: Create a saved research view
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResearchViewPayload"
+      responses:
+        "201":
+          description: Saved view created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchView"
+        "400":
+          description: Invalid saved view request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /research/views/{id}:
+    patch:
+      operationId: updateResearchView
+      tags: [research]
+      summary: Update a saved research view
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResearchViewPayload"
+      responses:
+        "200":
+          description: Saved view updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchView"
+        "404":
+          description: Saved view not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteResearchView
+      tags: [research]
+      summary: Delete a saved research view
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Saved view deleted
+
+  /offers:
+    get:
+      operationId: getOffers
+      tags: [slg]
+      summary: List SLG offers
+      responses:
+        "200":
+          description: Offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Offer"
+
+  /narratives:
+    get:
+      operationId: getNarratives
+      tags: [slg]
+      summary: List SLG narratives
+      responses:
+        "200":
+          description: Narratives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Narrative"
+
+  /credibility-assets:
+    get:
+      operationId: getCredibilityAssets
+      tags: [slg]
+      summary: List SLG credibility assets
+      responses:
+        "200":
+          description: Credibility assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CredibilityAsset"
+
+  /case-studies:
+    get:
+      operationId: getCaseStudies
+      tags: [slg]
+      summary: List SLG case studies
+      responses:
+        "200":
+          description: Case studies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CaseStudy"
+
+  /seasonal-windows:
+    get:
+      operationId: getSeasonalWindows
+      tags: [slg]
+      summary: List SLG seasonal windows
+      responses:
+        "200":
+          description: Seasonal windows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeasonalWindow"
+
+  /content-assets:
+    get:
+      operationId: getContentAssets
+      tags: [slg]
+      summary: List SLG content assets
+      responses:
+        "200":
+          description: Content assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContentAsset"
+
+  /relationship-paths:
+    get:
+      operationId: getRelationshipPaths
+      tags: [slg]
+      summary: List relationship paths
+      parameters:
+        - name: businessId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Relationship paths
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RelationshipPathSummary"
+
+  /strategic-accounts:
+    get:
+      operationId: getStrategicAccounts
+      tags: [slg]
+      summary: List strategic accounts
+      parameters:
+        - name: businessId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Strategic accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StrategicAccountSummary"
 
   /stats:
     get:
@@ -1004,6 +1411,475 @@ components:
         - changedFields
         - payload
         - createdAt
+
+    Offer:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        engineType:
+          type: string
+        offerType:
+          type: string
+        summary:
+          type: ["string", "null"]
+        targetClusters:
+          type: ["string", "null"]
+        ticketMin:
+          type: ["integer", "null"]
+        ticketMax:
+          type: ["integer", "null"]
+        recurringPotential:
+          type: ["integer", "null"]
+        bundleable:
+          type: boolean
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, slug, name, engineType, offerType, bundleable, active, createdAt, updatedAt]
+
+    Narrative:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        summary:
+          type: ["string", "null"]
+        toneOfApproach:
+          type: ["string", "null"]
+        engineTypes:
+          type: ["string", "null"]
+        targetClusters:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, slug, name, active, createdAt, updatedAt]
+
+    CredibilityAsset:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        assetType:
+          type: string
+        summary:
+          type: ["string", "null"]
+        sourceUrl:
+          type: ["string", "null"]
+        targetClusters:
+          type: ["string", "null"]
+        engineTypes:
+          type: ["string", "null"]
+        tags:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, slug, name, assetType, active, createdAt, updatedAt]
+
+    CaseStudy:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+        summary:
+          type: ["string", "null"]
+        targetCluster:
+          type: ["string", "null"]
+        engineType:
+          type: ["string", "null"]
+        artist:
+          type: ["string", "null"]
+        outcome:
+          type: ["string", "null"]
+        sourceUrl:
+          type: ["string", "null"]
+        tags:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, slug, title, active, createdAt, updatedAt]
+
+    SeasonalWindow:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        engineType:
+          type: ["string", "null"]
+        targetCluster:
+          type: ["string", "null"]
+        startMonth:
+          type: integer
+        endMonth:
+          type: integer
+        note:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, slug, name, startMonth, endMonth, createdAt, updatedAt]
+
+    ContentAsset:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        assetType:
+          type: string
+        engineType:
+          type: ["string", "null"]
+        targetCluster:
+          type: ["string", "null"]
+        title:
+          type: string
+        body:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, slug, assetType, title, body, active, createdAt, updatedAt]
+
+    RelationshipPathSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        businessId:
+          type: integer
+        businessName:
+          type: ["string", "null"]
+        introducerName:
+          type: ["string", "null"]
+        introducerOrg:
+          type: ["string", "null"]
+        relationshipType:
+          type: string
+        confidenceScore:
+          type: string
+        isWarm:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, businessId, relationshipType, confidenceScore, isWarm, createdAt, updatedAt]
+
+    StrategicAccountSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        businessId:
+          type: integer
+        businessName:
+          type: ["string", "null"]
+        accountType:
+          type: string
+        owner:
+          type: ["string", "null"]
+        accountTier:
+          type: ["string", "null"]
+        status:
+          type: string
+        thesis:
+          type: ["string", "null"]
+        milestone:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, businessId, accountType, status, createdAt, updatedAt]
+
+    ResearchMetricsResponse:
+      type: object
+      properties:
+        totalBusinesses:
+          type: integer
+        qualifiedBusinesses:
+          type: integer
+        contactableBusinesses:
+          type: integer
+        readyBusinesses:
+          type: integer
+        reviewBusinesses:
+          type: integer
+        staleHighPriorityBusinesses:
+          type: integer
+        engineBreakdown:
+          type: object
+          properties:
+            revenue:
+              type: integer
+            institutional:
+              type: integer
+            authority:
+              type: integer
+          required: [revenue, institutional, authority]
+        relationshipBreakdown:
+          type: object
+          properties:
+            warmPaths:
+              type: integer
+            prestigeWatchlist:
+              type: integer
+          required: [warmPaths, prestigeWatchlist]
+        topNextSteps:
+          type: array
+          items:
+            type: object
+            properties:
+              recommendedNextStep:
+                type: string
+              total:
+                type: integer
+            required: [recommendedNextStep, total]
+        jobCounts:
+          type: object
+          additionalProperties:
+            type: integer
+        feedback:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+        - totalBusinesses
+        - qualifiedBusinesses
+        - contactableBusinesses
+        - readyBusinesses
+        - reviewBusinesses
+        - staleHighPriorityBusinesses
+        - engineBreakdown
+        - relationshipBreakdown
+        - topNextSteps
+        - jobCounts
+        - feedback
+
+    ResearchFeedBusiness:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        city:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        categorySlug:
+          type: string
+        targetMarket:
+          type: ["string", "null"]
+        avatarType:
+          type: ["string", "null"]
+        relevanceScore:
+          type: ["integer", "null"]
+        contactabilityScore:
+          type: ["integer", "null"]
+        confidenceScore:
+          type: ["integer", "null"]
+        freshnessScore:
+          type: ["integer", "null"]
+        priorityScore:
+          type: ["integer", "null"]
+        researchScore:
+          type: ["integer", "null"]
+        readyForOutreach:
+          type: boolean
+        reviewRequired:
+          type: boolean
+        reviewReason:
+          type: ["string", "null"]
+        recommendedNextStep:
+          type: ["string", "null"]
+        topGap:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+        - categorySlug
+        - readyForOutreach
+        - reviewRequired
+
+    ResearchFeedResponse:
+      type: object
+      properties:
+        businesses:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResearchFeedBusiness"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required: [businesses, total, page, pageSize, totalPages]
+
+    ReviewBucket:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              business:
+                $ref: "#/components/schemas/ResearchFeedBusiness"
+              reasons:
+                type: array
+                items:
+                  type: string
+              priorityScore:
+                type: integer
+            required: [business, reasons, priorityScore]
+      required: [key, label, count, items]
+
+    ResearchJob:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobType:
+          type: string
+        businessId:
+          type: ["integer", "null"]
+        sourceId:
+          type: ["integer", "null"]
+        status:
+          type: string
+        priority:
+          type: integer
+        scheduledAt:
+          type: ["string", "null"]
+        startedAt:
+          type: ["string", "null"]
+        finishedAt:
+          type: ["string", "null"]
+        attemptCount:
+          type: integer
+        errorCode:
+          type: ["string", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        payload:
+          type: ["object", "null"]
+          additionalProperties: true
+        resultSummary:
+          type: ["object", "null"]
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, jobType, status, priority, attemptCount, createdAt, updatedAt]
+
+    ResearchJobCreateRequest:
+      type: object
+      properties:
+        jobType:
+          type: string
+        businessId:
+          type: ["integer", "null"]
+        sourceId:
+          type: ["integer", "null"]
+        priority:
+          type: integer
+        payload:
+          type: object
+          additionalProperties: true
+      required: [jobType]
+
+    ResearchView:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        scope:
+          type: string
+        isDefault:
+          type: boolean
+        filtersJson:
+          type: object
+          additionalProperties: true
+        sortJson:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, name, scope, isDefault, filtersJson, sortJson]
+
+    ResearchViewPayload:
+      type: object
+      properties:
+        name:
+          type: string
+        scope:
+          type: string
+        isDefault:
+          type: boolean
+        filtersJson:
+          type: object
+          additionalProperties: true
+        sortJson:
+          type: object
+          additionalProperties: true
+      required: [name]
 
     ContactCandidateUpdateRequest:
       type: object

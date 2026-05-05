@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type GetOutreachDashboardParams = {
-  categorySlug?: string;
-  city?: string;
-  targetMarket?: string;
-};
+export interface OutreachPipelineSummary {
+  urgent: number;
+  thisWeek: number;
+  next: number;
+}

@@ -1,58 +1,29 @@
-import { useEffect, useState } from "react";
+import {
+  getGetCaseStudiesQueryKey,
+  getGetContentAssetsQueryKey,
+  getGetCredibilityAssetsQueryKey,
+  useGetCaseStudies,
+  useGetContentAssets,
+  useGetCredibilityAssets,
+  type CaseStudy,
+  type ContentAsset,
+  type CredibilityAsset,
+} from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getStoredAdminToken } from "@/lib/admin-auth";
 
-type CredibilityAsset = {
-  id: number;
-  name: string;
-  assetType: string;
-  summary?: string | null;
-  targetClusters?: string | null;
-  tags?: string | null;
-};
-
-type CaseStudy = {
-  id: number;
-  title: string;
-  summary?: string | null;
-  targetCluster?: string | null;
-  engineType?: string | null;
-  artist?: string | null;
-};
-
-type ContentAsset = {
-  id: number;
-  assetType: string;
-  engineType?: string | null;
-  targetCluster?: string | null;
-  title: string;
-  body: string;
-};
-
-function apiHeaders() {
-  const token = getStoredAdminToken();
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
-
 export default function ProofPage() {
-  const [assets, setAssets] = useState<CredibilityAsset[]>([]);
-  const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
-  const [contentAssets, setContentAssets] = useState<ContentAsset[]>([]);
   const hasAdminToken = Boolean(getStoredAdminToken());
-
-  useEffect(() => {
-    if (!hasAdminToken) return;
-    void Promise.all([
-      fetch("/api/credibility-assets", { headers: apiHeaders() }).then((response) => response.json()),
-      fetch("/api/case-studies", { headers: apiHeaders() }).then((response) => response.json()),
-      fetch("/api/content-assets", { headers: apiHeaders() }).then((response) => response.json()),
-    ]).then(([assetsData, caseStudiesData, contentAssetsData]) => {
-      setAssets(assetsData as CredibilityAsset[]);
-      setCaseStudies(caseStudiesData as CaseStudy[]);
-      setContentAssets(contentAssetsData as ContentAsset[]);
-    });
-  }, [hasAdminToken]);
+  const { data: assets = [] } = useGetCredibilityAssets({
+    query: { queryKey: getGetCredibilityAssetsQueryKey(), enabled: hasAdminToken },
+  });
+  const { data: caseStudies = [] } = useGetCaseStudies({
+    query: { queryKey: getGetCaseStudiesQueryKey(), enabled: hasAdminToken },
+  });
+  const { data: contentAssets = [] } = useGetContentAssets({
+    query: { queryKey: getGetContentAssetsQueryKey(), enabled: hasAdminToken },
+  });
 
   if (!hasAdminToken) {
     return (

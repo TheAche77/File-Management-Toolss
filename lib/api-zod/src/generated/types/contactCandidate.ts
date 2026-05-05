@@ -27,6 +27,13 @@ export interface ContactCandidate {
   isPersonalData: boolean;
   /** @nullable */
   lastVerifiedAt?: string | null;
+  verificationStatus: string;
+  isReachable: boolean;
+  isDecisionMakerLikely: boolean;
+  channelPriority: number;
+  sourcePriority: number;
+  /** @nullable */
+  nextVerificationAt?: string | null;
   reviewStatus: string;
   /** @nullable */
   notes?: string | null;

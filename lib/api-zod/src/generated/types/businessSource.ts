@@ -23,6 +23,12 @@ export interface BusinessSource {
   /** @nullable */
   httpStatus?: number | null;
   isOfficial: boolean;
+  sourcePriority: number;
+  /** @nullable */
+  usefulnessScore?: number | null;
+  /** @nullable */
+  nextFetchAt?: string | null;
+  freshnessStatus: string;
   createdAt: string;
   updatedAt: string;
 }

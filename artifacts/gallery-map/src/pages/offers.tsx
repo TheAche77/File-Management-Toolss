@@ -1,38 +1,16 @@
-import { useEffect, useState } from "react";
+import { getGetOffersQueryKey, useGetOffers, type Offer } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getStoredAdminToken } from "@/lib/admin-auth";
 
-type Offer = {
-  id: number;
-  slug: string;
-  name: string;
-  engineType: string;
-  offerType: string;
-  summary?: string | null;
-  targetClusters?: string | null;
-  ticketMin?: number | null;
-  ticketMax?: number | null;
-  recurringPotential?: number | null;
-  bundleable: boolean;
-  active: boolean;
-};
-
-function apiHeaders() {
-  const token = getStoredAdminToken();
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
-
 export default function OffersPage() {
-  const [offers, setOffers] = useState<Offer[]>([]);
   const hasAdminToken = Boolean(getStoredAdminToken());
-
-  useEffect(() => {
-    if (!hasAdminToken) return;
-    void fetch("/api/offers", { headers: apiHeaders() })
-      .then((response) => response.json())
-      .then((data: Offer[]) => setOffers(data));
-  }, [hasAdminToken]);
+  const { data: offers = [] } = useGetOffers({
+    query: {
+      queryKey: getGetOffersQueryKey(),
+      enabled: hasAdminToken,
+    },
+  });
 
   if (!hasAdminToken) {
     return (

@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type GetOutreachPipelineParams = {
-  horizonDays?: number;
-  limit?: number;
+export type GetReviewQueueParams = {
   categorySlug?: string;
   city?: string;
   targetMarket?: string;
+  limit?: number;
 };

@@ -1,38 +1,22 @@
-import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import {
+  getGetStrategicAccountsQueryKey,
+  useGetStrategicAccounts,
+} from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { getStoredAdminToken } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
 
-type StrategicAccount = {
-  id: number;
-  businessId: number;
-  businessName?: string | null;
-  accountType: string;
-  owner?: string | null;
-  accountTier?: string | null;
-  status: string;
-  thesis?: string | null;
-  milestone?: string | null;
-};
-
-function apiHeaders() {
-  const token = getStoredAdminToken();
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
-
 export default function AccountsPage() {
-  const [accounts, setAccounts] = useState<StrategicAccount[]>([]);
   const hasAdminToken = Boolean(getStoredAdminToken());
-
-  useEffect(() => {
-    if (!hasAdminToken) return;
-    void fetch("/api/strategic-accounts", { headers: apiHeaders() })
-      .then((response) => response.json())
-      .then((data: StrategicAccount[]) => setAccounts(data));
-  }, [hasAdminToken]);
+  const { data: accounts = [] } = useGetStrategicAccounts(undefined, {
+    query: {
+      queryKey: getGetStrategicAccountsQueryKey(),
+      enabled: hasAdminToken,
+    },
+  });
 
   if (!hasAdminToken) {
     return (

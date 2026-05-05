@@ -6,15 +6,12 @@
  * OpenAPI spec version: 0.2.0
  */
 import type { OutreachPipelineItem } from "./outreachPipelineItem";
+import type { OutreachPipelineSummary } from "./outreachPipelineSummary";
 
 export interface OutreachPipelineResponse {
   today: string;
   horizonDays: number;
   total: number;
-  summary: {
-    urgent: number;
-    thisWeek: number;
-    next: number;
-  };
+  summary: OutreachPipelineSummary;
   items: OutreachPipelineItem[];
 }

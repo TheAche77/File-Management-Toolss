@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type GetOutreachPipelineParams = {
-  horizonDays?: number;
-  limit?: number;
+export type GetResearchMetricsParams = {
   categorySlug?: string;
   city?: string;
   targetMarket?: string;
+  engineType?: string;
+  targetCluster?: string;
 };

@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { getGetCategoriesQueryKey, useGetCategories } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  getGetCategoriesQueryKey,
+  getGetResearchFeedQueryKey,
+  getGetResearchJobsQueryKey,
+  getGetResearchMetricsQueryKey,
+  getGetResearchReviewBucketsQueryKey,
+  getGetResearchViewsQueryKey,
+  useCreateResearchView,
+  useDeleteResearchView,
+  useGetCategories,
+  useGetResearchFeed,
+  useGetResearchJobs,
+  useGetResearchMetrics,
+  useGetResearchReviewBuckets,
+  useGetResearchViews,
+  useRunResearchJobs,
+  type ResearchView,
+} from "@workspace/api-client-react";
 import { SharedBusinessFilters } from "@/components/shared-business-filters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,123 +31,15 @@ import { buildSearchParams, readSharedBusinessFilters, syncSearchParams } from "
 import { formatPipelineValue } from "@/lib/outreach-formatting";
 import { useToast } from "@/hooks/use-toast";
 
-type ResearchMetrics = {
-  totalBusinesses: number;
-  qualifiedBusinesses: number;
-  contactableBusinesses: number;
-  readyBusinesses: number;
-  reviewBusinesses: number;
-  staleHighPriorityBusinesses: number;
-  engineBreakdown: {
-    revenue: number;
-    institutional: number;
-    authority: number;
-  };
-  relationshipBreakdown: {
-    warmPaths: number;
-    prestigeWatchlist: number;
-  };
-  topNextSteps: { recommendedNextStep: string; total: number }[];
-  jobCounts: {
-    queued: number;
-    running: number;
-    retrying: number;
-    completed: number;
-    failed: number;
-  };
-  feedback: {
-    recentEvents: number;
-    manualArtistOverrides: number;
-    primaryContactOverrides: number;
-    reviewCorrections: number;
-  };
-};
-
-type ResearchBusiness = {
-  id: number;
-  name: string;
-  city?: string | null;
-  country?: string | null;
-  categorySlug: string;
-  targetMarket?: string | null;
-  avatarType?: string | null;
-  relevanceScore?: number | null;
-  contactabilityScore?: number | null;
-  confidenceScore?: number | null;
-  freshnessScore?: number | null;
-  priorityScore?: number | null;
-  researchScore?: number | null;
-  readyForOutreach: boolean;
-  reviewRequired: boolean;
-  reviewReason?: string | null;
-  recommendedNextStep?: string | null;
-  topGap?: string | null;
-};
-
-type ResearchFeed = {
-  businesses: ResearchBusiness[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-};
-
-type ReviewBucket = {
-  key: string;
-  label: string;
-  count: number;
-  items: {
-    business: ResearchBusiness;
-    reasons: string[];
-    priorityScore: number;
-  }[];
-};
-
-type ResearchJob = {
-  id: number;
-  jobType: string;
-  businessId?: number | null;
-  status: string;
-  priority: number;
-  scheduledAt?: string | null;
-  errorMessage?: string | null;
-};
-
-type ResearchView = {
-  id: number;
-  name: string;
-  scope: string;
-  isDefault: boolean;
-  filtersJson: Record<string, unknown>;
-  sortJson: Record<string, unknown>;
-};
-
-function apiHeaders() {
-  const token = getStoredAdminToken();
-  return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : undefined;
-}
-
-function withParams(path: string, query: string, extra?: string) {
-  const params = new URLSearchParams(query);
-  if (extra) {
-    const extraParams = new URLSearchParams(extra);
-    for (const [key, value] of extraParams.entries()) {
-      params.set(key, value);
-    }
-  }
-
-  const suffix = params.toString();
-  return suffix ? `${path}?${suffix}` : path;
-}
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
-  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
-  return response.json() as Promise<T>;
+function parseOptionalInt(value: string) {
+  if (!value) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 export default function ResearchPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const hasAdminToken = Boolean(getStoredAdminToken());
   const initial = readSharedBusinessFilters(window.location.search);
   const [search, setSearch] = useState(initial.search);
@@ -140,13 +50,6 @@ export default function ResearchPage() {
   const [targetCluster, setTargetCluster] = useState(initial.targetCluster);
   const [minPriorityScore, setMinPriorityScore] = useState(initial.minPriorityScore?.toString() ?? "60");
   const [minResearchScore, setMinResearchScore] = useState(initial.minResearchScore?.toString() ?? "60");
-  const [metrics, setMetrics] = useState<ResearchMetrics | null>(null);
-  const [feed, setFeed] = useState<ResearchFeed | null>(null);
-  const [reviewBuckets, setReviewBuckets] = useState<ReviewBucket[]>([]);
-  const [jobs, setJobs] = useState<ResearchJob[]>([]);
-  const [views, setViews] = useState<ResearchView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0);
 
   const { data: categories } = useGetCategories({
     query: { queryKey: getGetCategoriesQueryKey() },
@@ -173,110 +76,164 @@ export default function ResearchPage() {
     return nextSearch;
   }, [category, city, engineType, minPriorityScore, minResearchScore, search, targetCluster, targetMarket]);
 
+  const metricParams = useMemo(
+    () => ({
+      categorySlug: category === "all" ? undefined : category,
+      city: city || undefined,
+      targetMarket: targetMarket === "all" ? undefined : targetMarket,
+      engineType: engineType === "all" ? undefined : engineType,
+      targetCluster: targetCluster === "all" ? undefined : targetCluster,
+    }),
+    [category, city, engineType, targetCluster, targetMarket],
+  );
+
+  const feedParams = useMemo(
+    () => ({
+      ...metricParams,
+      search: search || undefined,
+      minPriorityScore: parseOptionalInt(minPriorityScore),
+      minResearchScore: parseOptionalInt(minResearchScore),
+      page: 1,
+      pageSize: 20,
+    }),
+    [metricParams, minPriorityScore, minResearchScore, search],
+  );
+
+  const reviewBucketParams = useMemo(
+    () => ({
+      ...metricParams,
+      limit: 60,
+    }),
+    [metricParams],
+  );
+
+  const jobParams = useMemo(() => ({ limit: 12 }), []);
+
+  const metricsQuery = useGetResearchMetrics(metricParams, {
+    query: {
+      queryKey: getGetResearchMetricsQueryKey(metricParams),
+      enabled: hasAdminToken,
+    },
+  });
+  const feedQuery = useGetResearchFeed(feedParams, {
+    query: {
+      queryKey: getGetResearchFeedQueryKey(feedParams),
+      enabled: hasAdminToken,
+    },
+  });
+  const reviewBucketsQuery = useGetResearchReviewBuckets(reviewBucketParams, {
+    query: {
+      queryKey: getGetResearchReviewBucketsQueryKey(reviewBucketParams),
+      enabled: hasAdminToken,
+    },
+  });
+  const jobsQuery = useGetResearchJobs(jobParams, {
+    query: {
+      queryKey: getGetResearchJobsQueryKey(jobParams),
+      enabled: hasAdminToken,
+    },
+  });
+  const viewsQuery = useGetResearchViews({
+    query: {
+      queryKey: getGetResearchViewsQueryKey(),
+      enabled: hasAdminToken,
+    },
+  });
+
+  const invalidateResearchQueries = () => {
+    void queryClient.invalidateQueries({ queryKey: getGetResearchMetricsQueryKey(metricParams) });
+    void queryClient.invalidateQueries({ queryKey: getGetResearchFeedQueryKey(feedParams) });
+    void queryClient.invalidateQueries({ queryKey: getGetResearchReviewBucketsQueryKey(reviewBucketParams) });
+    void queryClient.invalidateQueries({ queryKey: getGetResearchJobsQueryKey(jobParams) });
+    void queryClient.invalidateQueries({ queryKey: getGetResearchViewsQueryKey() });
+  };
+
+  const runAutomationMutation = useRunResearchJobs({
+    mutation: {
+      onSuccess: invalidateResearchQueries,
+      onError: (error) => {
+        toast({
+          title: "Automation tick failed",
+          description: error instanceof Error ? error.message : "Could not run research automation.",
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
+  const createViewMutation = useCreateResearchView({
+    mutation: {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: getGetResearchViewsQueryKey() });
+      },
+      onError: (error) => {
+        toast({
+          title: "Save view failed",
+          description: error instanceof Error ? error.message : "Could not save research view.",
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
+  const deleteViewMutation = useDeleteResearchView({
+    mutation: {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: getGetResearchViewsQueryKey() });
+      },
+      onError: (error) => {
+        toast({
+          title: "Delete view failed",
+          description: error instanceof Error ? error.message : "Could not delete research view.",
+          variant: "destructive",
+        });
+      },
+    },
+  });
+
+  const metrics = metricsQuery.data ?? null;
+  const feed = feedQuery.data ?? null;
+  const reviewBuckets = reviewBucketsQuery.data ?? [];
+  const jobs = jobsQuery.data ?? [];
+  const views = viewsQuery.data ?? [];
+  const loading =
+    metricsQuery.isLoading ||
+    feedQuery.isLoading ||
+    reviewBucketsQuery.isLoading ||
+    jobsQuery.isLoading ||
+    viewsQuery.isLoading;
+
   useEffect(() => {
     syncSearchParams(queryString);
   }, [queryString]);
 
-  useEffect(() => {
-    if (!hasAdminToken) return;
-
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      try {
-        const [metricsData, feedData, bucketData, jobsData, viewsData] = await Promise.all([
-          fetchJson<ResearchMetrics>(withParams("/api/research/metrics", queryString), {
-            headers: apiHeaders(),
-          }),
-          fetchJson<ResearchFeed>(withParams("/api/research/feed", queryString, "pageSize=20"), {
-            headers: apiHeaders(),
-          }),
-          fetchJson<ReviewBucket[]>(withParams("/api/research/review-buckets", queryString, "limit=60"), {
-            headers: apiHeaders(),
-          }),
-          fetchJson<ResearchJob[]>(`/api/research/jobs?limit=12`, {
-            headers: apiHeaders(),
-          }),
-          fetchJson<ResearchView[]>(`/api/research/views`, {
-            headers: apiHeaders(),
-          }),
-        ]);
-
-        if (cancelled) return;
-        setMetrics(metricsData);
-        setFeed(feedData);
-        setReviewBuckets(bucketData);
-        setJobs(jobsData);
-        setViews(viewsData);
-      } catch (error) {
-        if (cancelled) return;
-        toast({
-          title: "Research load failed",
-          description: error instanceof Error ? error.message : "Could not load research data.",
-          variant: "destructive",
-        });
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [hasAdminToken, queryString, reloadKey, toast]);
-
-  const handleRunAutomation = async () => {
-    try {
-      await fetchJson("/api/research/jobs/run", {
-        method: "POST",
-        headers: apiHeaders(),
-      });
-      setReloadKey((value) => value + 1);
-    } catch (error) {
-      toast({
-        title: "Automation tick failed",
-        description: error instanceof Error ? error.message : "Could not run research automation.",
-        variant: "destructive",
-      });
-    }
+  const handleRunAutomation = () => {
+    runAutomationMutation.mutate();
   };
 
-  const handleSaveView = async () => {
+  const handleSaveView = () => {
     const name = window.prompt("Saved view name");
     if (!name?.trim()) return;
 
-    try {
-      await fetchJson("/api/research/views", {
-        method: "POST",
-        headers: apiHeaders(),
-        body: JSON.stringify({
-          name: name.trim(),
-          filtersJson: {
-            search,
-            city,
-            categorySlug: category,
-            targetMarket,
-            engineType,
-            targetCluster,
-            minPriorityScore: minPriorityScore ? Number(minPriorityScore) : undefined,
-            minResearchScore: minResearchScore ? Number(minResearchScore) : undefined,
-          },
-          sortJson: {
-            field: "researchScore",
-            direction: "desc",
-          },
-        }),
-      });
-      setReloadKey((value) => value + 1);
-    } catch (error) {
-      toast({
-        title: "Save view failed",
-        description: error instanceof Error ? error.message : "Could not save research view.",
-        variant: "destructive",
-      });
-    }
+    createViewMutation.mutate({
+      data: {
+        name: name.trim(),
+        filtersJson: {
+          search,
+          city,
+          categorySlug: category,
+          targetMarket,
+          engineType,
+          targetCluster,
+          minPriorityScore: parseOptionalInt(minPriorityScore),
+          minResearchScore: parseOptionalInt(minResearchScore),
+        },
+        sortJson: {
+          field: "researchScore",
+          direction: "desc",
+        },
+      },
+    });
   };
 
   const applyView = (view: ResearchView) => {
@@ -291,20 +248,8 @@ export default function ResearchPage() {
     setMinResearchScore(filters["minResearchScore"] ? String(filters["minResearchScore"]) : "");
   };
 
-  const deleteView = async (id: number) => {
-    try {
-      await fetch(`/api/research/views/${id}`, {
-        method: "DELETE",
-        headers: apiHeaders(),
-      });
-      setReloadKey((value) => value + 1);
-    } catch (error) {
-      toast({
-        title: "Delete view failed",
-        description: error instanceof Error ? error.message : "Could not delete research view.",
-        variant: "destructive",
-      });
-    }
+  const deleteView = (id: number) => {
+    deleteViewMutation.mutate({ id });
   };
 
   if (!hasAdminToken) {
@@ -357,9 +302,13 @@ export default function ResearchPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setReloadKey((value) => value + 1)}>Refresh</Button>
-          <Button variant="outline" onClick={handleSaveView}>Save view</Button>
-          <Button onClick={handleRunAutomation}>Run automation</Button>
+          <Button variant="outline" onClick={invalidateResearchQueries}>Refresh</Button>
+          <Button variant="outline" onClick={handleSaveView} disabled={createViewMutation.isPending}>
+            Save view
+          </Button>
+          <Button onClick={handleRunAutomation} disabled={runAutomationMutation.isPending}>
+            Run automation
+          </Button>
         </div>
       </div>
 
@@ -403,7 +352,7 @@ export default function ResearchPage() {
               {view.name}
             </button>
             {view.isDefault && <Badge variant="outline">Default</Badge>}
-            <button className="text-xs text-muted-foreground hover:text-destructive" onClick={() => void deleteView(view.id)}>
+            <button className="text-xs text-muted-foreground hover:text-destructive" onClick={() => deleteView(view.id)}>
               delete
             </button>
           </div>

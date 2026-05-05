@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   getGetBusinessOutreachQueryKey,
@@ -6,13 +6,24 @@ import {
   getGetBusinessByIdQueryKey,
   getGetBusinessSourcesQueryKey,
   getGetBusinessOutreachEventsQueryKey,
+  getGetCaseStudiesQueryKey,
+  getGetContentAssetsQueryKey,
+  getGetCredibilityAssetsQueryKey,
+  getGetNarrativesQueryKey,
+  getGetOffersQueryKey,
   useGetBusinessOutreach,
   useGetBusinessContactCandidates,
   useGetBusinessById,
   useGetBusinessSources,
   useGetBusinessOutreachEvents,
+  useGetCaseStudies,
+  useGetContentAssets,
+  useGetCredibilityAssets,
+  useGetNarratives,
+  useGetOffers,
   useUpdateBusinessContactCandidate,
   useUpdateBusinessOutreach,
+  type ContentAsset,
   type OutreachEvent,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -60,11 +71,34 @@ import {
 import { getStoredAdminToken } from "@/lib/admin-auth";
 import { formatPipelineValue } from "@/lib/outreach-formatting";
 
-type SlgReferenceEntry = {
-  id: number;
-  name?: string | null;
-  title?: string | null;
-};
+function selectSuggestedContentAsset(
+  assets: ContentAsset[],
+  business: {
+    engineType?: string | null;
+    targetCluster?: string | null;
+    bestOfferId?: number | null;
+    bestNarrativeId?: number | null;
+  } | null | undefined,
+) {
+  if (!business) return null;
+
+  const scored = assets
+    .map((asset) => {
+      let score = 0;
+      if (asset.assetType === "pitch_snippet") score += 35;
+      if (asset.assetType === "proof_snippet") score += 20;
+      if (asset.engineType && asset.engineType === business.engineType) score += 25;
+      if (asset.targetCluster && asset.targetCluster === business.targetCluster) score += 30;
+      if (!asset.engineType) score += 5;
+      if (!asset.targetCluster) score += 5;
+      if (business.bestNarrativeId) score += 3;
+      if (business.bestOfferId) score += 2;
+      return { asset, score };
+    })
+    .sort((left, right) => right.score - left.score);
+
+  return scored[0]?.asset ?? null;
+}
 
 const OUTREACH_STATUS_OPTIONS = [
   "not_contacted",
@@ -404,17 +438,6 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const hasAdminToken = Boolean(getStoredAdminToken());
   const [outreachForm, setOutreachForm] = useState<OutreachFormState>(() => buildOutreachFormState());
   const [assignedArtistMode, setAssignedArtistMode] = useState<"auto" | "manual">("auto");
-  const [referenceLabels, setReferenceLabels] = useState<{
-    offers: Record<number, string>;
-    narratives: Record<number, string>;
-    assets: Record<number, string>;
-    caseStudies: Record<number, string>;
-  }>({
-    offers: {},
-    narratives: {},
-    assets: {},
-    caseStudies: {},
-  });
 
   const businessQuery = useGetBusinessById(businessId, {
     query: {
@@ -450,6 +473,21 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
       enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
     },
   });
+  const offersQuery = useGetOffers({
+    query: { queryKey: getGetOffersQueryKey(), enabled: hasAdminToken },
+  });
+  const narrativesQuery = useGetNarratives({
+    query: { queryKey: getGetNarrativesQueryKey(), enabled: hasAdminToken },
+  });
+  const credibilityAssetsQuery = useGetCredibilityAssets({
+    query: { queryKey: getGetCredibilityAssetsQueryKey(), enabled: hasAdminToken },
+  });
+  const caseStudiesQuery = useGetCaseStudies({
+    query: { queryKey: getGetCaseStudiesQueryKey(), enabled: hasAdminToken },
+  });
+  const contentAssetsQuery = useGetContentAssets({
+    query: { queryKey: getGetContentAssetsQueryKey(), enabled: hasAdminToken },
+  });
 
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterChangedField, setFilterChangedField] = useState("all");
@@ -466,52 +504,23 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     }
   }, [outreachQuery.data, businessQuery.data?.categorySlug]);
 
-  useEffect(() => {
-    if (!hasAdminToken) return;
+  const referenceLabels = useMemo(
+    () => ({
+      offers: Object.fromEntries((offersQuery.data ?? []).map((entry) => [entry.id, entry.name ?? `Offer #${entry.id}`])),
+      narratives: Object.fromEntries(
+        (narrativesQuery.data ?? []).map((entry) => [entry.id, entry.name ?? `Narrative #${entry.id}`]),
+      ),
+      assets: Object.fromEntries(
+        (credibilityAssetsQuery.data ?? []).map((entry) => [entry.id, entry.name ?? `Asset #${entry.id}`]),
+      ),
+      caseStudies: Object.fromEntries(
+        (caseStudiesQuery.data ?? []).map((entry) => [entry.id, entry.title ?? `Case Study #${entry.id}`]),
+      ),
+    }),
+    [caseStudiesQuery.data, credibilityAssetsQuery.data, narrativesQuery.data, offersQuery.data],
+  );
 
-    let cancelled = false;
-    const token = getStoredAdminToken();
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-
-    const fetchEntries = async (path: string) => {
-      const response = await fetch(path, { headers });
-      if (!response.ok) throw new Error(`Failed to load ${path}`);
-      return (await response.json()) as SlgReferenceEntry[];
-    };
-
-    void Promise.all([
-      fetchEntries("/api/offers"),
-      fetchEntries("/api/narratives"),
-      fetchEntries("/api/credibility-assets"),
-      fetchEntries("/api/case-studies"),
-    ])
-      .then(([offers, narratives, assets, caseStudies]) => {
-        if (cancelled) return;
-        setReferenceLabels({
-          offers: Object.fromEntries(offers.map((entry) => [entry.id, entry.name ?? `Offer #${entry.id}`])),
-          narratives: Object.fromEntries(
-            narratives.map((entry) => [entry.id, entry.name ?? `Narrative #${entry.id}`]),
-          ),
-          assets: Object.fromEntries(assets.map((entry) => [entry.id, entry.name ?? `Asset #${entry.id}`])),
-          caseStudies: Object.fromEntries(
-            caseStudies.map((entry) => [entry.id, entry.title ?? `Case Study #${entry.id}`]),
-          ),
-        });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setReferenceLabels({
-          offers: {},
-          narratives: {},
-          assets: {},
-          caseStudies: {},
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hasAdminToken]);
+  const suggestedContentAsset = selectSuggestedContentAsset(contentAssetsQuery.data ?? [], businessQuery.data);
 
   const updateOutreachMutation = useUpdateBusinessOutreach({
     mutation: {
@@ -963,6 +972,15 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">Pitch Angle</p>
                   <p className="mt-2 font-medium">
                     {business.recommendedPitchAngle ?? business.proofAngle ?? "No angle selected yet"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm md:col-span-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Suggested Pitch Snippet</p>
+                  <p className="mt-2 font-medium">
+                    {suggestedContentAsset?.title ?? "No content asset selected yet"}
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                    {suggestedContentAsset?.body ?? "No reusable pitch snippet available for this target yet."}
                   </p>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-4 text-sm">

@@ -75,6 +75,9 @@ export const GetBusinessesResponse = zod.object({
       hasPhone: zod.boolean(),
       enrichmentStatus: zod.string(),
       targetMarket: zod.string().nullish(),
+      engineType: zod.string().nullish(),
+      targetType: zod.string().nullish(),
+      targetCluster: zod.string().nullish(),
       avatarType: zod.string().nullish(),
       discoveryStatus: zod.string().nullish(),
       qualificationStatus: zod.string().nullish(),
@@ -88,11 +91,36 @@ export const GetBusinessesResponse = zod.object({
       freshnessScore: zod.number().nullish(),
       priorityScore: zod.number().nullish(),
       researchScore: zod.number().nullish(),
+      economicValueScore: zod.number().nullish(),
+      strategicValueScore: zod.number().nullish(),
+      referralValueScore: zod.number().nullish(),
+      prestigeValueScore: zod.number().nullish(),
+      continuityRevenuePotential: zod.number().nullish(),
+      offerFitScore: zod.number().nullish(),
+      relationshipPathScore: zod.number().nullish(),
+      actionabilityScore: zod.number().nullish(),
       officialSourceCount: zod.number().nullish(),
       successfulSourceCount: zod.number().nullish(),
       failedSourceCount: zod.number().nullish(),
       primarySourceId: zod.number().nullish(),
       primaryContactCandidateId: zod.number().nullish(),
+      bestOfferId: zod.number().nullish(),
+      bestNarrativeId: zod.number().nullish(),
+      secondaryNarrativeId: zod.number().nullish(),
+      bestCredibilityAssetId: zod.number().nullish(),
+      bestCaseStudyId: zod.number().nullish(),
+      proofAngle: zod.string().nullish(),
+      riskReductionReason: zod.string().nullish(),
+      toneOfApproach: zod.string().nullish(),
+      recommendedPitchAngle: zod.string().nullish(),
+      nextBestContactWindow: zod.string().nullish(),
+      accountTier: zod.string().nullish(),
+      seasonalityFit: zod.string().nullish(),
+      warmPathExists: zod.boolean(),
+      readyForRelationship: zod.boolean(),
+      readyForInstitutionalPitch: zod.boolean(),
+      prestigeWatchlist: zod.boolean(),
+      cultivationRequired: zod.boolean(),
       readyForOutreach: zod.boolean(),
       reviewRequired: zod.boolean(),
       reviewReason: zod.string().nullish(),
@@ -147,7 +175,59 @@ export const GetReviewQueueResponseItem = zod.object({
     hasPhone: zod.boolean(),
     enrichmentStatus: zod.string(),
     targetMarket: zod.string().nullish(),
+    engineType: zod.string().nullish(),
+    targetType: zod.string().nullish(),
+    targetCluster: zod.string().nullish(),
     avatarType: zod.string().nullish(),
+    discoveryStatus: zod.string().nullish(),
+    qualificationStatus: zod.string().nullish(),
+    contactabilityStatus: zod.string().nullish(),
+    rankingStatus: zod.string().nullish(),
+    sourceHealth: zod.string().nullish(),
+    contactReadiness: zod.string().nullish(),
+    relevanceScore: zod.number().nullish(),
+    contactabilityScore: zod.number().nullish(),
+    confidenceScore: zod.number().nullish(),
+    freshnessScore: zod.number().nullish(),
+    priorityScore: zod.number().nullish(),
+    researchScore: zod.number().nullish(),
+    economicValueScore: zod.number().nullish(),
+    strategicValueScore: zod.number().nullish(),
+    referralValueScore: zod.number().nullish(),
+    prestigeValueScore: zod.number().nullish(),
+    continuityRevenuePotential: zod.number().nullish(),
+    offerFitScore: zod.number().nullish(),
+    relationshipPathScore: zod.number().nullish(),
+    actionabilityScore: zod.number().nullish(),
+    officialSourceCount: zod.number().nullish(),
+    successfulSourceCount: zod.number().nullish(),
+    failedSourceCount: zod.number().nullish(),
+    primarySourceId: zod.number().nullish(),
+    primaryContactCandidateId: zod.number().nullish(),
+    bestOfferId: zod.number().nullish(),
+    bestNarrativeId: zod.number().nullish(),
+    secondaryNarrativeId: zod.number().nullish(),
+    bestCredibilityAssetId: zod.number().nullish(),
+    bestCaseStudyId: zod.number().nullish(),
+    proofAngle: zod.string().nullish(),
+    riskReductionReason: zod.string().nullish(),
+    toneOfApproach: zod.string().nullish(),
+    recommendedPitchAngle: zod.string().nullish(),
+    nextBestContactWindow: zod.string().nullish(),
+    accountTier: zod.string().nullish(),
+    seasonalityFit: zod.string().nullish(),
+    warmPathExists: zod.boolean(),
+    readyForRelationship: zod.boolean(),
+    readyForInstitutionalPitch: zod.boolean(),
+    prestigeWatchlist: zod.boolean(),
+    cultivationRequired: zod.boolean(),
+    readyForOutreach: zod.boolean(),
+    reviewRequired: zod.boolean(),
+    reviewReason: zod.string().nullish(),
+    topGap: zod.string().nullish(),
+    recommendedNextStep: zod.string().nullish(),
+    lastResearchAt: zod.string().nullish(),
+    nextResearchAt: zod.string().nullish(),
     createdAt: zod.string(),
     updatedAt: zod.string(),
   }),
@@ -190,6 +270,10 @@ export const GetBusinessByIdResponse = zod.object({
   hasPhone: zod.boolean(),
   enrichmentStatus: zod.string(),
   targetMarket: zod.string().nullish(),
+  engineType: zod.string().nullish(),
+  targetType: zod.string().nullish(),
+  targetCluster: zod.string().nullish(),
+  avatarType: zod.string().nullish(),
   discoveryStatus: zod.string().nullish(),
   qualificationStatus: zod.string().nullish(),
   contactabilityStatus: zod.string().nullish(),
@@ -202,11 +286,36 @@ export const GetBusinessByIdResponse = zod.object({
   freshnessScore: zod.number().nullish(),
   priorityScore: zod.number().nullish(),
   researchScore: zod.number().nullish(),
+  economicValueScore: zod.number().nullish(),
+  strategicValueScore: zod.number().nullish(),
+  referralValueScore: zod.number().nullish(),
+  prestigeValueScore: zod.number().nullish(),
+  continuityRevenuePotential: zod.number().nullish(),
+  offerFitScore: zod.number().nullish(),
+  relationshipPathScore: zod.number().nullish(),
+  actionabilityScore: zod.number().nullish(),
   officialSourceCount: zod.number().nullish(),
   successfulSourceCount: zod.number().nullish(),
   failedSourceCount: zod.number().nullish(),
   primarySourceId: zod.number().nullish(),
   primaryContactCandidateId: zod.number().nullish(),
+  bestOfferId: zod.number().nullish(),
+  bestNarrativeId: zod.number().nullish(),
+  secondaryNarrativeId: zod.number().nullish(),
+  bestCredibilityAssetId: zod.number().nullish(),
+  bestCaseStudyId: zod.number().nullish(),
+  proofAngle: zod.string().nullish(),
+  riskReductionReason: zod.string().nullish(),
+  toneOfApproach: zod.string().nullish(),
+  recommendedPitchAngle: zod.string().nullish(),
+  nextBestContactWindow: zod.string().nullish(),
+  accountTier: zod.string().nullish(),
+  seasonalityFit: zod.string().nullish(),
+  warmPathExists: zod.boolean(),
+  readyForRelationship: zod.boolean(),
+  readyForInstitutionalPitch: zod.boolean(),
+  prestigeWatchlist: zod.boolean(),
+  cultivationRequired: zod.boolean(),
   readyForOutreach: zod.boolean(),
   reviewRequired: zod.boolean(),
   reviewReason: zod.string().nullish(),
@@ -255,20 +364,69 @@ export const UpdateBusinessOutreachParams = zod.object({
 
 export const UpdateBusinessOutreachBody = zod.object({
   outreachStatus: zod.string().optional(),
-  contactName: zod.string().nullish().optional(),
-  contactRole: zod.string().nullish().optional(),
-  contactEmail: zod.string().nullish().optional(),
-  lastContactDate: zod.string().nullish().optional(),
-  nextActionDate: zod.string().nullish().optional(),
-  assignedArtist: zod.string().nullish().optional(),
-  assignedArtistSource: zod.string().nullish().optional(),
-  avatarType: zod.string().nullish().optional(),
-  targetMarket: zod.string().nullish().optional(),
-  notes: zod.string().nullish().optional(),
-  warmConnection: zod.string().nullish().optional(),
+  contactName: zod.string().nullish(),
+  contactRole: zod.string().nullish(),
+  contactEmail: zod.string().nullish(),
+  lastContactDate: zod.string().nullish(),
+  nextActionDate: zod.string().nullish(),
+  assignedArtist: zod.string().nullish(),
+  assignedArtistSource: zod.string().nullish(),
+  avatarType: zod.string().nullish(),
+  targetMarket: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  warmConnection: zod.string().nullish(),
 });
 
-export const UpdateBusinessOutreachResponse = GetBusinessOutreachResponse;
+export const UpdateBusinessOutreachResponse = zod.object({
+  businessId: zod.number(),
+  outreachStatus: zod.string(),
+  contactName: zod.string().nullish(),
+  contactRole: zod.string().nullish(),
+  contactEmail: zod.string().nullish(),
+  lastContactDate: zod.string().nullish(),
+  nextActionDate: zod.string().nullish(),
+  assignedArtist: zod.string().nullish(),
+  assignedArtistSource: zod.string().nullish(),
+  avatarType: zod.string().nullish(),
+  targetMarket: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  warmConnection: zod.string().nullish(),
+  readyForOutreach: zod.boolean(),
+  reviewRequired: zod.boolean(),
+  reviewReason: zod.string().nullish(),
+  priorityScore: zod.number().nullish(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary List tracked sources for one business
+ */
+export const GetBusinessSourcesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBusinessSourcesResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  sourceType: zod.string(),
+  sourceUrl: zod.string(),
+  sourceDomain: zod.string().nullish(),
+  discoveredVia: zod.string().nullish(),
+  fetchStatus: zod.string(),
+  lastFetchedAt: zod.string().nullish(),
+  contentHash: zod.string().nullish(),
+  httpStatus: zod.number().nullish(),
+  isOfficial: zod.boolean(),
+  sourcePriority: zod.number(),
+  usefulnessScore: zod.number().nullish(),
+  nextFetchAt: zod.string().nullish(),
+  freshnessStatus: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetBusinessSourcesResponse = zod.array(
+  GetBusinessSourcesResponseItem,
+);
 
 /**
  * @summary List contact candidates derived for one business
@@ -292,6 +450,12 @@ export const GetBusinessContactCandidatesResponseItem = zod.object({
   isPrimary: zod.boolean(),
   isPersonalData: zod.boolean(),
   lastVerifiedAt: zod.string().nullish(),
+  verificationStatus: zod.string(),
+  isReachable: zod.boolean(),
+  isDecisionMakerLikely: zod.boolean(),
+  channelPriority: zod.number(),
+  sourcePriority: zod.number(),
+  nextVerificationAt: zod.string().nullish(),
   reviewStatus: zod.string(),
   notes: zod.string().nullish(),
   createdAt: zod.string(),
@@ -299,6 +463,29 @@ export const GetBusinessContactCandidatesResponseItem = zod.object({
 });
 export const GetBusinessContactCandidatesResponse = zod.array(
   GetBusinessContactCandidatesResponseItem,
+);
+
+/**
+ * @summary List outreach audit events for one business
+ */
+export const GetBusinessOutreachEventsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBusinessOutreachEventsResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  eventType: zod.string(),
+  entityType: zod.string(),
+  entityId: zod.number().nullish(),
+  actorType: zod.string(),
+  summary: zod.string(),
+  changedFields: zod.array(zod.string()),
+  payload: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.string(),
+});
+export const GetBusinessOutreachEventsResponse = zod.array(
+  GetBusinessOutreachEventsResponseItem,
 );
 
 /**
@@ -314,32 +501,427 @@ export const UpdateBusinessContactCandidateBody = zod.object({
   isPrimary: zod.boolean().optional(),
 });
 
-export const UpdateBusinessContactCandidateResponse =
-  GetBusinessContactCandidatesResponseItem;
-
-/**
- * @summary List tracked sources for one business
- */
-export const GetBusinessSourcesParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const GetBusinessSourcesResponseItem = zod.object({
+export const UpdateBusinessContactCandidateResponse = zod.object({
   id: zod.number(),
   businessId: zod.number(),
-  sourceType: zod.string(),
+  fullName: zod.string().nullish(),
+  role: zod.string().nullish(),
+  contactType: zod.string(),
+  email: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  contactUrl: zod.string().nullish(),
   sourceUrl: zod.string(),
-  sourceDomain: zod.string().nullish(),
-  discoveredVia: zod.string().nullish(),
-  fetchStatus: zod.string(),
-  lastFetchedAt: zod.string().nullish(),
-  contentHash: zod.string().nullish(),
-  httpStatus: zod.number().nullish(),
-  isOfficial: zod.boolean(),
+  sourceType: zod.string(),
+  confidenceScore: zod.string(),
+  isPrimary: zod.boolean(),
+  isPersonalData: zod.boolean(),
+  lastVerifiedAt: zod.string().nullish(),
+  verificationStatus: zod.string(),
+  isReachable: zod.boolean(),
+  isDecisionMakerLikely: zod.boolean(),
+  channelPriority: zod.number(),
+  sourcePriority: zod.number(),
+  nextVerificationAt: zod.string().nullish(),
+  reviewStatus: zod.string(),
+  notes: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
-export const GetBusinessSourcesResponse = zod.array(GetBusinessSourcesResponseItem);
+
+/**
+ * @summary Research metrics for the current filtered target set
+ */
+export const GetResearchMetricsQueryParams = zod.object({
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
+  engineType: zod.coerce.string().optional(),
+  targetCluster: zod.coerce.string().optional(),
+});
+
+export const GetResearchMetricsResponse = zod.object({
+  totalBusinesses: zod.number(),
+  qualifiedBusinesses: zod.number(),
+  contactableBusinesses: zod.number(),
+  readyBusinesses: zod.number(),
+  reviewBusinesses: zod.number(),
+  staleHighPriorityBusinesses: zod.number(),
+  engineBreakdown: zod.object({
+    revenue: zod.number(),
+    institutional: zod.number(),
+    authority: zod.number(),
+  }),
+  relationshipBreakdown: zod.object({
+    warmPaths: zod.number(),
+    prestigeWatchlist: zod.number(),
+  }),
+  topNextSteps: zod.array(
+    zod.object({
+      recommendedNextStep: zod.string(),
+      total: zod.number(),
+    }),
+  ),
+  jobCounts: zod.record(zod.string(), zod.number()),
+  feedback: zod.record(zod.string(), zod.number()),
+});
+
+/**
+ * @summary Ranked research feed for the current filters
+ */
+export const GetResearchFeedQueryParams = zod.object({
+  search: zod.coerce.string().optional(),
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
+  engineType: zod.coerce.string().optional(),
+  targetCluster: zod.coerce.string().optional(),
+  minPriorityScore: zod.coerce.number().optional(),
+  minResearchScore: zod.coerce.number().optional(),
+  page: zod.coerce.number().optional(),
+  pageSize: zod.coerce.number().optional(),
+});
+
+export const GetResearchFeedResponse = zod.object({
+  businesses: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      city: zod.string().nullish(),
+      country: zod.string().nullish(),
+      categorySlug: zod.string(),
+      targetMarket: zod.string().nullish(),
+      avatarType: zod.string().nullish(),
+      relevanceScore: zod.number().nullish(),
+      contactabilityScore: zod.number().nullish(),
+      confidenceScore: zod.number().nullish(),
+      freshnessScore: zod.number().nullish(),
+      priorityScore: zod.number().nullish(),
+      researchScore: zod.number().nullish(),
+      readyForOutreach: zod.boolean(),
+      reviewRequired: zod.boolean(),
+      reviewReason: zod.string().nullish(),
+      recommendedNextStep: zod.string().nullish(),
+      topGap: zod.string().nullish(),
+    }),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  pageSize: zod.number(),
+  totalPages: zod.number(),
+});
+
+/**
+ * @summary Review buckets grouped by blocker type
+ */
+export const GetResearchReviewBucketsQueryParams = zod.object({
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
+  engineType: zod.coerce.string().optional(),
+  targetCluster: zod.coerce.string().optional(),
+  limit: zod.coerce.number().optional(),
+});
+
+export const GetResearchReviewBucketsResponseItem = zod.object({
+  key: zod.string(),
+  label: zod.string(),
+  count: zod.number(),
+  items: zod.array(
+    zod.object({
+      business: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        city: zod.string().nullish(),
+        country: zod.string().nullish(),
+        categorySlug: zod.string(),
+        targetMarket: zod.string().nullish(),
+        avatarType: zod.string().nullish(),
+        relevanceScore: zod.number().nullish(),
+        contactabilityScore: zod.number().nullish(),
+        confidenceScore: zod.number().nullish(),
+        freshnessScore: zod.number().nullish(),
+        priorityScore: zod.number().nullish(),
+        researchScore: zod.number().nullish(),
+        readyForOutreach: zod.boolean(),
+        reviewRequired: zod.boolean(),
+        reviewReason: zod.string().nullish(),
+        recommendedNextStep: zod.string().nullish(),
+        topGap: zod.string().nullish(),
+      }),
+      reasons: zod.array(zod.string()),
+      priorityScore: zod.number(),
+    }),
+  ),
+});
+export const GetResearchReviewBucketsResponse = zod.array(
+  GetResearchReviewBucketsResponseItem,
+);
+
+/**
+ * @summary List research jobs
+ */
+export const GetResearchJobsQueryParams = zod.object({
+  limit: zod.coerce.number().optional(),
+  status: zod.coerce.string().optional(),
+});
+
+export const GetResearchJobsResponseItem = zod.object({
+  id: zod.number(),
+  jobType: zod.string(),
+  businessId: zod.number().nullish(),
+  sourceId: zod.number().nullish(),
+  status: zod.string(),
+  priority: zod.number(),
+  scheduledAt: zod.string().nullish(),
+  startedAt: zod.string().nullish(),
+  finishedAt: zod.string().nullish(),
+  attemptCount: zod.number(),
+  errorCode: zod.string().nullish(),
+  errorMessage: zod.string().nullish(),
+  payload: zod.record(zod.string(), zod.unknown()).nullish(),
+  resultSummary: zod.record(zod.string(), zod.unknown()).nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetResearchJobsResponse = zod.array(GetResearchJobsResponseItem);
+
+/**
+ * @summary Enqueue a research job
+ */
+export const CreateResearchJobBody = zod.object({
+  jobType: zod.string(),
+  businessId: zod.number().nullish(),
+  sourceId: zod.number().nullish(),
+  priority: zod.number().optional(),
+  payload: zod.record(zod.string(), zod.unknown()).optional(),
+});
+
+/**
+ * @summary Trigger one automation tick for research jobs
+ */
+export const RunResearchJobsResponse = zod.record(zod.string(), zod.unknown());
+
+/**
+ * @summary List saved research views
+ */
+export const GetResearchViewsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  scope: zod.string(),
+  isDefault: zod.boolean(),
+  filtersJson: zod.record(zod.string(), zod.unknown()),
+  sortJson: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.string().optional(),
+  updatedAt: zod.string().optional(),
+});
+export const GetResearchViewsResponse = zod.array(GetResearchViewsResponseItem);
+
+/**
+ * @summary Create a saved research view
+ */
+export const CreateResearchViewBody = zod.object({
+  name: zod.string(),
+  scope: zod.string().optional(),
+  isDefault: zod.boolean().optional(),
+  filtersJson: zod.record(zod.string(), zod.unknown()).optional(),
+  sortJson: zod.record(zod.string(), zod.unknown()).optional(),
+});
+
+/**
+ * @summary Update a saved research view
+ */
+export const UpdateResearchViewParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateResearchViewBody = zod.object({
+  name: zod.string(),
+  scope: zod.string().optional(),
+  isDefault: zod.boolean().optional(),
+  filtersJson: zod.record(zod.string(), zod.unknown()).optional(),
+  sortJson: zod.record(zod.string(), zod.unknown()).optional(),
+});
+
+export const UpdateResearchViewResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  scope: zod.string(),
+  isDefault: zod.boolean(),
+  filtersJson: zod.record(zod.string(), zod.unknown()),
+  sortJson: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.string().optional(),
+  updatedAt: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a saved research view
+ */
+export const DeleteResearchViewParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List SLG offers
+ */
+export const GetOffersResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  engineType: zod.string(),
+  offerType: zod.string(),
+  summary: zod.string().nullish(),
+  targetClusters: zod.string().nullish(),
+  ticketMin: zod.number().nullish(),
+  ticketMax: zod.number().nullish(),
+  recurringPotential: zod.number().nullish(),
+  bundleable: zod.boolean(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetOffersResponse = zod.array(GetOffersResponseItem);
+
+/**
+ * @summary List SLG narratives
+ */
+export const GetNarrativesResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  summary: zod.string().nullish(),
+  toneOfApproach: zod.string().nullish(),
+  engineTypes: zod.string().nullish(),
+  targetClusters: zod.string().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetNarrativesResponse = zod.array(GetNarrativesResponseItem);
+
+/**
+ * @summary List SLG credibility assets
+ */
+export const GetCredibilityAssetsResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  assetType: zod.string(),
+  summary: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  targetClusters: zod.string().nullish(),
+  engineTypes: zod.string().nullish(),
+  tags: zod.string().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetCredibilityAssetsResponse = zod.array(
+  GetCredibilityAssetsResponseItem,
+);
+
+/**
+ * @summary List SLG case studies
+ */
+export const GetCaseStudiesResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  title: zod.string(),
+  summary: zod.string().nullish(),
+  targetCluster: zod.string().nullish(),
+  engineType: zod.string().nullish(),
+  artist: zod.string().nullish(),
+  outcome: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  tags: zod.string().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetCaseStudiesResponse = zod.array(GetCaseStudiesResponseItem);
+
+/**
+ * @summary List SLG seasonal windows
+ */
+export const GetSeasonalWindowsResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  engineType: zod.string().nullish(),
+  targetCluster: zod.string().nullish(),
+  startMonth: zod.number(),
+  endMonth: zod.number(),
+  note: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSeasonalWindowsResponse = zod.array(
+  GetSeasonalWindowsResponseItem,
+);
+
+/**
+ * @summary List SLG content assets
+ */
+export const GetContentAssetsResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  assetType: zod.string(),
+  engineType: zod.string().nullish(),
+  targetCluster: zod.string().nullish(),
+  title: zod.string(),
+  body: zod.string(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetContentAssetsResponse = zod.array(GetContentAssetsResponseItem);
+
+/**
+ * @summary List relationship paths
+ */
+export const GetRelationshipPathsQueryParams = zod.object({
+  businessId: zod.coerce.number().optional(),
+});
+
+export const GetRelationshipPathsResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  businessName: zod.string().nullish(),
+  introducerName: zod.string().nullish(),
+  introducerOrg: zod.string().nullish(),
+  relationshipType: zod.string(),
+  confidenceScore: zod.string(),
+  isWarm: zod.boolean(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetRelationshipPathsResponse = zod.array(
+  GetRelationshipPathsResponseItem,
+);
+
+/**
+ * @summary List strategic accounts
+ */
+export const GetStrategicAccountsQueryParams = zod.object({
+  businessId: zod.coerce.number().optional(),
+});
+
+export const GetStrategicAccountsResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  businessName: zod.string().nullish(),
+  accountType: zod.string(),
+  owner: zod.string().nullish(),
+  accountTier: zod.string().nullish(),
+  status: zod.string(),
+  thesis: zod.string().nullish(),
+  milestone: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetStrategicAccountsResponse = zod.array(
+  GetStrategicAccountsResponseItem,
+);
 
 /**
  * @summary Dashboard statistics
@@ -403,6 +985,10 @@ export const GetOutreachDashboardResponse = zod.object({
       contactEmail: zod.string().nullish(),
       warmConnection: zod.string().nullish(),
       notes: zod.string().nullish(),
+      readyForOutreach: zod.boolean(),
+      reviewRequired: zod.boolean(),
+      priorityScore: zod.number().nullish(),
+      reviewReason: zod.string().nullish(),
       urgencyBucket: zod.string(),
       daysUntilAction: zod.number().nullish(),
       recommendedAction: zod.string(),
@@ -418,7 +1004,9 @@ export const getOutreachPipelineQueryHorizonDaysDefault = 7;
 export const getOutreachPipelineQueryLimitDefault = 50;
 
 export const GetOutreachPipelineQueryParams = zod.object({
-  horizonDays: zod.coerce.number().default(getOutreachPipelineQueryHorizonDaysDefault),
+  horizonDays: zod.coerce
+    .number()
+    .default(getOutreachPipelineQueryHorizonDaysDefault),
   limit: zod.coerce.number().default(getOutreachPipelineQueryLimitDefault),
   categorySlug: zod.coerce.string().optional(),
   city: zod.coerce.string().optional(),
@@ -466,24 +1054,11 @@ export const GetOutreachPipelineResponse = zod.object({
 });
 
 /**
- * @summary Run an import for a category + city
+ * @summary Queue an import for a category + city
  */
 export const RunImportBody = zod.object({
   categorySlug: zod.string(),
   city: zod.string(),
-});
-
-export const RunImportResponse = zod.object({
-  success: zod.boolean(),
-  queued: zod.boolean(),
-  status: zod.string(),
-  fetched: zod.number(),
-  inserted: zod.number(),
-  updated: zod.number(),
-  skipped: zod.number(),
-  errors: zod.number(),
-  message: zod.string(),
-  runId: zod.number().nullish(),
 });
 
 /**
@@ -505,7 +1080,29 @@ export const GetImportRunsResponseItem = zod.object({
   finishedAt: zod.string().nullish(),
 });
 export const GetImportRunsResponse = zod.array(GetImportRunsResponseItem);
-export const GetImportRunByIdResponse = GetImportRunsResponseItem;
+
+/**
+ * @summary Get detailed status for one import run
+ */
+export const GetImportRunByIdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetImportRunByIdResponse = zod.object({
+  id: zod.number(),
+  source: zod.string(),
+  categorySlug: zod.string(),
+  city: zod.string(),
+  status: zod.string(),
+  fetched: zod.number().nullish(),
+  inserted: zod.number().nullish(),
+  updated: zod.number().nullish(),
+  skipped: zod.number().nullish(),
+  errors: zod.number().nullish(),
+  errorMessage: zod.string().nullish(),
+  startedAt: zod.string(),
+  finishedAt: zod.string().nullish(),
+});
 
 /**
  * @summary Export businesses as CSV
@@ -513,4 +1110,7 @@ export const GetImportRunByIdResponse = GetImportRunsResponseItem;
 export const ExportBusinessesCsvQueryParams = zod.object({
   categorySlug: zod.coerce.string().optional(),
   city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
+  readyForOutreach: zod.coerce.boolean().optional(),
+  reviewRequired: zod.coerce.boolean().optional(),
 });

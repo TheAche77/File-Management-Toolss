@@ -89,7 +89,7 @@ Impact:
 
 Status:
 
-- not fixed yet
+- fixed on `2026-04-24`
 
 ### P1 - Functional/Product Gaps
 
@@ -261,8 +261,12 @@ Implementation in this phase:
 
 Remaining in Phase 0:
 
-- add checked-in DB migrations
-- add CI validation for build/typecheck
+- none
+
+Status:
+
+- checked-in DB migrations exist through `0004_slg_growth_engine.sql`
+- CI validation added on `2026-04-24`
 
 ## Phase 1 - Fix Current Broken User Flows
 

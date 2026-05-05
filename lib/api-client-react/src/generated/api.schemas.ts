@@ -38,14 +38,6 @@ export interface Business {
   /** @nullable */
   country?: string | null;
   /** @nullable */
-  targetMarket?: string | null;
-  /** @nullable */
-  engineType?: string | null;
-  /** @nullable */
-  targetType?: string | null;
-  /** @nullable */
-  targetCluster?: string | null;
-  /** @nullable */
   website?: string | null;
   /** @nullable */
   phone?: string | null;
@@ -64,6 +56,14 @@ export interface Business {
   hasWebsite: boolean;
   hasPhone: boolean;
   enrichmentStatus: string;
+  /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
   /** @nullable */
   avatarType?: string | null;
   /** @nullable */
@@ -196,39 +196,13 @@ export interface BusinessSource {
   updatedAt: string;
 }
 
-export interface ContactCandidate {
-  id: number;
-  businessId: number;
-  /** @nullable */
-  fullName?: string | null;
-  /** @nullable */
-  role?: string | null;
-  contactType: string;
-  /** @nullable */
-  email?: string | null;
-  /** @nullable */
-  phone?: string | null;
-  /** @nullable */
-  contactUrl?: string | null;
-  sourceUrl: string;
-  sourceType: string;
-  confidenceScore: string;
-  isPrimary: boolean;
-  isPersonalData: boolean;
-  /** @nullable */
-  lastVerifiedAt?: string | null;
-  verificationStatus: string;
-  isReachable: boolean;
-  isDecisionMakerLikely: boolean;
-  channelPriority: number;
-  sourcePriority: number;
-  /** @nullable */
-  nextVerificationAt?: string | null;
-  reviewStatus: string;
-  /** @nullable */
-  notes?: string | null;
-  createdAt: string;
-  updatedAt: string;
+export interface ReviewQueueItem {
+  business: Business;
+  reasons: string[];
+  priorityScore: number;
+  sourceCount: number;
+  officialSourceCount: number;
+  failedSourceCount: number;
 }
 
 export interface BusinessOutreach {
@@ -291,18 +265,376 @@ export interface UpdateBusinessOutreachRequest {
   warmConnection?: string | null;
 }
 
+export interface ContactCandidate {
+  id: number;
+  businessId: number;
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  role?: string | null;
+  contactType: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  contactUrl?: string | null;
+  sourceUrl: string;
+  sourceType: string;
+  confidenceScore: string;
+  isPrimary: boolean;
+  isPersonalData: boolean;
+  /** @nullable */
+  lastVerifiedAt?: string | null;
+  verificationStatus: string;
+  isReachable: boolean;
+  isDecisionMakerLikely: boolean;
+  channelPriority: number;
+  sourcePriority: number;
+  /** @nullable */
+  nextVerificationAt?: string | null;
+  reviewStatus: string;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type OutreachEventPayload = { [key: string]: unknown };
+
+export interface OutreachEvent {
+  id: number;
+  businessId: number;
+  eventType: string;
+  entityType: string;
+  /** @nullable */
+  entityId?: number | null;
+  actorType: string;
+  summary: string;
+  changedFields: string[];
+  payload: OutreachEventPayload;
+  createdAt: string;
+}
+
+export interface Offer {
+  id: number;
+  slug: string;
+  name: string;
+  engineType: string;
+  offerType: string;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  targetClusters?: string | null;
+  /** @nullable */
+  ticketMin?: number | null;
+  /** @nullable */
+  ticketMax?: number | null;
+  /** @nullable */
+  recurringPotential?: number | null;
+  bundleable: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Narrative {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  toneOfApproach?: string | null;
+  /** @nullable */
+  engineTypes?: string | null;
+  /** @nullable */
+  targetClusters?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CredibilityAsset {
+  id: number;
+  slug: string;
+  name: string;
+  assetType: string;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  sourceUrl?: string | null;
+  /** @nullable */
+  targetClusters?: string | null;
+  /** @nullable */
+  engineTypes?: string | null;
+  /** @nullable */
+  tags?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CaseStudy {
+  id: number;
+  slug: string;
+  title: string;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
+  /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  artist?: string | null;
+  /** @nullable */
+  outcome?: string | null;
+  /** @nullable */
+  sourceUrl?: string | null;
+  /** @nullable */
+  tags?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SeasonalWindow {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
+  startMonth: number;
+  endMonth: number;
+  /** @nullable */
+  note?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentAsset {
+  id: number;
+  slug: string;
+  assetType: string;
+  /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
+  title: string;
+  body: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RelationshipPathSummary {
+  id: number;
+  businessId: number;
+  /** @nullable */
+  businessName?: string | null;
+  /** @nullable */
+  introducerName?: string | null;
+  /** @nullable */
+  introducerOrg?: string | null;
+  relationshipType: string;
+  confidenceScore: string;
+  isWarm: boolean;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StrategicAccountSummary {
+  id: number;
+  businessId: number;
+  /** @nullable */
+  businessName?: string | null;
+  accountType: string;
+  /** @nullable */
+  owner?: string | null;
+  /** @nullable */
+  accountTier?: string | null;
+  status: string;
+  /** @nullable */
+  thesis?: string | null;
+  /** @nullable */
+  milestone?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ResearchMetricsResponseEngineBreakdown = {
+  revenue: number;
+  institutional: number;
+  authority: number;
+};
+
+export type ResearchMetricsResponseRelationshipBreakdown = {
+  warmPaths: number;
+  prestigeWatchlist: number;
+};
+
+export type ResearchMetricsResponseTopNextStepsItem = {
+  recommendedNextStep: string;
+  total: number;
+};
+
+export type ResearchMetricsResponseJobCounts = { [key: string]: number };
+
+export type ResearchMetricsResponseFeedback = { [key: string]: number };
+
+export interface ResearchMetricsResponse {
+  totalBusinesses: number;
+  qualifiedBusinesses: number;
+  contactableBusinesses: number;
+  readyBusinesses: number;
+  reviewBusinesses: number;
+  staleHighPriorityBusinesses: number;
+  engineBreakdown: ResearchMetricsResponseEngineBreakdown;
+  relationshipBreakdown: ResearchMetricsResponseRelationshipBreakdown;
+  topNextSteps: ResearchMetricsResponseTopNextStepsItem[];
+  jobCounts: ResearchMetricsResponseJobCounts;
+  feedback: ResearchMetricsResponseFeedback;
+}
+
+export interface ResearchFeedBusiness {
+  id: number;
+  name: string;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  country?: string | null;
+  categorySlug: string;
+  /** @nullable */
+  targetMarket?: string | null;
+  /** @nullable */
+  avatarType?: string | null;
+  /** @nullable */
+  relevanceScore?: number | null;
+  /** @nullable */
+  contactabilityScore?: number | null;
+  /** @nullable */
+  confidenceScore?: number | null;
+  /** @nullable */
+  freshnessScore?: number | null;
+  /** @nullable */
+  priorityScore?: number | null;
+  /** @nullable */
+  researchScore?: number | null;
+  readyForOutreach: boolean;
+  reviewRequired: boolean;
+  /** @nullable */
+  reviewReason?: string | null;
+  /** @nullable */
+  recommendedNextStep?: string | null;
+  /** @nullable */
+  topGap?: string | null;
+}
+
+export interface ResearchFeedResponse {
+  businesses: ResearchFeedBusiness[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export type ReviewBucketItemsItem = {
+  business: ResearchFeedBusiness;
+  reasons: string[];
+  priorityScore: number;
+};
+
+export interface ReviewBucket {
+  key: string;
+  label: string;
+  count: number;
+  items: ReviewBucketItemsItem[];
+}
+
+/**
+ * @nullable
+ */
+export type ResearchJobPayload = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type ResearchJobResultSummary = { [key: string]: unknown } | null;
+
+export interface ResearchJob {
+  id: number;
+  jobType: string;
+  /** @nullable */
+  businessId?: number | null;
+  /** @nullable */
+  sourceId?: number | null;
+  status: string;
+  priority: number;
+  /** @nullable */
+  scheduledAt?: string | null;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  finishedAt?: string | null;
+  attemptCount: number;
+  /** @nullable */
+  errorCode?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
+  /** @nullable */
+  payload?: ResearchJobPayload;
+  /** @nullable */
+  resultSummary?: ResearchJobResultSummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ResearchJobCreateRequestPayload = { [key: string]: unknown };
+
+export interface ResearchJobCreateRequest {
+  jobType: string;
+  /** @nullable */
+  businessId?: number | null;
+  /** @nullable */
+  sourceId?: number | null;
+  priority?: number;
+  payload?: ResearchJobCreateRequestPayload;
+}
+
+export type ResearchViewFiltersJson = { [key: string]: unknown };
+
+export type ResearchViewSortJson = { [key: string]: unknown };
+
+export interface ResearchView {
+  id: number;
+  name: string;
+  scope: string;
+  isDefault: boolean;
+  filtersJson: ResearchViewFiltersJson;
+  sortJson: ResearchViewSortJson;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type ResearchViewPayloadFiltersJson = { [key: string]: unknown };
+
+export type ResearchViewPayloadSortJson = { [key: string]: unknown };
+
+export interface ResearchViewPayload {
+  name: string;
+  scope?: string;
+  isDefault?: boolean;
+  filtersJson?: ResearchViewPayloadFiltersJson;
+  sortJson?: ResearchViewPayloadSortJson;
+}
+
 export interface ContactCandidateUpdateRequest {
   reviewStatus?: string;
   isPrimary?: boolean;
-}
-
-export interface ReviewQueueItem {
-  business: Business;
-  reasons: string[];
-  priorityScore: number;
-  sourceCount: number;
-  officialSourceCount: number;
-  failedSourceCount: number;
 }
 
 export interface CategoryCount {
@@ -394,20 +726,6 @@ export interface OutreachDashboardResponse {
   urgentThisWeek: OutreachPipelineItem[];
 }
 
-export interface OutreachEvent {
-  id: number;
-  businessId: number;
-  eventType: string;
-  entityType: string;
-  /** @nullable */
-  entityId?: number | null;
-  actorType: string;
-  summary: string;
-  changedFields: string[];
-  payload: Record<string, unknown>;
-  createdAt: string;
-}
-
 export interface ImportRequest {
   categorySlug: string;
   city: string;
@@ -474,6 +792,51 @@ export type GetReviewQueueParams = {
   city?: string;
   targetMarket?: string;
   limit?: number;
+};
+
+export type GetResearchMetricsParams = {
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
+  engineType?: string;
+  targetCluster?: string;
+};
+
+export type GetResearchFeedParams = {
+  search?: string;
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
+  engineType?: string;
+  targetCluster?: string;
+  minPriorityScore?: number;
+  minResearchScore?: number;
+  page?: number;
+  pageSize?: number;
+};
+
+export type GetResearchReviewBucketsParams = {
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
+  engineType?: string;
+  targetCluster?: string;
+  limit?: number;
+};
+
+export type GetResearchJobsParams = {
+  limit?: number;
+  status?: string;
+};
+
+export type RunResearchJobs200 = { [key: string]: unknown };
+
+export type GetRelationshipPathsParams = {
+  businessId?: number;
+};
+
+export type GetStrategicAccountsParams = {
+  businessId?: number;
 };
 
 export type GetStatsParams = {

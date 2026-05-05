@@ -2,8 +2,10 @@ import { Link } from "wouter";
 import {
   getGetCategoriesQueryKey,
   getGetOutreachDashboardQueryKey,
+  getGetResearchMetricsQueryKey,
   useGetCategories,
   useGetOutreachDashboard,
+  useGetResearchMetrics,
 } from "@workspace/api-client-react";
 import {
   ArrowRight,
@@ -86,6 +88,12 @@ export default function Dashboard() {
   const { data, isLoading, isError } = useGetOutreachDashboard(dashboardParams, {
     query: {
       queryKey: getGetOutreachDashboardQueryKey(dashboardParams),
+      enabled: hasAdminToken,
+    },
+  });
+  const { data: researchMetrics } = useGetResearchMetrics(dashboardParams, {
+    query: {
+      queryKey: getGetResearchMetricsQueryKey(dashboardParams),
       enabled: hasAdminToken,
     },
   });
@@ -236,6 +244,79 @@ export default function Dashboard() {
         })}
       </div>
 
+      {researchMetrics && (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                Revenue Engine
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-serif">{researchMetrics.engineBreakdown.revenue}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Target economici pronti o coltivabili.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                Institutional Engine
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-serif">{researchMetrics.engineBreakdown.institutional}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Enti, fondazioni e programmi pubblici.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                Authority Engine
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-serif">{researchMetrics.engineBreakdown.authority}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Target reputazionali e nodi di rete.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                Warm Paths
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-serif">{researchMetrics.relationshipBreakdown.warmPaths}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Opportunità da lavorare relationship-first.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                Prestige Watchlist
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-serif">{researchMetrics.relationshipBreakdown.prestigeWatchlist}</div>
+              <p className="mt-1 text-xs text-muted-foreground">Account ad alta leva reputazionale.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                Research Backlog
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-serif">{researchMetrics.reviewBusinesses}</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {researchMetrics.staleHighPriorityBusinesses} stale high-priority da recuperare.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
@@ -295,6 +376,23 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {researchMetrics && researchMetrics.topNextSteps.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Research Next Steps</CardTitle>
+            <CardDescription>Azioni macchina più frequenti sui target filtrati.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {researchMetrics.topNextSteps.map((step) => (
+              <div key={step.recommendedNextStep} className="flex items-center justify-between rounded-lg border p-3">
+                <span className="font-medium">{formatPipelineValue(step.recommendedNextStep)}</span>
+                <Badge variant="outline">{step.total}</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

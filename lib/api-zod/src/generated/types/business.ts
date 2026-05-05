@@ -42,31 +42,106 @@ export interface Business {
   hasWebsite: boolean;
   hasPhone: boolean;
   enrichmentStatus: string;
+  /** @nullable */
   targetMarket?: string | null;
+  /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
+  /** @nullable */
   avatarType?: string | null;
+  /** @nullable */
   discoveryStatus?: string | null;
+  /** @nullable */
   qualificationStatus?: string | null;
+  /** @nullable */
   contactabilityStatus?: string | null;
+  /** @nullable */
   rankingStatus?: string | null;
+  /** @nullable */
   sourceHealth?: string | null;
+  /** @nullable */
   contactReadiness?: string | null;
+  /** @nullable */
   relevanceScore?: number | null;
+  /** @nullable */
   contactabilityScore?: number | null;
+  /** @nullable */
   confidenceScore?: number | null;
+  /** @nullable */
   freshnessScore?: number | null;
+  /** @nullable */
   priorityScore?: number | null;
+  /** @nullable */
   researchScore?: number | null;
+  /** @nullable */
+  economicValueScore?: number | null;
+  /** @nullable */
+  strategicValueScore?: number | null;
+  /** @nullable */
+  referralValueScore?: number | null;
+  /** @nullable */
+  prestigeValueScore?: number | null;
+  /** @nullable */
+  continuityRevenuePotential?: number | null;
+  /** @nullable */
+  offerFitScore?: number | null;
+  /** @nullable */
+  relationshipPathScore?: number | null;
+  /** @nullable */
+  actionabilityScore?: number | null;
+  /** @nullable */
   officialSourceCount?: number | null;
+  /** @nullable */
   successfulSourceCount?: number | null;
+  /** @nullable */
   failedSourceCount?: number | null;
+  /** @nullable */
   primarySourceId?: number | null;
+  /** @nullable */
   primaryContactCandidateId?: number | null;
+  /** @nullable */
+  bestOfferId?: number | null;
+  /** @nullable */
+  bestNarrativeId?: number | null;
+  /** @nullable */
+  secondaryNarrativeId?: number | null;
+  /** @nullable */
+  bestCredibilityAssetId?: number | null;
+  /** @nullable */
+  bestCaseStudyId?: number | null;
+  /** @nullable */
+  proofAngle?: string | null;
+  /** @nullable */
+  riskReductionReason?: string | null;
+  /** @nullable */
+  toneOfApproach?: string | null;
+  /** @nullable */
+  recommendedPitchAngle?: string | null;
+  /** @nullable */
+  nextBestContactWindow?: string | null;
+  /** @nullable */
+  accountTier?: string | null;
+  /** @nullable */
+  seasonalityFit?: string | null;
+  warmPathExists: boolean;
+  readyForRelationship: boolean;
+  readyForInstitutionalPitch: boolean;
+  prestigeWatchlist: boolean;
+  cultivationRequired: boolean;
   readyForOutreach: boolean;
   reviewRequired: boolean;
+  /** @nullable */
   reviewReason?: string | null;
+  /** @nullable */
   topGap?: string | null;
+  /** @nullable */
   recommendedNextStep?: string | null;
+  /** @nullable */
   lastResearchAt?: string | null;
+  /** @nullable */
   nextResearchAt?: string | null;
   createdAt: string;
   updatedAt: string;

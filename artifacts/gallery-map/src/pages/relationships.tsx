@@ -1,38 +1,22 @@
-import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import {
+  getGetRelationshipPathsQueryKey,
+  useGetRelationshipPaths,
+} from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { getStoredAdminToken } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
 
-type RelationshipPath = {
-  id: number;
-  businessId: number;
-  businessName?: string | null;
-  introducerName?: string | null;
-  introducerOrg?: string | null;
-  relationshipType: string;
-  confidenceScore: string;
-  isWarm: boolean;
-  notes?: string | null;
-};
-
-function apiHeaders() {
-  const token = getStoredAdminToken();
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
-
 export default function RelationshipsPage() {
-  const [paths, setPaths] = useState<RelationshipPath[]>([]);
   const hasAdminToken = Boolean(getStoredAdminToken());
-
-  useEffect(() => {
-    if (!hasAdminToken) return;
-    void fetch("/api/relationship-paths", { headers: apiHeaders() })
-      .then((response) => response.json())
-      .then((data: RelationshipPath[]) => setPaths(data));
-  }, [hasAdminToken]);
+  const { data: paths = [] } = useGetRelationshipPaths(undefined, {
+    query: {
+      queryKey: getGetRelationshipPathsQueryKey(),
+      enabled: hasAdminToken,
+    },
+  });
 
   if (!hasAdminToken) {
     return (
