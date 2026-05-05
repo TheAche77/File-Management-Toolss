@@ -28,7 +28,9 @@ import type {
   ContentAsset,
   CredibilityAsset,
   ErrorResponse,
+  ExportBusinessResearchSummaryCsvParams,
   ExportBusinessesCsvParams,
+  ExportOutreachReadyCsvParams,
   GetBusinessesParams,
   GetOutreachDashboardParams,
   GetOutreachPipelineParams,
@@ -38,6 +40,8 @@ import type {
   GetResearchMetricsParams,
   GetResearchReviewBucketsParams,
   GetReviewQueueParams,
+  GetSlgRelationshipPathsParams,
+  GetSlgStrategicAccountsParams,
   GetStatsParams,
   GetStrategicAccountsParams,
   HealthStatus,
@@ -2597,6 +2601,661 @@ export function useGetStrategicAccounts<
 }
 
 /**
+ * @summary List SLG offers through canonical SLG namespace
+ */
+export const getGetSlgOffersUrl = () => {
+  return `/api/slg/offers`;
+};
+
+export const getSlgOffers = async (options?: RequestInit): Promise<Offer[]> => {
+  return customFetch<Offer[]>(getGetSlgOffersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSlgOffersQueryKey = () => {
+  return [`/api/slg/offers`] as const;
+};
+
+export const getGetSlgOffersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgOffers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgOffers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSlgOffersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSlgOffers>>> = ({
+    signal,
+  }) => getSlgOffers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgOffers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgOffersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgOffers>>
+>;
+export type GetSlgOffersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List SLG offers through canonical SLG namespace
+ */
+
+export function useGetSlgOffers<
+  TData = Awaited<ReturnType<typeof getSlgOffers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgOffers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgOffersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List SLG narratives through canonical SLG namespace
+ */
+export const getGetSlgNarrativesUrl = () => {
+  return `/api/slg/narratives`;
+};
+
+export const getSlgNarratives = async (
+  options?: RequestInit,
+): Promise<Narrative[]> => {
+  return customFetch<Narrative[]>(getGetSlgNarrativesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSlgNarrativesQueryKey = () => {
+  return [`/api/slg/narratives`] as const;
+};
+
+export const getGetSlgNarrativesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgNarratives>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgNarratives>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSlgNarrativesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSlgNarratives>>
+  > = ({ signal }) => getSlgNarratives({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgNarratives>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgNarrativesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgNarratives>>
+>;
+export type GetSlgNarrativesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List SLG narratives through canonical SLG namespace
+ */
+
+export function useGetSlgNarratives<
+  TData = Awaited<ReturnType<typeof getSlgNarratives>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgNarratives>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgNarrativesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List SLG credibility assets through canonical SLG namespace
+ */
+export const getGetSlgCredibilityAssetsUrl = () => {
+  return `/api/slg/credibility-assets`;
+};
+
+export const getSlgCredibilityAssets = async (
+  options?: RequestInit,
+): Promise<CredibilityAsset[]> => {
+  return customFetch<CredibilityAsset[]>(getGetSlgCredibilityAssetsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSlgCredibilityAssetsQueryKey = () => {
+  return [`/api/slg/credibility-assets`] as const;
+};
+
+export const getGetSlgCredibilityAssetsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgCredibilityAssets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgCredibilityAssets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSlgCredibilityAssetsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSlgCredibilityAssets>>
+  > = ({ signal }) => getSlgCredibilityAssets({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgCredibilityAssets>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgCredibilityAssetsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgCredibilityAssets>>
+>;
+export type GetSlgCredibilityAssetsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List SLG credibility assets through canonical SLG namespace
+ */
+
+export function useGetSlgCredibilityAssets<
+  TData = Awaited<ReturnType<typeof getSlgCredibilityAssets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgCredibilityAssets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgCredibilityAssetsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List SLG case studies through canonical SLG namespace
+ */
+export const getGetSlgCaseStudiesUrl = () => {
+  return `/api/slg/case-studies`;
+};
+
+export const getSlgCaseStudies = async (
+  options?: RequestInit,
+): Promise<CaseStudy[]> => {
+  return customFetch<CaseStudy[]>(getGetSlgCaseStudiesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSlgCaseStudiesQueryKey = () => {
+  return [`/api/slg/case-studies`] as const;
+};
+
+export const getGetSlgCaseStudiesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgCaseStudies>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgCaseStudies>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSlgCaseStudiesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSlgCaseStudies>>
+  > = ({ signal }) => getSlgCaseStudies({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgCaseStudies>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgCaseStudiesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgCaseStudies>>
+>;
+export type GetSlgCaseStudiesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List SLG case studies through canonical SLG namespace
+ */
+
+export function useGetSlgCaseStudies<
+  TData = Awaited<ReturnType<typeof getSlgCaseStudies>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgCaseStudies>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgCaseStudiesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List SLG seasonal windows through canonical SLG namespace
+ */
+export const getGetSlgSeasonalWindowsUrl = () => {
+  return `/api/slg/seasonal-windows`;
+};
+
+export const getSlgSeasonalWindows = async (
+  options?: RequestInit,
+): Promise<SeasonalWindow[]> => {
+  return customFetch<SeasonalWindow[]>(getGetSlgSeasonalWindowsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSlgSeasonalWindowsQueryKey = () => {
+  return [`/api/slg/seasonal-windows`] as const;
+};
+
+export const getGetSlgSeasonalWindowsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgSeasonalWindows>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgSeasonalWindows>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSlgSeasonalWindowsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSlgSeasonalWindows>>
+  > = ({ signal }) => getSlgSeasonalWindows({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgSeasonalWindows>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgSeasonalWindowsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgSeasonalWindows>>
+>;
+export type GetSlgSeasonalWindowsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List SLG seasonal windows through canonical SLG namespace
+ */
+
+export function useGetSlgSeasonalWindows<
+  TData = Awaited<ReturnType<typeof getSlgSeasonalWindows>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgSeasonalWindows>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgSeasonalWindowsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List SLG content assets through canonical SLG namespace
+ */
+export const getGetSlgContentAssetsUrl = () => {
+  return `/api/slg/content-assets`;
+};
+
+export const getSlgContentAssets = async (
+  options?: RequestInit,
+): Promise<ContentAsset[]> => {
+  return customFetch<ContentAsset[]>(getGetSlgContentAssetsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSlgContentAssetsQueryKey = () => {
+  return [`/api/slg/content-assets`] as const;
+};
+
+export const getGetSlgContentAssetsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgContentAssets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgContentAssets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSlgContentAssetsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSlgContentAssets>>
+  > = ({ signal }) => getSlgContentAssets({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgContentAssets>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgContentAssetsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgContentAssets>>
+>;
+export type GetSlgContentAssetsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List SLG content assets through canonical SLG namespace
+ */
+
+export function useGetSlgContentAssets<
+  TData = Awaited<ReturnType<typeof getSlgContentAssets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgContentAssets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgContentAssetsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List relationship paths through canonical SLG namespace
+ */
+export const getGetSlgRelationshipPathsUrl = (
+  params?: GetSlgRelationshipPathsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/slg/relationship-paths?${stringifiedParams}`
+    : `/api/slg/relationship-paths`;
+};
+
+export const getSlgRelationshipPaths = async (
+  params?: GetSlgRelationshipPathsParams,
+  options?: RequestInit,
+): Promise<RelationshipPathSummary[]> => {
+  return customFetch<RelationshipPathSummary[]>(
+    getGetSlgRelationshipPathsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetSlgRelationshipPathsQueryKey = (
+  params?: GetSlgRelationshipPathsParams,
+) => {
+  return [`/api/slg/relationship-paths`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetSlgRelationshipPathsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgRelationshipPaths>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSlgRelationshipPathsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSlgRelationshipPaths>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSlgRelationshipPathsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSlgRelationshipPaths>>
+  > = ({ signal }) =>
+    getSlgRelationshipPaths(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgRelationshipPaths>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgRelationshipPathsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgRelationshipPaths>>
+>;
+export type GetSlgRelationshipPathsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List relationship paths through canonical SLG namespace
+ */
+
+export function useGetSlgRelationshipPaths<
+  TData = Awaited<ReturnType<typeof getSlgRelationshipPaths>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSlgRelationshipPathsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSlgRelationshipPaths>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgRelationshipPathsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List strategic accounts through canonical SLG namespace
+ */
+export const getGetSlgStrategicAccountsUrl = (
+  params?: GetSlgStrategicAccountsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/slg/strategic-accounts?${stringifiedParams}`
+    : `/api/slg/strategic-accounts`;
+};
+
+export const getSlgStrategicAccounts = async (
+  params?: GetSlgStrategicAccountsParams,
+  options?: RequestInit,
+): Promise<StrategicAccountSummary[]> => {
+  return customFetch<StrategicAccountSummary[]>(
+    getGetSlgStrategicAccountsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetSlgStrategicAccountsQueryKey = (
+  params?: GetSlgStrategicAccountsParams,
+) => {
+  return [`/api/slg/strategic-accounts`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetSlgStrategicAccountsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSlgStrategicAccounts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSlgStrategicAccountsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSlgStrategicAccounts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSlgStrategicAccountsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSlgStrategicAccounts>>
+  > = ({ signal }) =>
+    getSlgStrategicAccounts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSlgStrategicAccounts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSlgStrategicAccountsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSlgStrategicAccounts>>
+>;
+export type GetSlgStrategicAccountsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List strategic accounts through canonical SLG namespace
+ */
+
+export function useGetSlgStrategicAccounts<
+  TData = Awaited<ReturnType<typeof getSlgStrategicAccounts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSlgStrategicAccountsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSlgStrategicAccounts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSlgStrategicAccountsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Dashboard statistics
  */
 export const getGetStatsUrl = (params?: GetStatsParams) => {
@@ -3236,6 +3895,750 @@ export function useExportBusinessesCsv<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getExportBusinessesCsvQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export the condensed research summary CSV
+ */
+export const getExportBusinessResearchSummaryCsvUrl = (
+  params?: ExportBusinessResearchSummaryCsvParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/export/business-research-summary.csv?${stringifiedParams}`
+    : `/api/export/business-research-summary.csv`;
+};
+
+export const exportBusinessResearchSummaryCsv = async (
+  params?: ExportBusinessResearchSummaryCsvParams,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportBusinessResearchSummaryCsvUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportBusinessResearchSummaryCsvQueryKey = (
+  params?: ExportBusinessResearchSummaryCsvParams,
+) => {
+  return [
+    `/api/export/business-research-summary.csv`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getExportBusinessResearchSummaryCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportBusinessResearchSummaryCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ExportBusinessResearchSummaryCsvParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportBusinessResearchSummaryCsv>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getExportBusinessResearchSummaryCsvQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportBusinessResearchSummaryCsv>>
+  > = ({ signal }) =>
+    exportBusinessResearchSummaryCsv(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportBusinessResearchSummaryCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportBusinessResearchSummaryCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportBusinessResearchSummaryCsv>>
+>;
+export type ExportBusinessResearchSummaryCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export the condensed research summary CSV
+ */
+
+export function useExportBusinessResearchSummaryCsv<
+  TData = Awaited<ReturnType<typeof exportBusinessResearchSummaryCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ExportBusinessResearchSummaryCsvParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportBusinessResearchSummaryCsv>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportBusinessResearchSummaryCsvQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export targets ready for outreach
+ */
+export const getExportOutreachReadyCsvUrl = (
+  params?: ExportOutreachReadyCsvParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/export/outreach-ready.csv?${stringifiedParams}`
+    : `/api/export/outreach-ready.csv`;
+};
+
+export const exportOutreachReadyCsv = async (
+  params?: ExportOutreachReadyCsvParams,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportOutreachReadyCsvUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportOutreachReadyCsvQueryKey = (
+  params?: ExportOutreachReadyCsvParams,
+) => {
+  return [
+    `/api/export/outreach-ready.csv`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getExportOutreachReadyCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportOutreachReadyCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ExportOutreachReadyCsvParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportOutreachReadyCsv>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getExportOutreachReadyCsvQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportOutreachReadyCsv>>
+  > = ({ signal }) =>
+    exportOutreachReadyCsv(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportOutreachReadyCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportOutreachReadyCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportOutreachReadyCsv>>
+>;
+export type ExportOutreachReadyCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export targets ready for outreach
+ */
+
+export function useExportOutreachReadyCsv<
+  TData = Awaited<ReturnType<typeof exportOutreachReadyCsv>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ExportOutreachReadyCsvParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportOutreachReadyCsv>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportOutreachReadyCsvQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export manual review queue
+ */
+export const getExportReviewQueueCsvUrl = () => {
+  return `/api/export/review-queue.csv`;
+};
+
+export const exportReviewQueueCsv = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportReviewQueueCsvUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportReviewQueueCsvQueryKey = () => {
+  return [`/api/export/review-queue.csv`] as const;
+};
+
+export const getExportReviewQueueCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportReviewQueueCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportReviewQueueCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportReviewQueueCsvQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportReviewQueueCsv>>
+  > = ({ signal }) => exportReviewQueueCsv({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportReviewQueueCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportReviewQueueCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportReviewQueueCsv>>
+>;
+export type ExportReviewQueueCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export manual review queue
+ */
+
+export function useExportReviewQueueCsv<
+  TData = Awaited<ReturnType<typeof exportReviewQueueCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportReviewQueueCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportReviewQueueCsvQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export SLG revenue targets
+ */
+export const getExportSlgRevenueTargetsCsvUrl = () => {
+  return `/api/export/slg-revenue-targets.csv`;
+};
+
+export const exportSlgRevenueTargetsCsv = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportSlgRevenueTargetsCsvUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportSlgRevenueTargetsCsvQueryKey = () => {
+  return [`/api/export/slg-revenue-targets.csv`] as const;
+};
+
+export const getExportSlgRevenueTargetsCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportSlgRevenueTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgRevenueTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getExportSlgRevenueTargetsCsvQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportSlgRevenueTargetsCsv>>
+  > = ({ signal }) => exportSlgRevenueTargetsCsv({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgRevenueTargetsCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportSlgRevenueTargetsCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportSlgRevenueTargetsCsv>>
+>;
+export type ExportSlgRevenueTargetsCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export SLG revenue targets
+ */
+
+export function useExportSlgRevenueTargetsCsv<
+  TData = Awaited<ReturnType<typeof exportSlgRevenueTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgRevenueTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportSlgRevenueTargetsCsvQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export SLG institutional targets
+ */
+export const getExportSlgInstitutionalTargetsCsvUrl = () => {
+  return `/api/export/slg-institutional-targets.csv`;
+};
+
+export const exportSlgInstitutionalTargetsCsv = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportSlgInstitutionalTargetsCsvUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportSlgInstitutionalTargetsCsvQueryKey = () => {
+  return [`/api/export/slg-institutional-targets.csv`] as const;
+};
+
+export const getExportSlgInstitutionalTargetsCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportSlgInstitutionalTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgInstitutionalTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getExportSlgInstitutionalTargetsCsvQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportSlgInstitutionalTargetsCsv>>
+  > = ({ signal }) =>
+    exportSlgInstitutionalTargetsCsv({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgInstitutionalTargetsCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportSlgInstitutionalTargetsCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportSlgInstitutionalTargetsCsv>>
+>;
+export type ExportSlgInstitutionalTargetsCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export SLG institutional targets
+ */
+
+export function useExportSlgInstitutionalTargetsCsv<
+  TData = Awaited<ReturnType<typeof exportSlgInstitutionalTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgInstitutionalTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportSlgInstitutionalTargetsCsvQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export SLG authority targets
+ */
+export const getExportSlgAuthorityTargetsCsvUrl = () => {
+  return `/api/export/slg-authority-targets.csv`;
+};
+
+export const exportSlgAuthorityTargetsCsv = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportSlgAuthorityTargetsCsvUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportSlgAuthorityTargetsCsvQueryKey = () => {
+  return [`/api/export/slg-authority-targets.csv`] as const;
+};
+
+export const getExportSlgAuthorityTargetsCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportSlgAuthorityTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgAuthorityTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getExportSlgAuthorityTargetsCsvQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportSlgAuthorityTargetsCsv>>
+  > = ({ signal }) =>
+    exportSlgAuthorityTargetsCsv({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgAuthorityTargetsCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportSlgAuthorityTargetsCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportSlgAuthorityTargetsCsv>>
+>;
+export type ExportSlgAuthorityTargetsCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export SLG authority targets
+ */
+
+export function useExportSlgAuthorityTargetsCsv<
+  TData = Awaited<ReturnType<typeof exportSlgAuthorityTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgAuthorityTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportSlgAuthorityTargetsCsvQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export SLG referral-path targets
+ */
+export const getExportSlgReferralPathsCsvUrl = () => {
+  return `/api/export/slg-referral-paths.csv`;
+};
+
+export const exportSlgReferralPathsCsv = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportSlgReferralPathsCsvUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportSlgReferralPathsCsvQueryKey = () => {
+  return [`/api/export/slg-referral-paths.csv`] as const;
+};
+
+export const getExportSlgReferralPathsCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportSlgReferralPathsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgReferralPathsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getExportSlgReferralPathsCsvQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportSlgReferralPathsCsv>>
+  > = ({ signal }) => exportSlgReferralPathsCsv({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgReferralPathsCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportSlgReferralPathsCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportSlgReferralPathsCsv>>
+>;
+export type ExportSlgReferralPathsCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export SLG referral-path targets
+ */
+
+export function useExportSlgReferralPathsCsv<
+  TData = Awaited<ReturnType<typeof exportSlgReferralPathsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgReferralPathsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportSlgReferralPathsCsvQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export SLG LABirinto-fit targets
+ */
+export const getExportSlgLabirintoFitCsvUrl = () => {
+  return `/api/export/slg-labirinto-fit.csv`;
+};
+
+export const exportSlgLabirintoFitCsv = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportSlgLabirintoFitCsvUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportSlgLabirintoFitCsvQueryKey = () => {
+  return [`/api/export/slg-labirinto-fit.csv`] as const;
+};
+
+export const getExportSlgLabirintoFitCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportSlgLabirintoFitCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgLabirintoFitCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getExportSlgLabirintoFitCsvQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportSlgLabirintoFitCsv>>
+  > = ({ signal }) => exportSlgLabirintoFitCsv({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgLabirintoFitCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportSlgLabirintoFitCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportSlgLabirintoFitCsv>>
+>;
+export type ExportSlgLabirintoFitCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export SLG LABirinto-fit targets
+ */
+
+export function useExportSlgLabirintoFitCsv<
+  TData = Awaited<ReturnType<typeof exportSlgLabirintoFitCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgLabirintoFitCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportSlgLabirintoFitCsvQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Export SLG hospitality targets
+ */
+export const getExportSlgHospitalityTargetsCsvUrl = () => {
+  return `/api/export/slg-hospitality-targets.csv`;
+};
+
+export const exportSlgHospitalityTargetsCsv = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getExportSlgHospitalityTargetsCsvUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportSlgHospitalityTargetsCsvQueryKey = () => {
+  return [`/api/export/slg-hospitality-targets.csv`] as const;
+};
+
+export const getExportSlgHospitalityTargetsCsvQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportSlgHospitalityTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgHospitalityTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getExportSlgHospitalityTargetsCsvQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportSlgHospitalityTargetsCsv>>
+  > = ({ signal }) =>
+    exportSlgHospitalityTargetsCsv({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgHospitalityTargetsCsv>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportSlgHospitalityTargetsCsvQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportSlgHospitalityTargetsCsv>>
+>;
+export type ExportSlgHospitalityTargetsCsvQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Export SLG hospitality targets
+ */
+
+export function useExportSlgHospitalityTargetsCsv<
+  TData = Awaited<ReturnType<typeof exportSlgHospitalityTargetsCsv>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportSlgHospitalityTargetsCsv>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportSlgHospitalityTargetsCsvQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

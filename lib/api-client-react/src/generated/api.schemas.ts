@@ -513,6 +513,27 @@ export interface ResearchFeedBusiness {
   /** @nullable */
   avatarType?: string | null;
   /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
+  /** @nullable */
+  economicValueScore?: number | null;
+  /** @nullable */
+  strategicValueScore?: number | null;
+  /** @nullable */
+  offerFitScore?: number | null;
+  /** @nullable */
+  relationshipPathScore?: number | null;
+  /** @nullable */
+  actionabilityScore?: number | null;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
+  /** @nullable */
   relevanceScore?: number | null;
   /** @nullable */
   contactabilityScore?: number | null;
@@ -781,6 +802,14 @@ export type GetBusinessesParams = {
   hasPhone?: boolean;
   readyForOutreach?: boolean;
   reviewRequired?: boolean;
+  engineType?: string;
+  targetType?: string;
+  targetCluster?: string;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
   minPriorityScore?: number;
   minResearchScore?: number;
   page?: number;
@@ -799,7 +828,13 @@ export type GetResearchMetricsParams = {
   city?: string;
   targetMarket?: string;
   engineType?: string;
+  targetType?: string;
   targetCluster?: string;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
 };
 
 export type GetResearchFeedParams = {
@@ -808,7 +843,13 @@ export type GetResearchFeedParams = {
   city?: string;
   targetMarket?: string;
   engineType?: string;
+  targetType?: string;
   targetCluster?: string;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
   minPriorityScore?: number;
   minResearchScore?: number;
   page?: number;
@@ -820,7 +861,13 @@ export type GetResearchReviewBucketsParams = {
   city?: string;
   targetMarket?: string;
   engineType?: string;
+  targetType?: string;
   targetCluster?: string;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
   limit?: number;
 };
 
@@ -836,6 +883,14 @@ export type GetRelationshipPathsParams = {
 };
 
 export type GetStrategicAccountsParams = {
+  businessId?: number;
+};
+
+export type GetSlgRelationshipPathsParams = {
+  businessId?: number;
+};
+
+export type GetSlgStrategicAccountsParams = {
   businessId?: number;
 };
 
@@ -863,4 +918,16 @@ export type ExportBusinessesCsvParams = {
   targetMarket?: string;
   readyForOutreach?: boolean;
   reviewRequired?: boolean;
+};
+
+export type ExportBusinessResearchSummaryCsvParams = {
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
+};
+
+export type ExportOutreachReadyCsvParams = {
+  categorySlug?: string;
+  city?: string;
+  targetMarket?: string;
 };

@@ -11,6 +11,12 @@ export type GetResearchReviewBucketsParams = {
   city?: string;
   targetMarket?: string;
   engineType?: string;
+  targetType?: string;
   targetCluster?: string;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
   limit?: number;
 };

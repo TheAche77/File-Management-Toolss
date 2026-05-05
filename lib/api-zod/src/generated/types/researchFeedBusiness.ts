@@ -19,6 +19,27 @@ export interface ResearchFeedBusiness {
   /** @nullable */
   avatarType?: string | null;
   /** @nullable */
+  engineType?: string | null;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetCluster?: string | null;
+  /** @nullable */
+  economicValueScore?: number | null;
+  /** @nullable */
+  strategicValueScore?: number | null;
+  /** @nullable */
+  offerFitScore?: number | null;
+  /** @nullable */
+  relationshipPathScore?: number | null;
+  /** @nullable */
+  actionabilityScore?: number | null;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
+  /** @nullable */
   relevanceScore?: number | null;
   /** @nullable */
   contactabilityScore?: number | null;

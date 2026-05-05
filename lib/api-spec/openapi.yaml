@@ -93,6 +93,38 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: engineType
+          in: query
+          schema:
+            type: string
+        - name: targetType
+          in: query
+          schema:
+            type: string
+        - name: targetCluster
+          in: query
+          schema:
+            type: string
+        - name: warmPathExists
+          in: query
+          schema:
+            type: boolean
+        - name: readyForRelationship
+          in: query
+          schema:
+            type: boolean
+        - name: readyForInstitutionalPitch
+          in: query
+          schema:
+            type: boolean
+        - name: prestigeWatchlist
+          in: query
+          schema:
+            type: boolean
+        - name: cultivationRequired
+          in: query
+          schema:
+            type: boolean
         - name: minPriorityScore
           in: query
           schema:
@@ -370,10 +402,34 @@ paths:
           in: query
           schema:
             type: string
+        - name: targetType
+          in: query
+          schema:
+            type: string
         - name: targetCluster
           in: query
           schema:
             type: string
+        - name: warmPathExists
+          in: query
+          schema:
+            type: boolean
+        - name: readyForRelationship
+          in: query
+          schema:
+            type: boolean
+        - name: readyForInstitutionalPitch
+          in: query
+          schema:
+            type: boolean
+        - name: prestigeWatchlist
+          in: query
+          schema:
+            type: boolean
+        - name: cultivationRequired
+          in: query
+          schema:
+            type: boolean
       responses:
         "200":
           description: Research metrics
@@ -408,10 +464,34 @@ paths:
           in: query
           schema:
             type: string
+        - name: targetType
+          in: query
+          schema:
+            type: string
         - name: targetCluster
           in: query
           schema:
             type: string
+        - name: warmPathExists
+          in: query
+          schema:
+            type: boolean
+        - name: readyForRelationship
+          in: query
+          schema:
+            type: boolean
+        - name: readyForInstitutionalPitch
+          in: query
+          schema:
+            type: boolean
+        - name: prestigeWatchlist
+          in: query
+          schema:
+            type: boolean
+        - name: cultivationRequired
+          in: query
+          schema:
+            type: boolean
         - name: minPriorityScore
           in: query
           schema:
@@ -458,10 +538,34 @@ paths:
           in: query
           schema:
             type: string
+        - name: targetType
+          in: query
+          schema:
+            type: string
         - name: targetCluster
           in: query
           schema:
             type: string
+        - name: warmPathExists
+          in: query
+          schema:
+            type: boolean
+        - name: readyForRelationship
+          in: query
+          schema:
+            type: boolean
+        - name: readyForInstitutionalPitch
+          in: query
+          schema:
+            type: boolean
+        - name: prestigeWatchlist
+          in: query
+          schema:
+            type: boolean
+        - name: cultivationRequired
+          in: query
+          schema:
+            type: boolean
         - name: limit
           in: query
           schema:
@@ -749,6 +853,136 @@ paths:
                 items:
                   $ref: "#/components/schemas/StrategicAccountSummary"
 
+  /slg/offers:
+    get:
+      operationId: getSlgOffers
+      tags: [slg]
+      summary: List SLG offers through canonical SLG namespace
+      responses:
+        "200":
+          description: Offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Offer"
+
+  /slg/narratives:
+    get:
+      operationId: getSlgNarratives
+      tags: [slg]
+      summary: List SLG narratives through canonical SLG namespace
+      responses:
+        "200":
+          description: Narratives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Narrative"
+
+  /slg/credibility-assets:
+    get:
+      operationId: getSlgCredibilityAssets
+      tags: [slg]
+      summary: List SLG credibility assets through canonical SLG namespace
+      responses:
+        "200":
+          description: Credibility assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CredibilityAsset"
+
+  /slg/case-studies:
+    get:
+      operationId: getSlgCaseStudies
+      tags: [slg]
+      summary: List SLG case studies through canonical SLG namespace
+      responses:
+        "200":
+          description: Case studies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CaseStudy"
+
+  /slg/seasonal-windows:
+    get:
+      operationId: getSlgSeasonalWindows
+      tags: [slg]
+      summary: List SLG seasonal windows through canonical SLG namespace
+      responses:
+        "200":
+          description: Seasonal windows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeasonalWindow"
+
+  /slg/content-assets:
+    get:
+      operationId: getSlgContentAssets
+      tags: [slg]
+      summary: List SLG content assets through canonical SLG namespace
+      responses:
+        "200":
+          description: Content assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContentAsset"
+
+  /slg/relationship-paths:
+    get:
+      operationId: getSlgRelationshipPaths
+      tags: [slg]
+      summary: List relationship paths through canonical SLG namespace
+      parameters:
+        - name: businessId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Relationship paths
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RelationshipPathSummary"
+
+  /slg/strategic-accounts:
+    get:
+      operationId: getSlgStrategicAccounts
+      tags: [slg]
+      summary: List strategic accounts through canonical SLG namespace
+      parameters:
+        - name: businessId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Strategic accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StrategicAccountSummary"
+
   /stats:
     get:
       operationId: getStats
@@ -926,6 +1160,149 @@ paths:
           in: query
           schema:
             type: boolean
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/business-research-summary.csv:
+    get:
+      operationId: exportBusinessResearchSummaryCsv
+      tags: [export]
+      summary: Export the condensed research summary CSV
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/outreach-ready.csv:
+    get:
+      operationId: exportOutreachReadyCsv
+      tags: [export]
+      summary: Export targets ready for outreach
+      parameters:
+        - name: categorySlug
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: targetMarket
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/review-queue.csv:
+    get:
+      operationId: exportReviewQueueCsv
+      tags: [export]
+      summary: Export manual review queue
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/slg-revenue-targets.csv:
+    get:
+      operationId: exportSlgRevenueTargetsCsv
+      tags: [export]
+      summary: Export SLG revenue targets
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/slg-institutional-targets.csv:
+    get:
+      operationId: exportSlgInstitutionalTargetsCsv
+      tags: [export]
+      summary: Export SLG institutional targets
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/slg-authority-targets.csv:
+    get:
+      operationId: exportSlgAuthorityTargetsCsv
+      tags: [export]
+      summary: Export SLG authority targets
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/slg-referral-paths.csv:
+    get:
+      operationId: exportSlgReferralPathsCsv
+      tags: [export]
+      summary: Export SLG referral-path targets
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/slg-labirinto-fit.csv:
+    get:
+      operationId: exportSlgLabirintoFitCsv
+      tags: [export]
+      summary: Export SLG LABirinto-fit targets
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /export/slg-hospitality-targets.csv:
+    get:
+      operationId: exportSlgHospitalityTargetsCsv
+      tags: [export]
+      summary: Export SLG hospitality targets
       responses:
         "200":
           description: CSV file
@@ -1715,6 +2092,32 @@ components:
           type: ["string", "null"]
         avatarType:
           type: ["string", "null"]
+        engineType:
+          type: ["string", "null"]
+        targetType:
+          type: ["string", "null"]
+        targetCluster:
+          type: ["string", "null"]
+        economicValueScore:
+          type: ["integer", "null"]
+        strategicValueScore:
+          type: ["integer", "null"]
+        offerFitScore:
+          type: ["integer", "null"]
+        relationshipPathScore:
+          type: ["integer", "null"]
+        actionabilityScore:
+          type: ["integer", "null"]
+        warmPathExists:
+          type: boolean
+        readyForRelationship:
+          type: boolean
+        readyForInstitutionalPitch:
+          type: boolean
+        prestigeWatchlist:
+          type: boolean
+        cultivationRequired:
+          type: boolean
         relevanceScore:
           type: ["integer", "null"]
         contactabilityScore:

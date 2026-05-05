@@ -43,6 +43,14 @@ export const GetBusinessesQueryParams = zod.object({
   hasPhone: zod.coerce.boolean().optional(),
   readyForOutreach: zod.coerce.boolean().optional(),
   reviewRequired: zod.coerce.boolean().optional(),
+  engineType: zod.coerce.string().optional(),
+  targetType: zod.coerce.string().optional(),
+  targetCluster: zod.coerce.string().optional(),
+  warmPathExists: zod.coerce.boolean().optional(),
+  readyForRelationship: zod.coerce.boolean().optional(),
+  readyForInstitutionalPitch: zod.coerce.boolean().optional(),
+  prestigeWatchlist: zod.coerce.boolean().optional(),
+  cultivationRequired: zod.coerce.boolean().optional(),
   minPriorityScore: zod.coerce.number().optional(),
   minResearchScore: zod.coerce.number().optional(),
   page: zod.coerce.number().default(getBusinessesQueryPageDefault),
@@ -536,7 +544,13 @@ export const GetResearchMetricsQueryParams = zod.object({
   city: zod.coerce.string().optional(),
   targetMarket: zod.coerce.string().optional(),
   engineType: zod.coerce.string().optional(),
+  targetType: zod.coerce.string().optional(),
   targetCluster: zod.coerce.string().optional(),
+  warmPathExists: zod.coerce.boolean().optional(),
+  readyForRelationship: zod.coerce.boolean().optional(),
+  readyForInstitutionalPitch: zod.coerce.boolean().optional(),
+  prestigeWatchlist: zod.coerce.boolean().optional(),
+  cultivationRequired: zod.coerce.boolean().optional(),
 });
 
 export const GetResearchMetricsResponse = zod.object({
@@ -574,7 +588,13 @@ export const GetResearchFeedQueryParams = zod.object({
   city: zod.coerce.string().optional(),
   targetMarket: zod.coerce.string().optional(),
   engineType: zod.coerce.string().optional(),
+  targetType: zod.coerce.string().optional(),
   targetCluster: zod.coerce.string().optional(),
+  warmPathExists: zod.coerce.boolean().optional(),
+  readyForRelationship: zod.coerce.boolean().optional(),
+  readyForInstitutionalPitch: zod.coerce.boolean().optional(),
+  prestigeWatchlist: zod.coerce.boolean().optional(),
+  cultivationRequired: zod.coerce.boolean().optional(),
   minPriorityScore: zod.coerce.number().optional(),
   minResearchScore: zod.coerce.number().optional(),
   page: zod.coerce.number().optional(),
@@ -591,6 +611,19 @@ export const GetResearchFeedResponse = zod.object({
       categorySlug: zod.string(),
       targetMarket: zod.string().nullish(),
       avatarType: zod.string().nullish(),
+      engineType: zod.string().nullish(),
+      targetType: zod.string().nullish(),
+      targetCluster: zod.string().nullish(),
+      economicValueScore: zod.number().nullish(),
+      strategicValueScore: zod.number().nullish(),
+      offerFitScore: zod.number().nullish(),
+      relationshipPathScore: zod.number().nullish(),
+      actionabilityScore: zod.number().nullish(),
+      warmPathExists: zod.boolean().optional(),
+      readyForRelationship: zod.boolean().optional(),
+      readyForInstitutionalPitch: zod.boolean().optional(),
+      prestigeWatchlist: zod.boolean().optional(),
+      cultivationRequired: zod.boolean().optional(),
       relevanceScore: zod.number().nullish(),
       contactabilityScore: zod.number().nullish(),
       confidenceScore: zod.number().nullish(),
@@ -618,7 +651,13 @@ export const GetResearchReviewBucketsQueryParams = zod.object({
   city: zod.coerce.string().optional(),
   targetMarket: zod.coerce.string().optional(),
   engineType: zod.coerce.string().optional(),
+  targetType: zod.coerce.string().optional(),
   targetCluster: zod.coerce.string().optional(),
+  warmPathExists: zod.coerce.boolean().optional(),
+  readyForRelationship: zod.coerce.boolean().optional(),
+  readyForInstitutionalPitch: zod.coerce.boolean().optional(),
+  prestigeWatchlist: zod.coerce.boolean().optional(),
+  cultivationRequired: zod.coerce.boolean().optional(),
   limit: zod.coerce.number().optional(),
 });
 
@@ -636,6 +675,19 @@ export const GetResearchReviewBucketsResponseItem = zod.object({
         categorySlug: zod.string(),
         targetMarket: zod.string().nullish(),
         avatarType: zod.string().nullish(),
+        engineType: zod.string().nullish(),
+        targetType: zod.string().nullish(),
+        targetCluster: zod.string().nullish(),
+        economicValueScore: zod.number().nullish(),
+        strategicValueScore: zod.number().nullish(),
+        offerFitScore: zod.number().nullish(),
+        relationshipPathScore: zod.number().nullish(),
+        actionabilityScore: zod.number().nullish(),
+        warmPathExists: zod.boolean().optional(),
+        readyForRelationship: zod.boolean().optional(),
+        readyForInstitutionalPitch: zod.boolean().optional(),
+        prestigeWatchlist: zod.boolean().optional(),
+        cultivationRequired: zod.boolean().optional(),
         relevanceScore: zod.number().nullish(),
         contactabilityScore: zod.number().nullish(),
         confidenceScore: zod.number().nullish(),
@@ -924,6 +976,173 @@ export const GetStrategicAccountsResponse = zod.array(
 );
 
 /**
+ * @summary List SLG offers through canonical SLG namespace
+ */
+export const GetSlgOffersResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  engineType: zod.string(),
+  offerType: zod.string(),
+  summary: zod.string().nullish(),
+  targetClusters: zod.string().nullish(),
+  ticketMin: zod.number().nullish(),
+  ticketMax: zod.number().nullish(),
+  recurringPotential: zod.number().nullish(),
+  bundleable: zod.boolean(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgOffersResponse = zod.array(GetSlgOffersResponseItem);
+
+/**
+ * @summary List SLG narratives through canonical SLG namespace
+ */
+export const GetSlgNarrativesResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  summary: zod.string().nullish(),
+  toneOfApproach: zod.string().nullish(),
+  engineTypes: zod.string().nullish(),
+  targetClusters: zod.string().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgNarrativesResponse = zod.array(GetSlgNarrativesResponseItem);
+
+/**
+ * @summary List SLG credibility assets through canonical SLG namespace
+ */
+export const GetSlgCredibilityAssetsResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  assetType: zod.string(),
+  summary: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  targetClusters: zod.string().nullish(),
+  engineTypes: zod.string().nullish(),
+  tags: zod.string().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgCredibilityAssetsResponse = zod.array(
+  GetSlgCredibilityAssetsResponseItem,
+);
+
+/**
+ * @summary List SLG case studies through canonical SLG namespace
+ */
+export const GetSlgCaseStudiesResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  title: zod.string(),
+  summary: zod.string().nullish(),
+  targetCluster: zod.string().nullish(),
+  engineType: zod.string().nullish(),
+  artist: zod.string().nullish(),
+  outcome: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
+  tags: zod.string().nullish(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgCaseStudiesResponse = zod.array(
+  GetSlgCaseStudiesResponseItem,
+);
+
+/**
+ * @summary List SLG seasonal windows through canonical SLG namespace
+ */
+export const GetSlgSeasonalWindowsResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  engineType: zod.string().nullish(),
+  targetCluster: zod.string().nullish(),
+  startMonth: zod.number(),
+  endMonth: zod.number(),
+  note: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgSeasonalWindowsResponse = zod.array(
+  GetSlgSeasonalWindowsResponseItem,
+);
+
+/**
+ * @summary List SLG content assets through canonical SLG namespace
+ */
+export const GetSlgContentAssetsResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  assetType: zod.string(),
+  engineType: zod.string().nullish(),
+  targetCluster: zod.string().nullish(),
+  title: zod.string(),
+  body: zod.string(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgContentAssetsResponse = zod.array(
+  GetSlgContentAssetsResponseItem,
+);
+
+/**
+ * @summary List relationship paths through canonical SLG namespace
+ */
+export const GetSlgRelationshipPathsQueryParams = zod.object({
+  businessId: zod.coerce.number().optional(),
+});
+
+export const GetSlgRelationshipPathsResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  businessName: zod.string().nullish(),
+  introducerName: zod.string().nullish(),
+  introducerOrg: zod.string().nullish(),
+  relationshipType: zod.string(),
+  confidenceScore: zod.string(),
+  isWarm: zod.boolean(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgRelationshipPathsResponse = zod.array(
+  GetSlgRelationshipPathsResponseItem,
+);
+
+/**
+ * @summary List strategic accounts through canonical SLG namespace
+ */
+export const GetSlgStrategicAccountsQueryParams = zod.object({
+  businessId: zod.coerce.number().optional(),
+});
+
+export const GetSlgStrategicAccountsResponseItem = zod.object({
+  id: zod.number(),
+  businessId: zod.number(),
+  businessName: zod.string().nullish(),
+  accountType: zod.string(),
+  owner: zod.string().nullish(),
+  accountTier: zod.string().nullish(),
+  status: zod.string(),
+  thesis: zod.string().nullish(),
+  milestone: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetSlgStrategicAccountsResponse = zod.array(
+  GetSlgStrategicAccountsResponseItem,
+);
+
+/**
  * @summary Dashboard statistics
  */
 export const GetStatsQueryParams = zod.object({
@@ -1113,4 +1332,22 @@ export const ExportBusinessesCsvQueryParams = zod.object({
   targetMarket: zod.coerce.string().optional(),
   readyForOutreach: zod.coerce.boolean().optional(),
   reviewRequired: zod.coerce.boolean().optional(),
+});
+
+/**
+ * @summary Export the condensed research summary CSV
+ */
+export const ExportBusinessResearchSummaryCsvQueryParams = zod.object({
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
+});
+
+/**
+ * @summary Export targets ready for outreach
+ */
+export const ExportOutreachReadyCsvQueryParams = zod.object({
+  categorySlug: zod.coerce.string().optional(),
+  city: zod.coerce.string().optional(),
+  targetMarket: zod.coerce.string().optional(),
 });

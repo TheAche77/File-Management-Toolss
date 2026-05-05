@@ -8,5 +8,6 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(businessesRouter);
 router.use(slgRouter);
+router.use("/slg", slgRouter);
 
 export default router;

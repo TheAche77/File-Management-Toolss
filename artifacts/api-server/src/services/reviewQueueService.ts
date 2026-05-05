@@ -33,7 +33,13 @@ export interface ReviewQueueFilters {
   city?: string;
   targetMarket?: string;
   engineType?: string;
+  targetType?: string;
   targetCluster?: string;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
   limit?: number;
 }
 
@@ -93,8 +99,26 @@ export async function getReviewQueue(
   if (filters.engineType) {
     conditions.push(eq(businessesTable.engineType, filters.engineType));
   }
+  if (filters.targetType) {
+    conditions.push(eq(businessesTable.targetType, filters.targetType));
+  }
   if (filters.targetCluster) {
     conditions.push(eq(businessesTable.targetCluster, filters.targetCluster));
+  }
+  if (filters.warmPathExists !== undefined) {
+    conditions.push(eq(businessesTable.warmPathExists, filters.warmPathExists));
+  }
+  if (filters.readyForRelationship !== undefined) {
+    conditions.push(eq(businessesTable.readyForRelationship, filters.readyForRelationship));
+  }
+  if (filters.readyForInstitutionalPitch !== undefined) {
+    conditions.push(eq(businessesTable.readyForInstitutionalPitch, filters.readyForInstitutionalPitch));
+  }
+  if (filters.prestigeWatchlist !== undefined) {
+    conditions.push(eq(businessesTable.prestigeWatchlist, filters.prestigeWatchlist));
+  }
+  if (filters.cultivationRequired !== undefined) {
+    conditions.push(eq(businessesTable.cultivationRequired, filters.cultivationRequired));
   }
 
   const candidates = await db

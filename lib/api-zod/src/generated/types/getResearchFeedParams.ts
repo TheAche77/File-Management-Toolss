@@ -12,7 +12,13 @@ export type GetResearchFeedParams = {
   city?: string;
   targetMarket?: string;
   engineType?: string;
+  targetType?: string;
   targetCluster?: string;
+  warmPathExists?: boolean;
+  readyForRelationship?: boolean;
+  readyForInstitutionalPitch?: boolean;
+  prestigeWatchlist?: boolean;
+  cultivationRequired?: boolean;
   minPriorityScore?: number;
   minResearchScore?: number;
   page?: number;
