@@ -2,10 +2,13 @@ import { Link } from "wouter";
 import {
   getGetCategoriesQueryKey,
   getGetOutreachDashboardQueryKey,
+  getGetResearchFeedQueryKey,
   getGetResearchMetricsQueryKey,
   useGetCategories,
   useGetOutreachDashboard,
+  useGetResearchFeed,
   useGetResearchMetrics,
+  type ResearchFeedBusiness,
 } from "@workspace/api-client-react";
 import {
   ArrowRight,
@@ -31,6 +34,52 @@ import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function formatPercent(value: number) {
   return `${(value * 100).toFixed(1)}%`;
+}
+
+function OpportunityList({
+  title,
+  description,
+  businesses,
+}: {
+  title: string;
+  description: string;
+  businesses: ResearchFeedBusiness[];
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {businesses.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            Nessun target in questa coda con i filtri attuali.
+          </div>
+        ) : (
+          businesses.map((business) => (
+            <Link
+              key={business.id}
+              href={`/businesses/${business.id}`}
+              className="block rounded-lg border p-3 transition-colors hover:bg-muted/40"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{business.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {[business.city, business.targetMarket, formatPipelineValue(business.targetCluster)]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <Badge variant="outline">{business.actionabilityScore ?? business.researchScore ?? 0}</Badge>
+              </div>
+            </Link>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function DashboardSkeleton() {
@@ -96,6 +145,57 @@ export default function Dashboard() {
       queryKey: getGetResearchMetricsQueryKey(dashboardParams),
       enabled: hasAdminToken,
     },
+  });
+  const baseOpportunityParams = useMemo(
+    () => ({
+      ...dashboardParams,
+      minResearchScore: 50,
+      page: 1,
+      pageSize: 3,
+    }),
+    [dashboardParams],
+  );
+  const topRevenueParams = useMemo(
+    () => ({ ...baseOpportunityParams, engineType: "revenue", minPriorityScore: 60 }),
+    [baseOpportunityParams],
+  );
+  const institutionalParams = useMemo(
+    () => ({ ...baseOpportunityParams, engineType: "institutional", readyForInstitutionalPitch: true }),
+    [baseOpportunityParams],
+  );
+  const prestigeParams = useMemo(
+    () => ({ ...baseOpportunityParams, prestigeWatchlist: true }),
+    [baseOpportunityParams],
+  );
+  const cultivationParams = useMemo(
+    () => ({ ...baseOpportunityParams, cultivationRequired: true }),
+    [baseOpportunityParams],
+  );
+  const referralParams = useMemo(
+    () => ({ ...baseOpportunityParams, warmPathExists: true }),
+    [baseOpportunityParams],
+  );
+  const labirintoParams = useMemo(
+    () => ({ ...baseOpportunityParams, targetCluster: "residency_exchange_diplomacy" }),
+    [baseOpportunityParams],
+  );
+  const topRevenueQuery = useGetResearchFeed(topRevenueParams, {
+    query: { queryKey: getGetResearchFeedQueryKey(topRevenueParams), enabled: hasAdminToken },
+  });
+  const institutionalQuery = useGetResearchFeed(institutionalParams, {
+    query: { queryKey: getGetResearchFeedQueryKey(institutionalParams), enabled: hasAdminToken },
+  });
+  const prestigeQuery = useGetResearchFeed(prestigeParams, {
+    query: { queryKey: getGetResearchFeedQueryKey(prestigeParams), enabled: hasAdminToken },
+  });
+  const cultivationQuery = useGetResearchFeed(cultivationParams, {
+    query: { queryKey: getGetResearchFeedQueryKey(cultivationParams), enabled: hasAdminToken },
+  });
+  const referralQuery = useGetResearchFeed(referralParams, {
+    query: { queryKey: getGetResearchFeedQueryKey(referralParams), enabled: hasAdminToken },
+  });
+  const labirintoQuery = useGetResearchFeed(labirintoParams, {
+    query: { queryKey: getGetResearchFeedQueryKey(labirintoParams), enabled: hasAdminToken },
   });
 
   useEffect(() => {
@@ -316,6 +416,39 @@ export default function Dashboard() {
           </Card>
         </div>
       )}
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <OpportunityList
+          title="Top Revenue Now"
+          description="Target economici con priorità alta e fit operativo immediato."
+          businesses={topRevenueQuery.data?.businesses ?? []}
+        />
+        <OpportunityList
+          title="Top Institutional Pitch"
+          description="Enti pronti per proposta istituzionale e proof credibili."
+          businesses={institutionalQuery.data?.businesses ?? []}
+        />
+        <OpportunityList
+          title="Prestige Watchlist"
+          description="Account reputazionali da coltivare con narrativa ad alta autorevolezza."
+          businesses={prestigeQuery.data?.businesses ?? []}
+        />
+        <OpportunityList
+          title="Cultivation Queue"
+          description="Target non ancora diretti: serve relazione prima del pitch."
+          businesses={cultivationQuery.data?.businesses ?? []}
+        />
+        <OpportunityList
+          title="Referral-first Opportunities"
+          description="Opportunità dove una warm path può accelerare la conversione."
+          businesses={referralQuery.data?.businesses ?? []}
+        />
+        <OpportunityList
+          title="LABirinto-fit Opportunities"
+          description="Target compatibili con residenze, exchange e diplomazia culturale."
+          businesses={labirintoQuery.data?.businesses ?? []}
+        />
+      </div>
 
       <Card>
         <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

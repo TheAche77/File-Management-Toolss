@@ -4,11 +4,17 @@ export type SharedBusinessFiltersState = {
   categorySlug: string;
   targetMarket: string;
   engineType: string;
+  targetType: string;
   targetCluster: string;
   hasWebsite: boolean;
   hasPhone: boolean;
   readyForOutreach: boolean;
   reviewRequired: boolean;
+  warmPathExists: boolean;
+  readyForRelationship: boolean;
+  readyForInstitutionalPitch: boolean;
+  prestigeWatchlist: boolean;
+  cultivationRequired: boolean;
   minPriorityScore?: number;
   minResearchScore?: number;
   page: number;
@@ -25,11 +31,17 @@ export function readSharedBusinessFilters(search: string): SharedBusinessFilters
     categorySlug: params.get("categorySlug") ?? "all",
     targetMarket: params.get("targetMarket") ?? "all",
     engineType: params.get("engineType") ?? "all",
+    targetType: params.get("targetType") ?? "all",
     targetCluster: params.get("targetCluster") ?? "all",
     hasWebsite: params.get("hasWebsite") === "true",
     hasPhone: params.get("hasPhone") === "true",
     readyForOutreach: params.get("readyForOutreach") === "true",
     reviewRequired: params.get("reviewRequired") === "true",
+    warmPathExists: params.get("warmPathExists") === "true",
+    readyForRelationship: params.get("readyForRelationship") === "true",
+    readyForInstitutionalPitch: params.get("readyForInstitutionalPitch") === "true",
+    prestigeWatchlist: params.get("prestigeWatchlist") === "true",
+    cultivationRequired: params.get("cultivationRequired") === "true",
     minPriorityScore: params.get("minPriorityScore")
       ? Number.parseInt(params.get("minPriorityScore") ?? "0", 10) || undefined
       : undefined,
@@ -65,11 +77,17 @@ export function buildSearchParams(
   setString("categorySlug", next.categorySlug, "all");
   setString("targetMarket", next.targetMarket, "all");
   setString("engineType", next.engineType, "all");
+  setString("targetType", next.targetType, "all");
   setString("targetCluster", next.targetCluster, "all");
   if (next.hasWebsite) params.set("hasWebsite", "true");
   if (next.hasPhone) params.set("hasPhone", "true");
   if (next.readyForOutreach) params.set("readyForOutreach", "true");
   if (next.reviewRequired) params.set("reviewRequired", "true");
+  if (next.warmPathExists) params.set("warmPathExists", "true");
+  if (next.readyForRelationship) params.set("readyForRelationship", "true");
+  if (next.readyForInstitutionalPitch) params.set("readyForInstitutionalPitch", "true");
+  if (next.prestigeWatchlist) params.set("prestigeWatchlist", "true");
+  if (next.cultivationRequired) params.set("cultivationRequired", "true");
   if (next.minPriorityScore) params.set("minPriorityScore", String(next.minPriorityScore));
   if (next.minResearchScore) params.set("minResearchScore", String(next.minResearchScore));
   if (next.page && next.page > 1) params.set("page", String(next.page));

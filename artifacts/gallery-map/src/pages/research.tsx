@@ -23,6 +23,7 @@ import { SharedBusinessFilters } from "@/components/shared-business-filters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -47,7 +48,13 @@ export default function ResearchPage() {
   const [category, setCategory] = useState(initial.categorySlug);
   const [targetMarket, setTargetMarket] = useState(initial.targetMarket);
   const [engineType, setEngineType] = useState(initial.engineType);
+  const [targetType, setTargetType] = useState(initial.targetType);
   const [targetCluster, setTargetCluster] = useState(initial.targetCluster);
+  const [warmPathExists, setWarmPathExists] = useState(initial.warmPathExists);
+  const [readyForRelationship, setReadyForRelationship] = useState(initial.readyForRelationship);
+  const [readyForInstitutionalPitch, setReadyForInstitutionalPitch] = useState(initial.readyForInstitutionalPitch);
+  const [prestigeWatchlist, setPrestigeWatchlist] = useState(initial.prestigeWatchlist);
+  const [cultivationRequired, setCultivationRequired] = useState(initial.cultivationRequired);
   const [minPriorityScore, setMinPriorityScore] = useState(initial.minPriorityScore?.toString() ?? "60");
   const [minResearchScore, setMinResearchScore] = useState(initial.minResearchScore?.toString() ?? "60");
 
@@ -62,7 +69,13 @@ export default function ResearchPage() {
       categorySlug: category,
       targetMarket,
       engineType,
+      targetType,
       targetCluster,
+      warmPathExists,
+      readyForRelationship,
+      readyForInstitutionalPitch,
+      prestigeWatchlist,
+      cultivationRequired,
       minPriorityScore: minPriorityScore ? Number(minPriorityScore) : undefined,
       minResearchScore: minResearchScore ? Number(minResearchScore) : undefined,
       hasWebsite: false,
@@ -74,7 +87,22 @@ export default function ResearchPage() {
       limit: undefined,
     });
     return nextSearch;
-  }, [category, city, engineType, minPriorityScore, minResearchScore, search, targetCluster, targetMarket]);
+  }, [
+    category,
+    city,
+    cultivationRequired,
+    engineType,
+    minPriorityScore,
+    minResearchScore,
+    prestigeWatchlist,
+    readyForInstitutionalPitch,
+    readyForRelationship,
+    search,
+    targetCluster,
+    targetMarket,
+    targetType,
+    warmPathExists,
+  ]);
 
   const metricParams = useMemo(
     () => ({
@@ -82,9 +110,27 @@ export default function ResearchPage() {
       city: city || undefined,
       targetMarket: targetMarket === "all" ? undefined : targetMarket,
       engineType: engineType === "all" ? undefined : engineType,
+      targetType: targetType === "all" ? undefined : targetType,
       targetCluster: targetCluster === "all" ? undefined : targetCluster,
+      warmPathExists: warmPathExists || undefined,
+      readyForRelationship: readyForRelationship || undefined,
+      readyForInstitutionalPitch: readyForInstitutionalPitch || undefined,
+      prestigeWatchlist: prestigeWatchlist || undefined,
+      cultivationRequired: cultivationRequired || undefined,
     }),
-    [category, city, engineType, targetCluster, targetMarket],
+    [
+      category,
+      city,
+      cultivationRequired,
+      engineType,
+      prestigeWatchlist,
+      readyForInstitutionalPitch,
+      readyForRelationship,
+      targetCluster,
+      targetMarket,
+      targetType,
+      warmPathExists,
+    ],
   );
 
   const feedParams = useMemo(
@@ -224,7 +270,13 @@ export default function ResearchPage() {
           categorySlug: category,
           targetMarket,
           engineType,
+          targetType,
           targetCluster,
+          warmPathExists,
+          readyForRelationship,
+          readyForInstitutionalPitch,
+          prestigeWatchlist,
+          cultivationRequired,
           minPriorityScore: parseOptionalInt(minPriorityScore),
           minResearchScore: parseOptionalInt(minResearchScore),
         },
@@ -243,7 +295,13 @@ export default function ResearchPage() {
     setCategory(String(filters["categorySlug"] ?? "all"));
     setTargetMarket(String(filters["targetMarket"] ?? "all"));
     setEngineType(String(filters["engineType"] ?? "all"));
+    setTargetType(String(filters["targetType"] ?? "all"));
     setTargetCluster(String(filters["targetCluster"] ?? "all"));
+    setWarmPathExists(Boolean(filters["warmPathExists"]));
+    setReadyForRelationship(Boolean(filters["readyForRelationship"]));
+    setReadyForInstitutionalPitch(Boolean(filters["readyForInstitutionalPitch"]));
+    setPrestigeWatchlist(Boolean(filters["prestigeWatchlist"]));
+    setCultivationRequired(Boolean(filters["cultivationRequired"]));
     setMinPriorityScore(filters["minPriorityScore"] ? String(filters["minPriorityScore"]) : "");
     setMinResearchScore(filters["minResearchScore"] ? String(filters["minResearchScore"]) : "");
   };
@@ -319,11 +377,13 @@ export default function ResearchPage() {
           categorySlug={category}
           targetMarket={targetMarket}
           engineType={engineType}
+          targetType={targetType}
           targetCluster={targetCluster}
           onCityChange={setCity}
           onCategoryChange={setCategory}
           onTargetMarketChange={setTargetMarket}
           onEngineTypeChange={setEngineType}
+          onTargetTypeChange={setTargetType}
           onTargetClusterChange={setTargetCluster}
         />
         <div className="grid gap-4 md:grid-cols-3">
@@ -342,6 +402,28 @@ export default function ResearchPage() {
             value={minResearchScore}
             onChange={(event) => setMinResearchScore(event.target.value)}
           />
+        </div>
+        <div className="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-5">
+          <label className="flex items-center gap-2">
+            <Checkbox checked={warmPathExists} onCheckedChange={(checked) => setWarmPathExists(Boolean(checked))} />
+            Warm path exists
+          </label>
+          <label className="flex items-center gap-2">
+            <Checkbox checked={readyForRelationship} onCheckedChange={(checked) => setReadyForRelationship(Boolean(checked))} />
+            Ready for relationship
+          </label>
+          <label className="flex items-center gap-2">
+            <Checkbox checked={readyForInstitutionalPitch} onCheckedChange={(checked) => setReadyForInstitutionalPitch(Boolean(checked))} />
+            Institutional pitch
+          </label>
+          <label className="flex items-center gap-2">
+            <Checkbox checked={prestigeWatchlist} onCheckedChange={(checked) => setPrestigeWatchlist(Boolean(checked))} />
+            Prestige watchlist
+          </label>
+          <label className="flex items-center gap-2">
+            <Checkbox checked={cultivationRequired} onCheckedChange={(checked) => setCultivationRequired(Boolean(checked))} />
+            Cultivation required
+          </label>
         </div>
       </div>
 

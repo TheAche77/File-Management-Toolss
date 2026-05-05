@@ -79,14 +79,17 @@ function selectSuggestedContentAsset(
     bestOfferId?: number | null;
     bestNarrativeId?: number | null;
   } | null | undefined,
+  preferredAssetType?: string,
 ) {
   if (!business) return null;
 
   const scored = assets
+    .filter((asset) => !preferredAssetType || asset.assetType === preferredAssetType)
     .map((asset) => {
       let score = 0;
       if (asset.assetType === "pitch_snippet") score += 35;
       if (asset.assetType === "proof_snippet") score += 20;
+      if (asset.assetType === "cta_suggestion") score += 30;
       if (asset.engineType && asset.engineType === business.engineType) score += 25;
       if (asset.targetCluster && asset.targetCluster === business.targetCluster) score += 30;
       if (!asset.engineType) score += 5;
@@ -520,7 +523,21 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
     [caseStudiesQuery.data, credibilityAssetsQuery.data, narrativesQuery.data, offersQuery.data],
   );
 
-  const suggestedContentAsset = selectSuggestedContentAsset(contentAssetsQuery.data ?? [], businessQuery.data);
+  const suggestedPitchAsset = selectSuggestedContentAsset(
+    contentAssetsQuery.data ?? [],
+    businessQuery.data,
+    "pitch_snippet",
+  );
+  const suggestedProofAsset = selectSuggestedContentAsset(
+    contentAssetsQuery.data ?? [],
+    businessQuery.data,
+    "proof_snippet",
+  );
+  const suggestedCtaAsset = selectSuggestedContentAsset(
+    contentAssetsQuery.data ?? [],
+    businessQuery.data,
+    "cta_suggestion",
+  );
 
   const updateOutreachMutation = useUpdateBusinessOutreach({
     mutation: {
@@ -977,10 +994,40 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                 <div className="rounded-lg bg-muted/50 p-4 text-sm md:col-span-2">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">Suggested Pitch Snippet</p>
                   <p className="mt-2 font-medium">
-                    {suggestedContentAsset?.title ?? "No content asset selected yet"}
+                    {suggestedPitchAsset?.title ?? "No pitch asset selected yet"}
                   </p>
                   <p className="mt-2 whitespace-pre-wrap text-muted-foreground">
-                    {suggestedContentAsset?.body ?? "No reusable pitch snippet available for this target yet."}
+                    {suggestedPitchAsset?.body ?? "No reusable pitch snippet available for this target yet."}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Relationship Path</p>
+                  <p className="mt-2 font-medium">
+                    {business.warmPathExists ? "Warm or networked path available" : "Cold outreach required"}
+                  </p>
+                  <p className="mt-2 text-muted-foreground">
+                    Score {business.relationshipPathScore ?? 0} · {business.readyForRelationship ? "use warm intro" : "build first signal"}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Proof Snippet</p>
+                  <p className="mt-2 font-medium">
+                    {suggestedProofAsset?.title ?? business.proofAngle ?? "No proof asset selected yet"}
+                  </p>
+                  <p className="mt-2 text-muted-foreground">
+                    {suggestedProofAsset?.body ?? business.riskReductionReason ?? "No reusable proof snippet available."}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-sm md:col-span-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">CTA Suggestion</p>
+                  <p className="mt-2 font-medium">
+                    {suggestedCtaAsset?.title ?? "No CTA asset selected yet"}
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                    {suggestedCtaAsset?.body ??
+                      (business.recommendedNextStep
+                        ? `Next action: ${formatPipelineValue(business.recommendedNextStep)}`
+                        : "No CTA suggestion available yet.")}
                   </p>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-4 text-sm">

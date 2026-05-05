@@ -24,6 +24,15 @@ export function matchBestOffer(
       if (offer.bundleable) score += 5;
       score += Math.min(25, Math.max(0, offer.recurringPotential ?? 0) / 4);
 
+      if (classification.targetType === "buyer" && offer.engineType === "revenue") score += 10;
+      if (classification.targetType === "host" && offer.offerType.includes("exhibition")) score += 10;
+      if (classification.targetType === "funder" && offer.engineType === "institutional") score += 10;
+      if (classification.targetType === "prestige" && offer.engineType === "authority") score += 8;
+      if (classification.targetType === "referrer" && offer.bundleable) score += 6;
+      if (aggregate.business.categorySlug === "design_boutique_hotel" && offer.offerType.includes("exhibition")) score += 8;
+      if (aggregate.business.categorySlug === "art_museum" && offer.offerType.includes("curatorial")) score += 8;
+      if (aggregate.business.categorySlug === "cultural_institute" && offer.offerType.includes("residency")) score += 8;
+      if (aggregate.business.targetMarket && aggregate.business.targetMarket !== "IT" && offer.engineType === "authority") score += 6;
       if (classification.targetCluster === "boutique_hotel_hospitality" && aggregate.business.website) score += 5;
       if (classification.targetCluster === "commercial_collectors_ecosystem" && aggregate.business.targetMarket) score += 5;
       if (classification.engineType === "institutional" && aggregate.business.reviewRequired) score += 3;

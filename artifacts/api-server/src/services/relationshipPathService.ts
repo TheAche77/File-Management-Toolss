@@ -22,10 +22,18 @@ export function scoreRelationshipPaths(paths: RelationshipPath[]) {
   })[0]!;
 
   const score = Math.round(Number(best.isWarm) * 50 + parseConfidence(best.confidenceScore) * 50);
+  const confidence = parseConfidence(best.confidenceScore);
+  const bestRelationshipStrategy = best.isWarm
+    ? confidence >= 0.75
+      ? "relationship_first"
+      : "warm_intro"
+    : confidence >= 0.5
+      ? "networked_outreach"
+      : "cold_outreach";
 
   return {
     warmPathExists: paths.some((path) => path.isWarm),
     relationshipPathScore: score,
-    bestRelationshipStrategy: best.isWarm ? "warm_intro" : "networked_outreach",
+    bestRelationshipStrategy,
   };
 }

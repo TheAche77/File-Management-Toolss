@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const TARGET_MARKET_OPTIONS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO"] as const;
 const ENGINE_TYPE_OPTIONS = ["revenue", "institutional", "authority"] as const;
+const TARGET_TYPE_OPTIONS = ["buyer", "funder", "host", "referrer", "prestige", "hybrid"] as const;
 const TARGET_CLUSTER_OPTIONS = [
   "commercial_collectors_ecosystem",
   "boutique_hotel_hospitality",
@@ -24,11 +25,13 @@ type SharedBusinessFiltersProps = {
   categorySlug: string;
   targetMarket: string;
   engineType?: string;
+  targetType?: string;
   targetCluster?: string;
   onCityChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onTargetMarketChange: (value: string) => void;
   onEngineTypeChange?: (value: string) => void;
+  onTargetTypeChange?: (value: string) => void;
   onTargetClusterChange?: (value: string) => void;
 };
 
@@ -38,15 +41,17 @@ export function SharedBusinessFilters({
   categorySlug,
   targetMarket,
   engineType = "all",
+  targetType = "all",
   targetCluster = "all",
   onCityChange,
   onCategoryChange,
   onTargetMarketChange,
   onEngineTypeChange,
+  onTargetTypeChange,
   onTargetClusterChange,
 }: SharedBusinessFiltersProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
       <div className="space-y-2">
         <Label htmlFor="shared-city-filter">City</Label>
         <Input
@@ -101,6 +106,25 @@ export function SharedBusinessFilters({
             <SelectContent>
               <SelectItem value="all">All engines</SelectItem>
               {ENGINE_TYPE_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option.replace(/_/g, " ")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {onTargetTypeChange && (
+        <div className="space-y-2">
+          <Label htmlFor="shared-target-type-filter">Target Type</Label>
+          <Select value={targetType} onValueChange={onTargetTypeChange}>
+            <SelectTrigger id="shared-target-type-filter">
+              <SelectValue placeholder="All target types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All target types</SelectItem>
+              {TARGET_TYPE_OPTIONS.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option.replace(/_/g, " ")}
                 </SelectItem>

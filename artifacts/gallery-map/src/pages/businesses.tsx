@@ -3,8 +3,10 @@ import { Link } from "wouter";
 import {
   getGetBusinessesQueryKey,
   getGetCategoriesQueryKey,
+  getGetOffersQueryKey,
   useGetBusinesses,
   useGetCategories,
+  useGetOffers,
 } from "@workspace/api-client-react";
 import { ExternalLink, Globe, MapPin, Phone, Radar, ShieldAlert } from "lucide-react";
 import { SharedBusinessFilters } from "@/components/shared-business-filters";
@@ -43,6 +45,7 @@ export default function Businesses() {
   const [category, setCategory] = useState(initialFilters.categorySlug);
   const [targetMarket, setTargetMarket] = useState(initialFilters.targetMarket);
   const [engineType, setEngineType] = useState(initialFilters.engineType);
+  const [targetType, setTargetType] = useState(initialFilters.targetType);
   const [targetCluster, setTargetCluster] = useState(initialFilters.targetCluster);
   const [hasWebsite, setHasWebsite] = useState(initialFilters.hasWebsite);
   const [hasPhone, setHasPhone] = useState(initialFilters.hasPhone);
@@ -62,6 +65,7 @@ export default function Businesses() {
       categorySlug: category === "all" ? undefined : category,
       targetMarket: targetMarket === "all" ? undefined : targetMarket,
       engineType: engineType === "all" ? undefined : engineType,
+      targetType: targetType === "all" ? undefined : targetType,
       targetCluster: targetCluster === "all" ? undefined : targetCluster,
       hasWebsite: hasWebsite || undefined,
       hasPhone: hasPhone || undefined,
@@ -70,12 +74,16 @@ export default function Businesses() {
       page,
       pageSize,
     }),
-    [category, city, engineType, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetCluster, targetMarket],
+    [category, city, engineType, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetCluster, targetMarket, targetType],
   );
 
   const { data, isLoading } = useGetBusinesses(queryParams, {
     query: { queryKey: getGetBusinessesQueryKey(queryParams) },
   });
+  const { data: offers = [] } = useGetOffers({
+    query: { queryKey: getGetOffersQueryKey() },
+  });
+  const offersById = useMemo(() => new Map(offers.map((offer) => [offer.id, offer])), [offers]);
 
   useEffect(() => {
     const nextSearch = buildSearchParams(window.location.search, {
@@ -84,6 +92,7 @@ export default function Businesses() {
       categorySlug: category,
       targetMarket,
       engineType,
+      targetType,
       targetCluster,
       hasWebsite,
       hasPhone,
@@ -95,7 +104,7 @@ export default function Businesses() {
     });
 
     syncSearchParams(nextSearch);
-  }, [category, city, engineType, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetCluster, targetMarket]);
+  }, [category, city, engineType, hasPhone, hasWebsite, page, readyOnly, reviewOnly, search, targetCluster, targetMarket, targetType]);
 
   return (
     <div className="space-y-6">
@@ -113,6 +122,7 @@ export default function Businesses() {
           categorySlug={category}
           targetMarket={targetMarket}
           engineType={engineType}
+          targetType={targetType}
           targetCluster={targetCluster}
           onCityChange={(value) => {
             setCity(value);
@@ -128,6 +138,10 @@ export default function Businesses() {
           }}
           onEngineTypeChange={(value) => {
             setEngineType(value);
+            setPage(1);
+          }}
+          onTargetTypeChange={(value) => {
+            setTargetType(value);
             setPage(1);
           }}
           onTargetClusterChange={(value) => {
@@ -249,7 +263,14 @@ export default function Businesses() {
                           <ScoreBadge label="Confidence" value={business.confidenceScore} />
                           <ScoreBadge label="Economic" value={business.economicValueScore} />
                           <ScoreBadge label="Strategic" value={business.strategicValueScore} />
+                          <ScoreBadge label="Actionability" value={business.actionabilityScore} />
+                          <ScoreBadge label="Offer fit" value={business.offerFitScore} />
                         </div>
+                        {business.bestOfferId && offersById.get(business.bestOfferId) && (
+                          <p className="text-xs text-muted-foreground">
+                            Best offer: {offersById.get(business.bestOfferId)?.name}
+                          </p>
+                        )}
                       </div>
                     </TableCell>
 
@@ -264,6 +285,9 @@ export default function Businesses() {
                         <div className="flex flex-wrap gap-2">
                           {business.avatarType && (
                             <Badge variant="outline">{formatPipelineValue(business.avatarType)}</Badge>
+                          )}
+                          {business.targetType && (
+                            <Badge variant="outline">{formatPipelineValue(business.targetType)}</Badge>
                           )}
                           {business.sourceHealth && (
                             <Badge variant="outline">{formatPipelineValue(business.sourceHealth)}</Badge>
@@ -335,6 +359,12 @@ export default function Businesses() {
                           )}
                           {business.prestigeWatchlist && (
                             <Badge variant="outline">Prestige</Badge>
+                          )}
+                          {business.readyForRelationship && (
+                            <Badge variant="outline" className="text-emerald-700">Relationship-ready</Badge>
+                          )}
+                          {business.readyForInstitutionalPitch && (
+                            <Badge variant="outline" className="text-sky-700">Institutional-ready</Badge>
                           )}
                         </div>
                         <p className="text-muted-foreground">
