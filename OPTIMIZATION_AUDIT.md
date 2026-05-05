@@ -333,6 +333,20 @@ Verification commands:
 
 Runtime smoke tests remain environment-dependent because this local shell has no confirmed running Postgres/API process.
 
+## Runtime Verification Hardening - 2026-05-05
+
+Completed:
+
+- added local Postgres `compose.yaml`
+- added `0000_base_schema.sql` so blank databases can apply the checked-in migration chain
+- made SLG reference seed additive and idempotent for partially seeded databases
+- added `scripts/smoke-slg-runtime.mjs` and `pnpm run smoke:slg-runtime`
+- updated runtime runbooks with database, migration, API, frontend, and smoke-test commands
+
+Environment note:
+
+- this Codex shell did not expose `pnpm`, Docker, `psql`, or `postgres` on PATH, so real DB/API/UI runtime smoke must be executed on a host with those tools available.
+
 ## Phase 5 - Optional Strategic Improvements
 
 - either implement Google enrichment properly or isolate the stub from runtime orchestration

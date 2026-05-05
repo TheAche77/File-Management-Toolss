@@ -18,6 +18,12 @@ Optional:
 
 ## 2. Database Schema
 
+For local verification, start Postgres first:
+
+```bash
+docker compose up -d postgres
+```
+
 Apply the schema update before starting the API:
 
 ```bash
@@ -27,10 +33,13 @@ pnpm --filter @workspace/db run migrate
 
 This is required for:
 
+- baseline tables on a blank local database
 - outreach columns on `businesses`
 - `business_sources`
 - `contact_candidates`
 - `outreach_events`
+- research jobs and views
+- SLG reference tables and scoring fields
 
 ## 3. Validation
 
@@ -43,6 +52,14 @@ pnpm --filter @workspace/gallery-map run typecheck
 ```
 
 If you have additional CI or tests in your environment, run them here before deploy.
+
+Run the repeatable API smoke suite with the API already started:
+
+```bash
+export API_BASE_URL=http://localhost:8080/api
+export ADMIN_API_TOKEN=replace-with-a-long-random-admin-token
+pnpm run smoke:slg-runtime
+```
 
 ## 4. Smoke Test
 
@@ -72,9 +89,14 @@ Check these flows manually:
    - detail link from popup works
 7. `/api/export/businesses.csv`
    - export still downloads
+8. `/api/export/slg-revenue-targets.csv`
+   - protected SLG export downloads with admin token
+9. `/api/slg/offers` and `/api/offers`
+   - both return the same seeded offer catalog shape
 
 ## 5. Known Constraints
 
 - `GOOGLE_MAPS_API_KEY` does not unlock a full Google Places enrichment flow yet; the connector remains a stub.
 - Admin-protected flows depend on `ADMIN_API_TOKEN`; the API now fails fast at startup if it is missing.
 - Versioned SQL migrations now live in `lib/db/migrations`, but they still need to be applied in the real environment before startup.
+- If Docker is unavailable on the host, provision any PostgreSQL 16-compatible database and use the same `DATABASE_URL` format from `.env.example`.

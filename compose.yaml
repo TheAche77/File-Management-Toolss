@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: slg-growth-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: scopri_italia
+    ports:
+      - "5432:5432"
+    volumes:
+      - slg_growth_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d scopri_italia"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  slg_growth_postgres:

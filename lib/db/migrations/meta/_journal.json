@@ -5,26 +5,33 @@
     {
       "idx": 0,
       "version": "7",
+      "when": 1776841200000,
+      "tag": "0000_base_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
       "when": 1776844800000,
       "tag": "0001_outreach_events_and_country_default",
       "breakpoints": true
     },
     {
-      "idx": 1,
+      "idx": 2,
       "version": "7",
       "when": 1776852000000,
       "tag": "0002_business_research_state",
       "breakpoints": true
     },
     {
-      "idx": 2,
+      "idx": 3,
       "version": "7",
       "when": 1776855600000,
       "tag": "0003_research_jobs_and_views",
       "breakpoints": true
     },
     {
-      "idx": 3,
+      "idx": 4,
       "version": "7",
       "when": 1776862800000,
       "tag": "0004_slg_growth_engine",

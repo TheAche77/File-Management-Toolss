@@ -11,12 +11,20 @@ Required environment:
 - `PORT`
 - optional `BASE_PATH`
 
+Start local Postgres when Docker is available:
+
+```bash
+docker compose up -d postgres
+```
+
 Run migrations before deploy:
 
 ```bash
-cd lib/db
-drizzle-kit migrate --config ./drizzle.config.ts
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
+pnpm --filter @workspace/db run migrate
 ```
+
+The migration chain includes `0000_base_schema.sql`, so a blank local Postgres database can be migrated without relying on pre-existing `businesses`, `business_sources`, or `contact_candidates` tables.
 
 ## Verification
 
@@ -40,11 +48,18 @@ cd lib/api-spec
 
 With API and DB running, verify:
 
-- `GET /api/research/metrics` with `Authorization: Bearer $ADMIN_API_TOKEN`
-- `GET /api/research/feed?targetType=buyer&warmPathExists=true`
-- `GET /api/slg/offers`
-- legacy `GET /api/offers`
-- `GET /api/export/slg-revenue-targets.csv`
+- automated API smoke test:
+
+```bash
+export API_BASE_URL=http://localhost:8080/api
+export ADMIN_API_TOKEN=replace-with-a-long-random-admin-token
+pnpm run smoke:slg-runtime
+```
+
+The smoke test covers admin auth, research endpoints, `/api/slg/*`, legacy SLG aliases, CSV exports, and expected default SLG reference data.
+
+Manual UI smoke test:
+
 - UI routes `/`, `/businesses`, `/businesses/:id`, `/research`, `/admin`, `/offers`, `/proof`, `/accounts`, `/relationships`
 
 ## Operating Consoles

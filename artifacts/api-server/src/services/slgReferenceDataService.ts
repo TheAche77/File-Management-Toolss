@@ -18,8 +18,6 @@ import {
 } from "../lib/slgDefaults";
 
 async function ensureOffers() {
-  const existing = await db.select({ id: offersTable.id }).from(offersTable).limit(1);
-  if (existing.length > 0) return;
   await db.insert(offersTable).values(DEFAULT_SLG_OFFERS.map((entry) => ({
     ...entry,
     active: true,
@@ -28,8 +26,6 @@ async function ensureOffers() {
 }
 
 async function ensureNarratives() {
-  const existing = await db.select({ id: narrativesTable.id }).from(narrativesTable).limit(1);
-  if (existing.length > 0) return;
   await db.insert(narrativesTable).values(DEFAULT_SLG_NARRATIVES.map((entry) => ({
     ...entry,
     active: true,
@@ -38,8 +34,6 @@ async function ensureNarratives() {
 }
 
 async function ensureCredibilityAssets() {
-  const existing = await db.select({ id: credibilityAssetsTable.id }).from(credibilityAssetsTable).limit(1);
-  if (existing.length > 0) return;
   await db.insert(credibilityAssetsTable).values(DEFAULT_SLG_CREDIBILITY_ASSETS.map((entry) => ({
     ...entry,
     active: true,
@@ -48,8 +42,6 @@ async function ensureCredibilityAssets() {
 }
 
 async function ensureCaseStudies() {
-  const existing = await db.select({ id: caseStudiesTable.id }).from(caseStudiesTable).limit(1);
-  if (existing.length > 0) return;
   await db.insert(caseStudiesTable).values(DEFAULT_SLG_CASE_STUDIES.map((entry) => ({
     ...entry,
     active: true,
@@ -58,8 +50,6 @@ async function ensureCaseStudies() {
 }
 
 async function ensureSeasonalWindows() {
-  const existing = await db.select({ id: seasonalWindowsTable.id }).from(seasonalWindowsTable).limit(1);
-  if (existing.length > 0) return;
   await db.insert(seasonalWindowsTable).values(DEFAULT_SLG_SEASONAL_WINDOWS.map((entry) => ({
     ...entry,
     updatedAt: new Date(),
@@ -67,8 +57,6 @@ async function ensureSeasonalWindows() {
 }
 
 async function ensureContentAssets() {
-  const existing = await db.select({ id: contentAssetsTable.id }).from(contentAssetsTable).limit(1);
-  if (existing.length > 0) return;
   await db.insert(contentAssetsTable).values(DEFAULT_SLG_CONTENT_ASSETS.map((entry) => ({
     ...entry,
     active: true,

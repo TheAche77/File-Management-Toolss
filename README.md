@@ -89,6 +89,14 @@ To make an expired token cause the post-merge script to abort (instead of just w
 
 ## Example Local Setup
 
+Start a local Postgres database:
+
+```bash
+docker compose up -d postgres
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
+pnpm --filter @workspace/db run migrate
+```
+
 API shell:
 
 ```bash
@@ -106,6 +114,14 @@ Frontend shell:
 export PORT=19001
 export BASE_PATH=/
 pnpm --filter @workspace/gallery-map run dev
+```
+
+Automated API smoke test after the API is running:
+
+```bash
+export API_BASE_URL=http://localhost:8080/api
+export ADMIN_API_TOKEN=change-me-to-a-long-random-string
+pnpm run smoke:slg-runtime
 ```
 
 ## Main Commands
@@ -145,6 +161,12 @@ Run versioned database migrations:
 
 ```bash
 pnpm --filter @workspace/db run migrate
+```
+
+Run SLG runtime smoke tests:
+
+```bash
+pnpm run smoke:slg-runtime
 ```
 
 ## Current Data Model
