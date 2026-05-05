@@ -10,6 +10,7 @@ Required environment:
 - `ADMIN_API_TOKEN`
 - `PORT`
 - optional `BASE_PATH`
+- optional `VITE_API_PROXY_TARGET` for frontend dev proxying; default is `http://localhost:8080`
 
 Start local Postgres when Docker is available:
 
@@ -61,6 +62,7 @@ The smoke test covers admin auth, research endpoints, `/api/slg/*`, legacy SLG a
 Manual UI smoke test:
 
 - UI routes `/`, `/businesses`, `/businesses/:id`, `/research`, `/admin`, `/offers`, `/proof`, `/accounts`, `/relationships`
+- In local development, run the API on `8080` and the frontend on `19001`; Vite proxies frontend `/api` requests to `VITE_API_PROXY_TARGET`.
 
 ## Operating Consoles
 

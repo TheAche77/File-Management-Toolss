@@ -1,5 +1,5 @@
 import type { Connector, ConnectorOptions, ConnectorResult } from "./types";
-import { resolveBbox } from "./types";
+import { resolveBbox, resolveCityCountry, resolveCityTargetMarket } from "./types";
 import type { InsertBusiness } from "@workspace/db";
 import { logger } from "../lib/logger";
 
@@ -64,6 +64,8 @@ export class OverpassConnector implements Connector {
 
   async fetch(options: ConnectorOptions): Promise<ConnectorResult> {
     const bbox = options.bbox ?? resolveBbox(options.city);
+    const country = resolveCityCountry(options.city);
+    const targetMarket = resolveCityTargetMarket(options.city);
     const query = buildQuery(options.osmTags, bbox);
     const errors: string[] = [];
 
@@ -136,7 +138,8 @@ export class OverpassConnector implements Connector {
         city: tags["addr:city"] ?? options.city,
         postalCode: tags["addr:postcode"] ?? null,
         region: tags["addr:state"] ?? null,
-        country: "Italy",
+        country,
+        targetMarket,
         website,
         phone,
         osmId: String(el.id),

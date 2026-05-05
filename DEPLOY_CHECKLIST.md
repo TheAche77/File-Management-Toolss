@@ -10,11 +10,18 @@ Confirm these values are set before starting services:
 - `ADMIN_API_TOKEN`
 - `PORT` for API
 - `PORT` and `BASE_PATH` for frontend
+- `VITE_API_PROXY_TARGET` for local frontend dev when API and Vite run on different ports
 
 Optional:
 
 - `LOG_LEVEL`
 - `GOOGLE_MAPS_API_KEY`
+
+Local dev default:
+
+- API: `http://localhost:8080`
+- Frontend: `http://localhost:19001`
+- Vite `/api` proxy target: `http://localhost:8080`
 
 ## 2. Database Schema
 

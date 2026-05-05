@@ -1,6 +1,6 @@
-# Scopri Italia
+# Street Level Discovery
 
-Local business discovery and enrichment platform for Italy.
+Street Levels Gallery growth engine for target discovery, research qualification, outreach, and relationship development.
 
 The app is built as a `pnpm` monorepo with:
 
@@ -66,11 +66,16 @@ Required for the frontend:
 - `PORT`
 - `BASE_PATH`
 
+Optional for local frontend development:
+
+- `VITE_API_PROXY_TARGET`
+
 Notes:
 
 - `ADMIN_API_TOKEN` protects import, review queue, contact candidate review, and import history endpoints.
 - `ADMIN_API_TOKEN` is now required for API startup. The server fails fast if it is missing.
 - `BASE_PATH` must match the Vite base path expected by the frontend. In a simple local setup, `/` is usually fine.
+- `VITE_API_PROXY_TARGET` defaults to `http://localhost:8080` and lets the Vite dev server proxy `/api` calls to the local API.
 
 ## GitHub Token Rotation
 
@@ -113,6 +118,7 @@ Frontend shell:
 ```bash
 export PORT=19001
 export BASE_PATH=/
+export VITE_API_PROXY_TARGET=http://localhost:8080
 pnpm --filter @workspace/gallery-map run dev
 ```
 
@@ -235,7 +241,7 @@ Not in scope:
 ## Operational Notes
 
 - The Google Places connector is still a stub even if `GOOGLE_MAPS_API_KEY` is present.
-- The current environment here did not allow running `pnpm`/`npm`, so recent changes were implemented and reviewed but not compiled in this session.
+- Local development expects the API on `http://localhost:8080` and the frontend on `http://localhost:19001`; Vite proxies `/api` to the API by default.
 - Any schema additions such as `business_sources`, `contact_candidates`, or `outreach_events` require the corresponding database migration in your real environment.
 - The optimization audit and phased fix plan lives in [OPTIMIZATION_AUDIT.md](./OPTIMIZATION_AUDIT.md).
 

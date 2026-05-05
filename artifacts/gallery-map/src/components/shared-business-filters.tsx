@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const TARGET_MARKET_OPTIONS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO"] as const;
+const TARGET_MARKET_OPTIONS = ["IT", "UK", "NL", "FR", "ES", "PT", "RO", "DE", "BE", "AT", "USA"] as const;
 const ENGINE_TYPE_OPTIONS = ["revenue", "institutional", "authority"] as const;
 const TARGET_TYPE_OPTIONS = ["buyer", "funder", "host", "referrer", "prestige", "hybrid"] as const;
 const TARGET_CLUSTER_OPTIONS = [

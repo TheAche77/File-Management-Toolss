@@ -113,10 +113,10 @@ Status:
 
 #### 5. Ingestion still assumes Italy while product now aims wider
 
-The connector layer still encodes Italy-first assumptions:
+The connector layer previously encoded Italy-first assumptions:
 
-- `CITY_BBOXES` includes only Italian cities
-- Overpass records default `country: "Italy"`
+- `CITY_BBOXES` included only Italian cities
+- Overpass records defaulted to `country: "Italy"`
 
 Affected areas:
 
@@ -130,11 +130,14 @@ Impact:
 
 Status:
 
-- fixed on `2026-04-22`
+- fixed on `2026-05-05`
+- `CITY_DISCOVERY_CONFIGS` now covers core SLG markets across IT, UK, NL, FR, ES, PT, DE, BE, AT, and USA
+- imports now infer `country` and `targetMarket` from the selected discovery city
+- unknown discovery cities now fail explicitly unless a caller passes an explicit bounding box
 
-#### 6. Product identity is inconsistent
+#### 6. Product identity was inconsistent
 
-The UI still presents the app as `Scopri Italia` / `Italy Gallery Map` while the actual product is a discovery + outreach CRM.
+The UI and README previously presented the app as `Scopri Italia` / `Italy Gallery Map` while the actual product is a discovery + outreach CRM.
 
 Affected areas:
 
@@ -150,7 +153,8 @@ Impact:
 
 Status:
 
-- fixed on `2026-04-22`
+- UI fixed on `2026-04-22`
+- README title/positioning fixed on `2026-05-05`
 
 ### P1 - Scalability And Data Flow
 
@@ -296,6 +300,11 @@ Status:
 - infer `targetMarket` at import time
 - assign initial `avatarType` earlier in the pipeline
 
+Status:
+
+- first three items completed on `2026-05-05`
+- `avatarType` remains a lower-priority pipeline enrichment item
+
 ## Phase 4 - Workspace Coherence
 
 - shared filters across dashboard, directory, map, and pipeline
@@ -342,6 +351,7 @@ Completed:
 - made SLG reference seed additive and idempotent for partially seeded databases
 - added `scripts/smoke-slg-runtime.mjs` and `pnpm run smoke:slg-runtime`
 - updated runtime runbooks with database, migration, API, frontend, and smoke-test commands
+- added a Vite dev proxy so frontend `/api` requests go to the local API on `http://localhost:8080` by default
 
 Environment note:
 

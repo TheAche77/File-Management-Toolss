@@ -21,7 +21,7 @@ export const AVATAR_TYPES = new Set([
   "museum_shop",
   "institution",
 ]);
-export const TARGET_MARKETS = new Set(["IT", "UK", "NL", "FR", "ES", "PT", "RO"]);
+export const TARGET_MARKETS = new Set(["IT", "UK", "NL", "FR", "ES", "PT", "RO", "DE", "BE", "AT", "USA"]);
 export const RESEARCH_JOB_TYPES_SET = new Set(RESEARCH_JOB_TYPES);
 
 export function normalizeNullableString(value: unknown): string | null | undefined {

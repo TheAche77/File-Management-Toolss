@@ -117,7 +117,7 @@ function mergeBusiness(existing: Business, incoming: InsertBusiness): InsertBusi
     city: incoming.city ?? existing.city ?? null,
     postalCode: incoming.postalCode ?? existing.postalCode ?? null,
     region: incoming.region ?? existing.region ?? null,
-    country: incoming.country ?? existing.country ?? "Italy",
+    country: incoming.country ?? existing.country ?? null,
     website: incoming.website ?? existing.website ?? null,
     phone: incoming.phone ?? existing.phone ?? null,
     osmId: incoming.osmId ?? existing.osmId ?? null,
