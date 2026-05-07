@@ -261,7 +261,8 @@ Status:
 
 Runtime note:
 
-- Wikidata DB verification still requires local Docker/Postgres availability.
+- Wikidata DB verification is now repeatable with `pnpm run verify:wikidata-enrichment`, after `docker compose up -d postgres`.
+- In the current Codex runtime, Docker is still unavailable (`docker` not on PATH and `/Applications/Docker.app` not present), so the script was added but could not be executed here.
 - GeoNames remains intentionally deferred until Wikidata has passed real-DB single-business and batch verification.
 
 The frontend includes a very broad `ui/` library compared to actual app needs.

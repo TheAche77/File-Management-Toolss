@@ -202,12 +202,7 @@ Verify a real Wikidata enrichment result in Postgres:
 
 ```bash
 docker compose up -d postgres
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm --filter @workspace/db run migrate
-
-export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
-export SLG_USER_AGENT="StreetLevelDiscovery/1.0 (https://github.com/TheAche77/File-Management-Toolss)"
-pnpm run enrich:business -- --id <business_id>
-pnpm run enrich:pending -- --limit 50
+pnpm run verify:wikidata-enrichment
 ```
 
 Expected DB checks:
@@ -256,6 +251,19 @@ Compliance guardrails:
 - no guessed personal emails
 - no paid/trial-only dependencies for enrichment
 - source URL, license/attribution, source hash, and fetch status are stored in `business_sources`
+
+## GeoNames Setup
+
+GeoNames remains intentionally deferred until `pnpm run verify:wikidata-enrichment` passes against real local Postgres. When implemented, it must use the static GeoNames dump only, not the live GeoNames API.
+
+Planned command shape:
+
+```bash
+pnpm run geo:import-cities -- --file data/cities15000.zip
+pnpm run enrich:all -- --limit 1000 --source both
+```
+
+The future importer should download `cities15000.zip` only if the file is missing, import it into a local `geo_cities` table, and record GeoNames attribution/license in `business_sources`.
 
 ## Protected Admin Features
 

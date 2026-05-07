@@ -67,9 +67,7 @@ Real DB verification sequence:
 
 ```bash
 docker compose up -d postgres
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm --filter @workspace/db run migrate
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm run enrich:business -- --id <business_id>
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm run enrich:pending -- --limit 50
+pnpm run verify:wikidata-enrichment
 ```
 
 Check `businesses.wikidata_id`, `businesses.last_enrichment_at`, `businesses.data_quality_score`, `businesses.enrichment_source_count`, and a `business_sources.source_type = 'wikidata_entity'` row. Re-running the same business should not duplicate the source row.
@@ -84,6 +82,12 @@ Source policy:
 - GeoNames: future city/admin normalization from CC-BY dumps.
 - OpenCorporates: disabled unless an API account/token and allowed limits are explicitly configured.
 - EU/local open data: future dataset-specific plugins only.
+
+GeoNames gate:
+
+- Do not implement GeoNames until `pnpm run verify:wikidata-enrichment` passes on real Postgres.
+- GeoNames must use `cities15000.zip` or another static dump; no live API calls.
+- Planned commands are `pnpm run geo:import-cities -- --file data/cities15000.zip` and `pnpm run enrich:all -- --limit 1000 --source both`.
 
 ## Smoke Tests
 
