@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 import pg from "pg";
+import { checkWikidataEndpoint } from "./check-wikidata-endpoint.mjs";
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/scopri_italia";
@@ -166,6 +167,28 @@ function assertNoDuplicateSources(sources) {
 async function main() {
   console.log("[wikidata-verify] Running Drizzle migrations...");
   run("pnpm", ["--filter", "@workspace/db", "run", "migrate"]);
+
+  console.log("[wikidata-verify] Checking Wikidata endpoint availability...");
+  const endpoint = await checkWikidataEndpoint({ userAgent: SLG_USER_AGENT });
+  if (!endpoint.ok) {
+    console.error("[wikidata-verify] WIKIDATA_UPSTREAM_UNAVAILABLE");
+    console.error(
+      JSON.stringify(
+        {
+          status: endpoint.status,
+          durationMs: endpoint.durationMs,
+          error: endpoint.error,
+        },
+        null,
+        2,
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  console.log(
+    `[wikidata-verify] Wikidata endpoint reachable in ${endpoint.durationMs}ms with status ${endpoint.status}.`,
+  );
 
   const client = new pg.Client({ connectionString: DATABASE_URL });
   await client.connect();

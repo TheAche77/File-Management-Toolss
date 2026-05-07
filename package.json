@@ -8,6 +8,7 @@
     "enrich:pending": "pnpm --filter @workspace/api-server enrich:pending",
     "enrich:business": "pnpm --filter @workspace/api-server enrich:business --",
     "enrich:source": "pnpm --filter @workspace/api-server enrich:source --",
+    "check:wikidata-endpoint": "node scripts/check-wikidata-endpoint.mjs",
     "verify:wikidata-enrichment": "node scripts/verify-wikidata-enrichment.mjs",
     "mock:enrich-all": "node scripts/mock-enrich-all.mjs",
     "smoke:slg-runtime": "node scripts/smoke-slg-runtime.mjs",
