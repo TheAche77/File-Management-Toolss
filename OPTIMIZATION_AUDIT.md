@@ -264,6 +264,8 @@ Runtime note:
 
 - Wikidata DB verification is now repeatable with `pnpm run verify:wikidata-enrichment`, after `docker compose up -d postgres`.
 - In the current Codex runtime, Docker is still unavailable (`docker` not on PATH and `/Applications/Docker.app` not present), so the script was added but could not be executed here.
+- On `2026-05-07`, the macOS/Homebrew runtime gate was checked again. `pnpm` was available, but `psql` and `pg_isready` were not on PATH and `DATABASE_URL` was unset. Per the production-hardening gate, DB-bound observability, real GeoNames, enrichment jobs, and metrics remain intentionally deferred until local PostgreSQL is reachable.
+- Homebrew unblock command path is now documented in `README.md` and `ROADMAP_SLG_GROWTH_ENGINE.md`: install/start `postgresql@16`, export the PostgreSQL bin path, create `scopri_italia`, set `DATABASE_URL`, run migrations, then run `pnpm run verify:wikidata-enrichment`.
 - Real DB GeoNames remains intentionally deferred until Wikidata has passed real-DB single-business and batch verification.
 
 The frontend includes a very broad `ui/` library compared to actual app needs.

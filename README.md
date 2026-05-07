@@ -101,13 +101,39 @@ To make an expired token cause the post-merge script to abort (instead of just w
 
 ## Example Local Setup
 
-Start a local Postgres database:
+### Postgres With Docker Compose
+
+Start a local Postgres database when Docker is available:
 
 ```bash
 docker compose up -d postgres
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
 pnpm --filter @workspace/db run migrate
 ```
+
+### Postgres With Homebrew On macOS
+
+If Docker is not installed, use Homebrew PostgreSQL instead:
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+createdb scopri_italia
+export DATABASE_URL=postgres://$(whoami)@localhost:5432/scopri_italia
+pnpm --filter @workspace/db run migrate
+```
+
+Verify the local runtime gate before running DB-bound enrichment:
+
+```bash
+psql --version
+pg_isready
+printenv DATABASE_URL
+pnpm --filter @workspace/db run migrate
+```
+
+If `psql`, `pg_isready`, or `DATABASE_URL` are missing, do not run real Wikidata/GeoNames DB enrichment yet. The offline GeoNames mock remains available with `pnpm run mock:enrich-all`.
 
 API shell:
 
@@ -207,7 +233,8 @@ pnpm run enrich:source -- --source wikidata --limit 50
 Verify a real Wikidata enrichment result in Postgres:
 
 ```bash
-docker compose up -d postgres
+export DATABASE_URL=postgres://$(whoami)@localhost:5432/scopri_italia
+export SLG_USER_AGENT="StreetLevelDiscovery/1.0 (https://github.com/TheAche77/File-Management-Toolss)"
 pnpm run verify:wikidata-enrichment
 ```
 

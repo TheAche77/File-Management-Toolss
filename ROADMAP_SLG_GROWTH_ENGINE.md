@@ -18,6 +18,24 @@ Start local Postgres when Docker is available:
 docker compose up -d postgres
 ```
 
+Start local Postgres without Docker on macOS:
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+createdb scopri_italia
+export DATABASE_URL=postgres://$(whoami)@localhost:5432/scopri_italia
+```
+
+Confirm the Homebrew runtime gate before running DB-bound enrichment:
+
+```bash
+psql --version
+pg_isready
+printenv DATABASE_URL
+```
+
 Run migrations before deploy:
 
 ```bash
@@ -66,7 +84,7 @@ pnpm run enrich:source -- --source wikidata --limit 50
 Real DB verification sequence:
 
 ```bash
-docker compose up -d postgres
+export DATABASE_URL=postgres://$(whoami)@localhost:5432/scopri_italia
 pnpm run verify:wikidata-enrichment
 ```
 
