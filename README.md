@@ -198,6 +198,26 @@ pnpm run enrich:business -- --id 123
 pnpm run enrich:source -- --source wikidata --limit 50
 ```
 
+Verify a real Wikidata enrichment result in Postgres:
+
+```bash
+docker compose up -d postgres
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm --filter @workspace/db run migrate
+
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
+export SLG_USER_AGENT="StreetLevelDiscovery/1.0 (https://github.com/TheAche77/File-Management-Toolss)"
+pnpm run enrich:business -- --id <business_id>
+pnpm run enrich:pending -- --limit 50
+```
+
+Expected DB checks:
+
+- `businesses.wikidata_id` is populated when a confident Wikidata match exists.
+- `businesses.last_enrichment_at`, `businesses.enrichment_source_count`, and `businesses.data_quality_score` are updated after every enrichment result.
+- `business_sources` contains at most one `wikidata_entity` row per Wikidata URL with `source_license`, `source_attribution`, `source_payload_summary`, and `source_rate_limit_bucket`.
+
+`data_quality_score` is intentionally simple: website `+20`, phone `+15`, OSM ID `+15`, Wikidata ID `+20`, GeoNames ID `+10`, at least two source records `+10`, capped at `100`.
+
 ## Current Data Model
 
 Core tables in active use:

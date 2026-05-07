@@ -256,7 +256,13 @@ Status:
 - fixed on `2026-05-07`
 - added `0005_external_enrichment_provenance.sql`
 - added a lightweight rate limiter, cache, Wikidata connector, and enrichment CLI scripts
+- hardened `data_quality_score` to update after enriched, unchanged, missed, skipped, and failed enrichment outcomes
 - no paid, trial-only, Google Maps, LinkedIn, or personal social scraping connector was added
+
+Runtime note:
+
+- Wikidata DB verification still requires local Docker/Postgres availability.
+- GeoNames remains intentionally deferred until Wikidata has passed real-DB single-business and batch verification.
 
 The frontend includes a very broad `ui/` library compared to actual app needs.
 

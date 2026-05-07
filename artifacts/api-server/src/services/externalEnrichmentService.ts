@@ -44,8 +44,8 @@ function availableConnectors(source?: string) {
 
 function calculateDataQualityScore(business: Business, patch: Partial<InsertBusiness>, sourceCount: number) {
   let score = 0;
-  if (business.website || patch.website) score += 25;
-  if (business.phone || patch.phone) score += 20;
+  if (business.website || patch.website) score += 20;
+  if (business.phone || patch.phone) score += 15;
   if (business.osmId) score += 15;
   if (business.wikidataId || patch.wikidataId) score += 20;
   if (business.geonamesId || patch.geonamesId) score += 10;
@@ -98,6 +98,9 @@ async function applyEnrichmentResult(business: Business, result: EnrichmentConne
     await upsertBusinessSources(result.sourceRecords);
   }
 
+  const sourceCount = await countSources(business.id);
+  const dataQualityScore = calculateDataQualityScore(business, result.patch, sourceCount);
+
   if (result.status !== "enriched" && result.status !== "unchanged") {
     if (result.status === "failed") {
       await db
@@ -105,6 +108,8 @@ async function applyEnrichmentResult(business: Business, result: EnrichmentConne
         .set({
           enrichmentStatus: "failed",
           failedSourceCount: sql`coalesce(${businessesTable.failedSourceCount}, 0) + 1`,
+          dataQualityScore,
+          enrichmentSourceCount: sourceCount,
           lastEnrichmentAt: new Date(),
           updatedAt: new Date(),
         })
@@ -114,6 +119,8 @@ async function applyEnrichmentResult(business: Business, result: EnrichmentConne
       await db
         .update(businessesTable)
         .set({
+          dataQualityScore,
+          enrichmentSourceCount: sourceCount,
           lastEnrichmentAt: new Date(),
           updatedAt: new Date(),
         })
@@ -122,7 +129,6 @@ async function applyEnrichmentResult(business: Business, result: EnrichmentConne
     return;
   }
 
-  const sourceCount = await countSources(business.id);
   const nextValues: Partial<InsertBusiness> = {
     ...result.patch,
     enrichmentStatus: computeEnrichmentStatus({
@@ -133,7 +139,7 @@ async function applyEnrichmentResult(business: Business, result: EnrichmentConne
       rating: business.rating,
       userRatingsTotal: business.userRatingsTotal,
     }),
-    dataQualityScore: calculateDataQualityScore(business, result.patch, sourceCount),
+    dataQualityScore,
     enrichmentSourceCount: sourceCount,
     lastEnrichmentAt: new Date(),
     lastCheckedAt: new Date(),

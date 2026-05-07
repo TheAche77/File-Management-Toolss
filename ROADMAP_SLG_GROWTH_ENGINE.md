@@ -63,6 +63,19 @@ pnpm run enrich:business -- --id <business_id>
 pnpm run enrich:source -- --source wikidata --limit 50
 ```
 
+Real DB verification sequence:
+
+```bash
+docker compose up -d postgres
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm --filter @workspace/db run migrate
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm run enrich:business -- --id <business_id>
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia pnpm run enrich:pending -- --limit 50
+```
+
+Check `businesses.wikidata_id`, `businesses.last_enrichment_at`, `businesses.data_quality_score`, `businesses.enrichment_source_count`, and a `business_sources.source_type = 'wikidata_entity'` row. Re-running the same business should not duplicate the source row.
+
+`data_quality_score` is deterministic and currently uses: website `+20`, phone `+15`, OSM ID `+15`, Wikidata ID `+20`, GeoNames ID `+10`, two or more source records `+10`, capped at `100`.
+
 Source policy:
 
 - OSM/Overpass: active, bounded city/bbox imports.
