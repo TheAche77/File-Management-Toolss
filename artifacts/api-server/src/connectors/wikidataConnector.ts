@@ -15,6 +15,7 @@ const WIKIDATA_RATE_LIMIT = {
 };
 const DEFAULT_USER_AGENT =
   "StreetLevelDiscovery/1.0 (https://github.com/TheAche77/File-Management-Toolss)";
+const WIKIDATA_REQUEST_TIMEOUT_MS = 15_000;
 
 interface WikidataBindingValue {
   value: string;
@@ -278,16 +279,25 @@ export class WikidataConnector implements EnrichmentConnector {
     const userAgent = process.env["SLG_USER_AGENT"] || DEFAULT_USER_AGENT;
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      const response = await fetch(WIKIDATA_SPARQL_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/sparql-query",
-          "Accept": "application/sparql-results+json",
-          "User-Agent": userAgent,
-          "Api-User-Agent": userAgent,
-        },
-        body: query,
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), WIKIDATA_REQUEST_TIMEOUT_MS);
+      let response: Response;
+
+      try {
+        response = await fetch(WIKIDATA_SPARQL_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/sparql-query",
+            "Accept": "application/sparql-results+json",
+            "User-Agent": userAgent,
+            "Api-User-Agent": userAgent,
+          },
+          body: query,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       if (response.ok) {
         return await response.json() as WikidataResponse;
