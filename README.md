@@ -182,6 +182,12 @@ Run SLG runtime smoke tests:
 pnpm run smoke:slg-runtime
 ```
 
+Run offline GeoNames mock enrichment with no Docker, no Postgres, and no `DATABASE_URL`:
+
+```bash
+pnpm run mock:enrich-all
+```
+
 Run conservative external enrichment:
 
 ```bash
@@ -240,7 +246,7 @@ Current source decisions:
 | OpenStreetMap / Overpass | Implemented | Bounded city/bbox imports only; avoid repeated heavy public-instance queries. |
 | Wikidata | Implemented | Exact-label/entity lookups only, 1 concurrent request, cache, identifiable user-agent, CC0 provenance stored. |
 | Overture Maps | Documented only | Use later through bounded bbox GeoParquet/DuckDB workflow; do not ingest global places data into the app. |
-| GeoNames | Documented only | Use later for city/admin normalization from downloadable CC-BY dumps, not as primary business enrichment. |
+| GeoNames | Offline mock implemented | Uses local `data/cities15000.txt` only; no API calls, no DB writes. |
 | OpenCorporates | Disabled by config | Requires API account/token and plan-specific limits; do not block core enrichment on it. |
 | EU/local open data portals | Documented only | Integrate as dataset-specific plugins because schemas and licenses vary by publisher. |
 
@@ -252,18 +258,46 @@ Compliance guardrails:
 - no paid/trial-only dependencies for enrichment
 - source URL, license/attribution, source hash, and fetch status are stored in `business_sources`
 
-## GeoNames Setup
+## Offline GeoNames Mock Enrichment
 
-GeoNames remains intentionally deferred until `pnpm run verify:wikidata-enrichment` passes against real local Postgres. When implemented, it must use the static GeoNames dump only, not the live GeoNames API.
+The GeoNames mock exists so city normalization and scoring can be developed without Docker or Postgres.
 
-Planned command shape:
+Manual setup:
+
+1. Download `cities15000.zip` from `https://download.geonames.org/export/dump/`.
+2. Extract `cities15000.txt`.
+3. Place the text file at `data/cities15000.txt`.
+
+Run:
 
 ```bash
-pnpm run geo:import-cities -- --file data/cities15000.zip
-pnpm run enrich:all -- --limit 1000 --source both
+pnpm run mock:enrich-all
 ```
 
-The future importer should download `cities15000.zip` only if the file is missing, import it into a local `geo_cities` table, and record GeoNames attribution/license in `business_sources`.
+Optional inputs:
+
+```bash
+pnpm run mock:enrich-all -- --file data/cities15000.txt
+pnpm run mock:enrich-all -- --businesses scripts/mock-businesses.json --limit 5
+```
+
+Behavior:
+
+- no Docker
+- no Postgres
+- no `DATABASE_URL`
+- no GeoNames API calls
+- no DB writes
+- console output only
+
+The GeoNames gazetteer dump is licensed under Creative Commons Attribution 4.0 according to the official GeoNames dump readme. Keep attribution to GeoNames in any future persisted provenance.
+
+Future real DB path:
+
+- create a `geo_cities` migration/table
+- import `cities15000.txt` into Postgres
+- replace the mock lookup with a SQL-backed connector
+- keep the same normalization and quality scoring rules
 
 ## Protected Admin Features
 

@@ -9,6 +9,7 @@
     "enrich:pending": "pnpm run build && node --enable-source-maps ./dist/enrich.mjs pending",
     "enrich:business": "pnpm run build && node --enable-source-maps ./dist/enrich.mjs business",
     "enrich:source": "pnpm run build && node --enable-source-maps ./dist/enrich.mjs source",
+    "mock:enrich-all": "pnpm run build && node --enable-source-maps ./dist/mockEnrichAll.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

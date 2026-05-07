@@ -247,7 +247,7 @@ The next enrichment layer now follows a stricter source policy:
 - OSM/Overpass remains the default discovery source.
 - Wikidata is implemented for conservative entity enrichment: external ID, official URL, phone when present, source hash, license, attribution, and payload summary.
 - Overture Maps is intentionally documented but not enabled because global GeoParquet ingestion is operationally too heavy for this repo without a bounded DuckDB/CLI workflow.
-- GeoNames is documented for future city/admin normalization, not business discovery.
+- GeoNames has an offline mock path for city/admin normalization development without Docker/Postgres.
 - OpenCorporates remains optional/disabled because it requires API account/token and plan-specific limits.
 - EU/local open data remains plugin territory because each dataset has its own schema and license.
 
@@ -257,13 +257,14 @@ Status:
 - added `0005_external_enrichment_provenance.sql`
 - added a lightweight rate limiter, cache, Wikidata connector, and enrichment CLI scripts
 - hardened `data_quality_score` to update after enriched, unchanged, missed, skipped, and failed enrichment outcomes
+- added offline GeoNames mock enrichment using local `data/cities15000.txt`; real DB GeoNames remains deferred
 - no paid, trial-only, Google Maps, LinkedIn, or personal social scraping connector was added
 
 Runtime note:
 
 - Wikidata DB verification is now repeatable with `pnpm run verify:wikidata-enrichment`, after `docker compose up -d postgres`.
 - In the current Codex runtime, Docker is still unavailable (`docker` not on PATH and `/Applications/Docker.app` not present), so the script was added but could not be executed here.
-- GeoNames remains intentionally deferred until Wikidata has passed real-DB single-business and batch verification.
+- Real DB GeoNames remains intentionally deferred until Wikidata has passed real-DB single-business and batch verification.
 
 The frontend includes a very broad `ui/` library compared to actual app needs.
 

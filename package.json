@@ -9,6 +9,7 @@
     "enrich:business": "pnpm --filter @workspace/api-server enrich:business --",
     "enrich:source": "pnpm --filter @workspace/api-server enrich:source --",
     "verify:wikidata-enrichment": "node scripts/verify-wikidata-enrichment.mjs",
+    "mock:enrich-all": "node scripts/mock-enrich-all.mjs",
     "smoke:slg-runtime": "node scripts/smoke-slg-runtime.mjs",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"

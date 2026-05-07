@@ -1,0 +1,40 @@
+[
+  {
+    "id": "mock-roma",
+    "name": "SLG Roma sample",
+    "city": "Roma",
+    "country": "Italy",
+    "targetMarket": "IT",
+    "osmId": "mock-1"
+  },
+  {
+    "id": "mock-london",
+    "name": "London gallery sample",
+    "city": "London",
+    "country": "United Kingdom",
+    "targetMarket": "UK"
+  },
+  {
+    "id": "mock-paris",
+    "name": "Paris culture sample",
+    "city": "Paris",
+    "country": "France",
+    "targetMarket": "FR",
+    "website": "https://example.org"
+  },
+  {
+    "id": "mock-amsterdam",
+    "name": "Amsterdam museum sample",
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "targetMarket": "NL"
+  },
+  {
+    "id": "mock-barcelona",
+    "name": "Barcelona hotel sample",
+    "city": "Barcelona",
+    "country": "Spain",
+    "targetMarket": "ES",
+    "phone": "+34930000000"
+  }
+]
