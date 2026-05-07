@@ -1,4 +1,5 @@
 import type { InsertBusiness } from "@workspace/db";
+import type { Business, InsertBusinessSource } from "@workspace/db";
 
 export interface ConnectorResult {
   items: InsertBusiness[];
@@ -31,6 +32,36 @@ export interface Connector {
   name: string;
   isAvailable(): boolean;
   fetch(options: ConnectorOptions): Promise<ConnectorResult>;
+}
+
+export interface EnrichmentSourceDecision {
+  source: string;
+  decision: "implement_now" | "disabled_by_config" | "document_only" | "rejected_for_now";
+  reason: string;
+  documentationUrl: string;
+}
+
+export interface EnrichmentConnectorResult {
+  businessId: number;
+  source: string;
+  status: "enriched" | "unchanged" | "miss" | "failed" | "skipped";
+  patch: Partial<InsertBusiness>;
+  sourceRecords: InsertBusinessSource[];
+  errors: string[];
+  sourceHash?: string | null;
+  latencyMs: number;
+}
+
+export interface EnrichmentConnector {
+  name: string;
+  isAvailable(): boolean;
+  getRateLimitMetadata(): {
+    bucket: string;
+    maxRequests: number;
+    intervalMs: number;
+    concurrency: number;
+  };
+  enrichBusiness(business: Business): Promise<EnrichmentConnectorResult>;
 }
 
 export const CITY_DISCOVERY_CONFIGS: Record<string, CityDiscoveryConfig> = {

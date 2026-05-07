@@ -1376,6 +1376,14 @@ components:
           type: ["string", "null"]
         googleMapsUrl:
           type: ["string", "null"]
+        overtureId:
+          type: ["string", "null"]
+        wikidataId:
+          type: ["string", "null"]
+        geonamesId:
+          type: ["string", "null"]
+        opencorporatesId:
+          type: ["string", "null"]
         rating:
           type: ["string", "null"]
         userRatingsTotal:
@@ -1386,6 +1394,12 @@ components:
           type: boolean
         enrichmentStatus:
           type: string
+        dataQualityScore:
+          type: ["integer", "null"]
+        enrichmentSourceCount:
+          type: ["integer", "null"]
+        lastEnrichmentAt:
+          type: ["string", "null"]
         targetMarket:
           type: ["string", "null"]
         engineType:
@@ -1555,6 +1569,14 @@ components:
         lastFetchedAt:
           type: ["string", "null"]
         contentHash:
+          type: ["string", "null"]
+        sourcePayloadSummary:
+          type: ["string", "null"]
+        sourceLicense:
+          type: ["string", "null"]
+        sourceAttribution:
+          type: ["string", "null"]
+        sourceRateLimitBucket:
           type: ["string", "null"]
         httpStatus:
           type: ["integer", "null"]

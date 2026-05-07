@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
+    "enrich:pending": "pnpm run build && node --enable-source-maps ./dist/enrich.mjs pending",
+    "enrich:business": "pnpm run build && node --enable-source-maps ./dist/enrich.mjs business",
+    "enrich:source": "pnpm run build && node --enable-source-maps ./dist/enrich.mjs source",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

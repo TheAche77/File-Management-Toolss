@@ -50,12 +50,26 @@ export interface Business {
   /** @nullable */
   googleMapsUrl?: string | null;
   /** @nullable */
+  overtureId?: string | null;
+  /** @nullable */
+  wikidataId?: string | null;
+  /** @nullable */
+  geonamesId?: string | null;
+  /** @nullable */
+  opencorporatesId?: string | null;
+  /** @nullable */
   rating?: string | null;
   /** @nullable */
   userRatingsTotal?: number | null;
   hasWebsite: boolean;
   hasPhone: boolean;
   enrichmentStatus: string;
+  /** @nullable */
+  dataQualityScore?: number | null;
+  /** @nullable */
+  enrichmentSourceCount?: number | null;
+  /** @nullable */
+  lastEnrichmentAt?: string | null;
   /** @nullable */
   targetMarket?: string | null;
   /** @nullable */
@@ -183,6 +197,14 @@ export interface BusinessSource {
   lastFetchedAt?: string | null;
   /** @nullable */
   contentHash?: string | null;
+  /** @nullable */
+  sourcePayloadSummary?: string | null;
+  /** @nullable */
+  sourceLicense?: string | null;
+  /** @nullable */
+  sourceAttribution?: string | null;
+  /** @nullable */
+  sourceRateLimitBucket?: string | null;
   /** @nullable */
   httpStatus?: number | null;
   isOfficial: boolean;

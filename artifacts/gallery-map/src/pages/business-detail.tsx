@@ -1709,7 +1709,18 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                             <CircleSlash className="h-3 w-3" />
                             HTTP: {source.httpStatus ?? "N/A"}
                           </span>
+                          {source.sourceLicense && (
+                            <span className="inline-flex items-center gap-1">
+                              <BadgeCheck className="h-3 w-3" />
+                              License: {source.sourceLicense}
+                            </span>
+                          )}
                         </div>
+                        {source.sourcePayloadSummary && (
+                          <p className="max-w-2xl text-xs text-muted-foreground">
+                            {source.sourcePayloadSummary}
+                          </p>
+                        )}
                       </div>
 
                       <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
@@ -1792,6 +1803,30 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                 <span className="text-muted-foreground">Google Place ID</span>
                 <span className="font-medium break-all text-right">
                   {business.googlePlaceId || "Not available"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">Wikidata ID</span>
+                <span className="font-medium break-all text-right">
+                  {business.wikidataId || "Not available"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">GeoNames ID</span>
+                <span className="font-medium break-all text-right">
+                  {business.geonamesId || "Not available"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">Data quality</span>
+                <span className="font-medium">
+                  {business.dataQualityScore != null ? `${business.dataQualityScore}/100` : "Not scored"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">Last enrichment</span>
+                <span className="font-medium text-right">
+                  {formatDate(business.lastEnrichmentAt)}
                 </span>
               </div>
             </CardContent>

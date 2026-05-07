@@ -238,6 +238,26 @@ Status:
 
 #### 11. Unused/oversized UI surface
 
+### P1 - Legal Data Enrichment
+
+#### 12. Free/legal enrichment needed clearer source boundaries
+
+The next enrichment layer now follows a stricter source policy:
+
+- OSM/Overpass remains the default discovery source.
+- Wikidata is implemented for conservative entity enrichment: external ID, official URL, phone when present, source hash, license, attribution, and payload summary.
+- Overture Maps is intentionally documented but not enabled because global GeoParquet ingestion is operationally too heavy for this repo without a bounded DuckDB/CLI workflow.
+- GeoNames is documented for future city/admin normalization, not business discovery.
+- OpenCorporates remains optional/disabled because it requires API account/token and plan-specific limits.
+- EU/local open data remains plugin territory because each dataset has its own schema and license.
+
+Status:
+
+- fixed on `2026-05-07`
+- added `0005_external_enrichment_provenance.sql`
+- added a lightweight rate limiter, cache, Wikidata connector, and enrichment CLI scripts
+- no paid, trial-only, Google Maps, LinkedIn, or personal social scraping connector was added
+
 The frontend includes a very broad `ui/` library compared to actual app needs.
 
 Impact:

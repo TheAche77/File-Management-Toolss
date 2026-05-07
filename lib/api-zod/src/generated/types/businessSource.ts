@@ -21,6 +21,14 @@ export interface BusinessSource {
   /** @nullable */
   contentHash?: string | null;
   /** @nullable */
+  sourcePayloadSummary?: string | null;
+  /** @nullable */
+  sourceLicense?: string | null;
+  /** @nullable */
+  sourceAttribution?: string | null;
+  /** @nullable */
+  sourceRateLimitBucket?: string | null;
+  /** @nullable */
   httpStatus?: number | null;
   isOfficial: boolean;
   sourcePriority: number;

@@ -36,12 +36,26 @@ export interface Business {
   /** @nullable */
   googleMapsUrl?: string | null;
   /** @nullable */
+  overtureId?: string | null;
+  /** @nullable */
+  wikidataId?: string | null;
+  /** @nullable */
+  geonamesId?: string | null;
+  /** @nullable */
+  opencorporatesId?: string | null;
+  /** @nullable */
   rating?: string | null;
   /** @nullable */
   userRatingsTotal?: number | null;
   hasWebsite: boolean;
   hasPhone: boolean;
   enrichmentStatus: string;
+  /** @nullable */
+  dataQualityScore?: number | null;
+  /** @nullable */
+  enrichmentSourceCount?: number | null;
+  /** @nullable */
+  lastEnrichmentAt?: string | null;
   /** @nullable */
   targetMarket?: string | null;
   /** @nullable */

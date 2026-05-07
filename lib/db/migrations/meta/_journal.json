@@ -36,6 +36,13 @@
       "when": 1776862800000,
       "tag": "0004_slg_growth_engine",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776945600000,
+      "tag": "0005_external_enrichment_provenance",
+      "breakpoints": true
     }
   ]
 }

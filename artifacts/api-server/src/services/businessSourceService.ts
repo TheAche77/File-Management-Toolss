@@ -16,6 +16,10 @@ export interface MergedBusinessRecord {
 function getSourcePriority(sourceType: string, isOfficial: boolean) {
   if (sourceType === "official_website_page") return 95;
   if (sourceType === "official_website") return 90;
+  if (sourceType === "wikidata_entity") return 70;
+  if (sourceType === "overture_place") return 60;
+  if (sourceType === "geonames_record") return 55;
+  if (sourceType === "opencorporates_company") return 55;
   if (isOfficial) return 80;
   if (sourceType === "google_maps") return 45;
   if (sourceType === "osm_record") return 35;
@@ -140,6 +144,12 @@ export async function upsertBusinessSources(records: InsertBusinessSource[]): Pr
             fetchStatus: record.fetchStatus,
             lastFetchedAt: record.lastFetchedAt ?? existingRecord.lastFetchedAt ?? new Date(),
             contentHash: record.contentHash ?? existingRecord.contentHash ?? null,
+            sourcePayloadSummary:
+              record.sourcePayloadSummary ?? existingRecord.sourcePayloadSummary ?? null,
+            sourceLicense: record.sourceLicense ?? existingRecord.sourceLicense ?? null,
+            sourceAttribution: record.sourceAttribution ?? existingRecord.sourceAttribution ?? null,
+            sourceRateLimitBucket:
+              record.sourceRateLimitBucket ?? existingRecord.sourceRateLimitBucket ?? null,
             httpStatus: record.httpStatus ?? existingRecord.httpStatus ?? null,
             isOfficial: record.isOfficial,
             sourcePriority: record.sourcePriority ?? existingRecord.sourcePriority,

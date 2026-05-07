@@ -21,6 +21,7 @@ The current branch supports:
 - review queue for incomplete or suspicious records
 - contact candidates with manual review actions
 - generic email extraction from official websites only
+- conservative Wikidata enrichment for external IDs, official URLs, and source provenance
 - minimal admin protection via `ADMIN_API_TOKEN`
 - business detail pages with sources, contact candidates, and outreach editing
 - outreach KPI dashboard and follow-up pipeline board
@@ -60,6 +61,9 @@ Recommended for production-like local use:
 Optional:
 
 - `GOOGLE_MAPS_API_KEY`
+- `SLG_USER_AGENT`
+- `ENABLE_WIKIDATA_ENRICHMENT`
+- `OPENCORPORATES_API_TOKEN`
 
 Required for the frontend:
 
@@ -76,6 +80,9 @@ Notes:
 - `ADMIN_API_TOKEN` is now required for API startup. The server fails fast if it is missing.
 - `BASE_PATH` must match the Vite base path expected by the frontend. In a simple local setup, `/` is usually fine.
 - `VITE_API_PROXY_TARGET` defaults to `http://localhost:8080` and lets the Vite dev server proxy `/api` calls to the local API.
+- `SLG_USER_AGENT` is used for Wikimedia/Wikidata requests. Keep it identifiable; Wikimedia may reject generic clients.
+- `ENABLE_WIKIDATA_ENRICHMENT=false` disables the Wikidata connector without code changes.
+- `OPENCORPORATES_API_TOKEN` is documented for future optional use only; OpenCorporates is not part of the default enrichment run.
 
 ## GitHub Token Rotation
 
@@ -160,7 +167,7 @@ pnpm --filter @workspace/gallery-map run dev
 Regenerate API client after changing `lib/api-spec/openapi.yaml`:
 
 ```bash
-pnpm --filter @workspace/api-client-react run codegen
+pnpm --filter @workspace/api-spec run codegen
 ```
 
 Run versioned database migrations:
@@ -173,6 +180,22 @@ Run SLG runtime smoke tests:
 
 ```bash
 pnpm run smoke:slg-runtime
+```
+
+Run conservative external enrichment:
+
+```bash
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
+export SLG_USER_AGENT="StreetLevelDiscovery/1.0 (https://github.com/TheAche77/File-Management-Toolss)"
+
+# Enrich pending/partial records with safe enabled sources, currently Wikidata.
+pnpm run enrich:pending -- --limit 25
+
+# Enrich one business.
+pnpm run enrich:business -- --id 123
+
+# Run one source explicitly.
+pnpm run enrich:source -- --source wikidata --limit 50
 ```
 
 ## Current Data Model
@@ -192,6 +215,27 @@ Important functional roles:
 - `business_sources`: provenance and fetch tracking for source URLs
 - `contact_candidates`: suggested contact paths with confidence and review state
 - `outreach_events`: audit trail for outreach edits and contact candidate review actions
+
+## Legal Free Enrichment Sources
+
+Current source decisions:
+
+| Source | Status | Operational rule |
+|---|---|---|
+| OpenStreetMap / Overpass | Implemented | Bounded city/bbox imports only; avoid repeated heavy public-instance queries. |
+| Wikidata | Implemented | Exact-label/entity lookups only, 1 concurrent request, cache, identifiable user-agent, CC0 provenance stored. |
+| Overture Maps | Documented only | Use later through bounded bbox GeoParquet/DuckDB workflow; do not ingest global places data into the app. |
+| GeoNames | Documented only | Use later for city/admin normalization from downloadable CC-BY dumps, not as primary business enrichment. |
+| OpenCorporates | Disabled by config | Requires API account/token and plan-specific limits; do not block core enrichment on it. |
+| EU/local open data portals | Documented only | Integrate as dataset-specific plugins because schemas and licenses vary by publisher. |
+
+Compliance guardrails:
+
+- no Google Maps scraping
+- no LinkedIn or personal social scraping
+- no guessed personal emails
+- no paid/trial-only dependencies for enrichment
+- source URL, license/attribution, source hash, and fetch status are stored in `business_sources`
 
 ## Protected Admin Features
 

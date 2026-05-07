@@ -41,9 +41,36 @@ git diff --check
 Regenerate contracts after OpenAPI edits:
 
 ```bash
-cd lib/api-spec
-./node_modules/.bin/orval --config ./orval.config.ts
+pnpm --filter @workspace/api-spec run codegen
 ```
+
+## Legal Enrichment
+
+The enrichment layer is intentionally conservative. The current implemented external connector is Wikidata.
+
+Required env:
+
+```bash
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
+export SLG_USER_AGENT="StreetLevelDiscovery/1.0 (https://github.com/TheAche77/File-Management-Toolss)"
+```
+
+Commands:
+
+```bash
+pnpm run enrich:pending -- --limit 25
+pnpm run enrich:business -- --id <business_id>
+pnpm run enrich:source -- --source wikidata --limit 50
+```
+
+Source policy:
+
+- OSM/Overpass: active, bounded city/bbox imports.
+- Wikidata: active, exact-label/entity enrichment with cache/rate limit and CC0 provenance.
+- Overture Maps: future bounded GeoParquet/DuckDB workflow only; no global ingest.
+- GeoNames: future city/admin normalization from CC-BY dumps.
+- OpenCorporates: disabled unless an API account/token and allowed limits are explicitly configured.
+- EU/local open data: future dataset-specific plugins only.
 
 ## Smoke Tests
 
