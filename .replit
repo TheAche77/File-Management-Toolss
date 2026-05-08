@@ -40,4 +40,3 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-ADMIN_API_TOKEN = "81e4043f72116e20dd484ac9f898aa2749c229257536d115d67507bcb0ebcfab"

@@ -221,6 +221,80 @@ Smoke test checklist:
 5. Queue an import and verify import history/progress still works.
 6. Verify directory, map, and CSV export still behave as before.
 
+## Running on Replit
+
+### 1. Import and branch
+
+Import the repo from GitHub and select branch `crea`.
+
+### 2. Confirm Replit modules
+
+The `.replit` file already declares these — no manual action needed:
+
+- `nodejs-24`
+- `postgresql-16` (automatically injects `DATABASE_URL`)
+
+### 3. Install dependencies
+
+Open the Replit Shell and run:
+
+```bash
+pnpm install
+```
+
+### 4. Set Replit Secrets
+
+In the Replit Secrets panel (not `.env`, not shell exports), set:
+
+| Secret | Notes |
+|---|---|
+| `ADMIN_API_TOKEN` | Long random string — `openssl rand -hex 32`. Required for API startup. |
+
+`DATABASE_URL` is injected automatically by the `postgresql-16` module.
+
+Optional secrets:
+
+| Secret | Notes |
+|---|---|
+| `LOG_LEVEL` | `info` (default), `debug`, `warn`, `error` |
+| `GOOGLE_MAPS_API_KEY` | Connector is still a stub; leave unset unless implementing |
+
+### 5. Push the database schema
+
+Run this once before the first API start (and after any schema changes):
+
+```bash
+pnpm --filter @workspace/db run push
+```
+
+This uses `drizzle-kit push` — there is no separate migrations folder.
+
+### 6. Start services
+
+Click the **Run** button. This starts:
+
+- API server on port `8080` (`/api/*`)
+- React frontend on port `19001` (`/`)
+
+Both are managed as separate artifact workflows in Replit.
+
+### 7. Smoke test
+
+| URL | What to check |
+|---|---|
+| `/api/healthz` | Returns `{"ok":true}` |
+| `/` | Outreach KPI dashboard loads |
+| `/businesses` | Directory renders (empty until import runs) |
+| `/pipeline` | Follow-up pipeline board renders |
+| `/admin` | Unlock with `ADMIN_API_TOKEN`, trigger an import |
+| `/map` | Map renders |
+
+### 8. GeoNames enrichment (optional)
+
+If `data/cities15000.txt` is needed for GeoNames local enrichment, upload the file manually to `data/cities15000.txt` in the Replit workspace (it is not committed). Once uploaded, trigger an enrichment run from the Admin page.
+
+---
+
 ## Roadmap
 
 The higher-level product and engineering roadmap lives in:
