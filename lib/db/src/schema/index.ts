@@ -14,3 +14,4 @@ export * from "./relationshipPaths";
 export * from "./strategicAccounts";
 export * from "./seasonalWindows";
 export * from "./contentAssets";
+export * from "./geoCities";

@@ -220,7 +220,7 @@ Run conservative external enrichment:
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
 export SLG_USER_AGENT="StreetLevelDiscovery/1.0 (https://github.com/TheAche77/File-Management-Toolss)"
 
-# Enrich pending/partial records with safe enabled sources, currently Wikidata.
+# Enrich pending/partial records with safe enabled sources.
 pnpm run enrich:pending -- --limit 25
 
 # Enrich one business.
@@ -228,6 +228,7 @@ pnpm run enrich:business -- --id 123
 
 # Run one source explicitly.
 pnpm run enrich:source -- --source wikidata --limit 50
+pnpm run enrich:source -- --source geonames --limit 50
 ```
 
 Verify a real Wikidata enrichment result in Postgres:
@@ -273,7 +274,7 @@ Current source decisions:
 | OpenStreetMap / Overpass | Implemented | Bounded city/bbox imports only; avoid repeated heavy public-instance queries. |
 | Wikidata | Implemented | Exact-label/entity lookups only, 1 concurrent request, cache, identifiable user-agent, CC0 provenance stored. |
 | Overture Maps | Documented only | Use later through bounded bbox GeoParquet/DuckDB workflow; do not ingest global places data into the app. |
-| GeoNames | Offline mock implemented | Uses local `data/cities15000.txt` only; no API calls, no DB writes. |
+| GeoNames | Implemented from local dump | Uses local `data/cities15000.txt` only; no API calls; writes `geonames_id` and CC BY 4.0 provenance. |
 | OpenCorporates | Disabled by config | Requires API account/token and plan-specific limits; do not block core enrichment on it. |
 | EU/local open data portals | Documented only | Integrate as dataset-specific plugins because schemas and licenses vary by publisher. |
 
@@ -317,14 +318,40 @@ Behavior:
 - no DB writes
 - console output only
 
-The GeoNames gazetteer dump is licensed under Creative Commons Attribution 4.0 according to the official GeoNames dump readme. Keep attribution to GeoNames in any future persisted provenance.
+The GeoNames gazetteer dump is licensed under Creative Commons Attribution 4.0 according to the official GeoNames dump readme. Keep attribution to GeoNames in persisted provenance.
 
-Future real DB path:
+## Real GeoNames Local Dump Enrichment
 
-- create a `geo_cities` migration/table
-- import `cities15000.txt` into Postgres
-- replace the mock lookup with a SQL-backed connector
-- keep the same normalization and quality scoring rules
+GeoNames enrichment is independent from Wikidata. It uses the same local `data/cities15000.txt` dump, never calls the GeoNames API, and stores provenance in `business_sources`.
+
+Manual setup:
+
+1. Download `cities15000.zip` from `https://download.geonames.org/export/dump/`.
+2. Extract `cities15000.txt`.
+3. Place the text file at `data/cities15000.txt`.
+
+Run migrations and import the dump:
+
+```bash
+export DATABASE_URL=postgres://streetlevelsgallery@localhost:5432/scopri_italia
+pnpm --filter @workspace/db run migrate
+pnpm run geonames:import -- --file data/cities15000.txt
+```
+
+Run GeoNames enrichment:
+
+```bash
+export DATABASE_URL=postgres://streetlevelsgallery@localhost:5432/scopri_italia
+pnpm run enrich:source -- --source geonames --limit 100
+```
+
+Behavior:
+
+- looks up `businesses.city` plus country/target market against `geo_cities`
+- sets only `businesses.geonames_id`; it does not overwrite city or country
+- updates `data_quality_score`, `enrichment_source_count`, and `last_enrichment_at`
+- stores `geonames_record` provenance with `source_license = CC BY 4.0` and `source_attribution = GeoNames`
+- repeated enrichment updates the same source record instead of duplicating it
 
 ## Protected Admin Features
 

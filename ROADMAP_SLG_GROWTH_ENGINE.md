@@ -64,7 +64,7 @@ pnpm --filter @workspace/api-spec run codegen
 
 ## Legal Enrichment
 
-The enrichment layer is intentionally conservative. The current implemented external connector is Wikidata.
+The enrichment layer is intentionally conservative. The current implemented external connectors are Wikidata and GeoNames local dump enrichment.
 
 Required env:
 
@@ -79,6 +79,7 @@ Commands:
 pnpm run enrich:pending -- --limit 25
 pnpm run enrich:business -- --id <business_id>
 pnpm run enrich:source -- --source wikidata --limit 50
+pnpm run enrich:source -- --source geonames --limit 50
 ```
 
 Real DB verification sequence:
@@ -95,17 +96,19 @@ Check `businesses.wikidata_id`, `businesses.last_enrichment_at`, `businesses.dat
 Source policy:
 
 - OSM/Overpass: active, bounded city/bbox imports.
-- Wikidata: active, exact-label/entity enrichment with cache/rate limit and CC0 provenance.
+- Wikidata: active, exact-label/entity enrichment with cache/rate limit and CC0 provenance; currently may be blocked by upstream HTTP 429/timeouts.
 - Overture Maps: future bounded GeoParquet/DuckDB workflow only; no global ingest.
-- GeoNames: future city/admin normalization from CC-BY dumps.
+- GeoNames: active SQL-backed city/admin normalization from a local CC BY 4.0 dump; no API calls.
 - OpenCorporates: disabled unless an API account/token and allowed limits are explicitly configured.
 - EU/local open data: future dataset-specific plugins only.
 
-GeoNames gate:
+GeoNames local dump workflow:
 
-- Do not implement GeoNames until `pnpm run verify:wikidata-enrichment` passes on real Postgres.
-- GeoNames must use `cities15000.zip` or another static dump; no live API calls.
-- Planned commands are `pnpm run geo:import-cities -- --file data/cities15000.zip` and `pnpm run enrich:all -- --limit 1000 --source both`.
+- Download `cities15000.zip` from `https://download.geonames.org/export/dump/`.
+- Extract `cities15000.txt` and place it at `data/cities15000.txt`.
+- Import with `pnpm run geonames:import -- --file data/cities15000.txt`.
+- Enrich with `pnpm run enrich:source -- --source geonames --limit 100`.
+- GeoNames updates `businesses.geonames_id`, quality score fields, and `business_sources` provenance only; it does not overwrite curated city/country values.
 
 ## Smoke Tests
 

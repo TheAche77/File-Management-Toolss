@@ -247,7 +247,7 @@ The next enrichment layer now follows a stricter source policy:
 - OSM/Overpass remains the default discovery source.
 - Wikidata is implemented for conservative entity enrichment: external ID, official URL, phone when present, source hash, license, attribution, and payload summary.
 - Overture Maps is intentionally documented but not enabled because global GeoParquet ingestion is operationally too heavy for this repo without a bounded DuckDB/CLI workflow.
-- GeoNames has an offline mock path for city/admin normalization development without Docker/Postgres.
+- GeoNames has an offline mock path and a real SQL-backed local dump path for city/admin normalization without live API calls.
 - OpenCorporates remains optional/disabled because it requires API account/token and plan-specific limits.
 - EU/local open data remains plugin territory because each dataset has its own schema and license.
 
@@ -257,7 +257,7 @@ Status:
 - added `0005_external_enrichment_provenance.sql`
 - added a lightweight rate limiter, cache, Wikidata connector, and enrichment CLI scripts
 - hardened `data_quality_score` to update after enriched, unchanged, missed, skipped, and failed enrichment outcomes
-- added offline GeoNames mock enrichment using local `data/cities15000.txt`; real DB GeoNames remains deferred
+- added offline GeoNames mock enrichment and real DB GeoNames local dump enrichment using local `data/cities15000.txt`
 - no paid, trial-only, Google Maps, LinkedIn, or personal social scraping connector was added
 
 Runtime note:
@@ -266,7 +266,8 @@ Runtime note:
 - In the current Codex runtime, Docker is still unavailable (`docker` not on PATH and `/Applications/Docker.app` not present), so the script was added but could not be executed here.
 - On `2026-05-07`, the macOS/Homebrew runtime gate was checked again. `pnpm` was available, but `psql` and `pg_isready` were not on PATH and `DATABASE_URL` was unset. Per the production-hardening gate, DB-bound observability, real GeoNames, enrichment jobs, and metrics remain intentionally deferred until local PostgreSQL is reachable.
 - Homebrew unblock command path is now documented in `README.md` and `ROADMAP_SLG_GROWTH_ENGINE.md`: install/start `postgresql@16`, export the PostgreSQL bin path, create `scopri_italia`, set `DATABASE_URL`, run migrations, then run `pnpm run verify:wikidata-enrichment`.
-- Real DB GeoNames remains intentionally deferred until Wikidata has passed real-DB single-business and batch verification.
+- On `2026-05-08`, real DB GeoNames was unblocked independently from Wikidata because it uses a static local dump and does not depend on the rate-limited Wikidata endpoint.
+- Wikidata remained blocked during the pass by upstream timeout/HTTP 429 behavior; GeoNames does not fake or replace Wikidata verification.
 
 The frontend includes a very broad `ui/` library compared to actual app needs.
 

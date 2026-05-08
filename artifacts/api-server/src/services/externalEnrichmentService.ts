@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import type { EnrichmentConnector, EnrichmentConnectorResult } from "../connectors/types";
 import { WikidataConnector } from "../connectors/wikidataConnector";
+import { GeoNamesConnector } from "../connectors/geonamesConnector";
 import { logger } from "../lib/logger";
 import { computeEnrichmentStatus } from "./businessNormalization";
 import { upsertBusinessSources } from "./businessSourceService";
@@ -31,7 +32,7 @@ export interface EnrichmentRunStats {
   latencyMs: number;
 }
 
-const connectors: EnrichmentConnector[] = [new WikidataConnector()];
+const connectors: EnrichmentConnector[] = [new WikidataConnector(), new GeoNamesConnector()];
 
 function clampLimit(limit: number | undefined) {
   if (!limit || !Number.isFinite(limit)) return 25;
@@ -68,6 +69,18 @@ async function selectBusinesses(options: EnrichmentRunOptions) {
       .from(businessesTable)
       .where(eq(businessesTable.id, options.businessId))
       .limit(1);
+  }
+
+  if (options.source === "geonames") {
+    return db
+      .select()
+      .from(businessesTable)
+      .where(isNull(businessesTable.geonamesId))
+      .orderBy(
+        asc(sql`coalesce(${businessesTable.lastEnrichmentAt}, ${businessesTable.createdAt})`),
+        asc(businessesTable.id),
+      )
+      .limit(clampLimit(options.limit));
   }
 
   return db

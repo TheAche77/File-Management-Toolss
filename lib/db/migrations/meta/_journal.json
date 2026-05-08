@@ -43,6 +43,13 @@
       "when": 1776945600000,
       "tag": "0005_external_enrichment_provenance",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778241600000,
+      "tag": "0006_geo_cities",
+      "breakpoints": true
     }
   ]
 }
