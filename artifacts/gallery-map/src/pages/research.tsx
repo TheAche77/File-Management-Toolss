@@ -27,7 +27,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getStoredAdminToken } from "@/lib/admin-auth";
 import { buildSearchParams, readSharedBusinessFilters, syncSearchParams } from "@/lib/business-filters";
 import { formatPipelineValue } from "@/lib/outreach-formatting";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +40,6 @@ function parseOptionalInt(value: string) {
 export default function ResearchPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const hasAdminToken = Boolean(getStoredAdminToken());
   const initial = readSharedBusinessFilters(window.location.search);
   const [search, setSearch] = useState(initial.search);
   const [city, setCity] = useState(initial.city);
@@ -158,31 +156,26 @@ export default function ResearchPage() {
   const metricsQuery = useGetResearchMetrics(metricParams, {
     query: {
       queryKey: getGetResearchMetricsQueryKey(metricParams),
-      enabled: hasAdminToken,
     },
   });
   const feedQuery = useGetResearchFeed(feedParams, {
     query: {
       queryKey: getGetResearchFeedQueryKey(feedParams),
-      enabled: hasAdminToken,
     },
   });
   const reviewBucketsQuery = useGetResearchReviewBuckets(reviewBucketParams, {
     query: {
       queryKey: getGetResearchReviewBucketsQueryKey(reviewBucketParams),
-      enabled: hasAdminToken,
     },
   });
   const jobsQuery = useGetResearchJobs(jobParams, {
     query: {
       queryKey: getGetResearchJobsQueryKey(jobParams),
-      enabled: hasAdminToken,
     },
   });
   const viewsQuery = useGetResearchViews({
     query: {
       queryKey: getGetResearchViewsQueryKey(),
-      enabled: hasAdminToken,
     },
   });
 
@@ -309,30 +302,6 @@ export default function ResearchPage() {
   const deleteView = (id: number) => {
     deleteViewMutation.mutate({ id });
   };
-
-  if (!hasAdminToken) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-serif text-foreground">Research Console</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Discovery, qualification, review buckets and machine jobs.
-          </p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin unlock required</CardTitle>
-            <CardDescription>Research endpoints are protected because they expose operational internals.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/admin">Go to Admin</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const statCards = metrics
     ? [

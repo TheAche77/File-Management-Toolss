@@ -6,28 +6,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { getStoredAdminToken } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
 
 export default function RelationshipsPage() {
-  const hasAdminToken = Boolean(getStoredAdminToken());
   const { data: paths = [] } = useGetRelationshipPaths(undefined, {
     query: {
       queryKey: getGetRelationshipPathsQueryKey(),
-      enabled: hasAdminToken,
     },
   });
-
-  if (!hasAdminToken) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Relationships</CardTitle>
-          <CardDescription>Admin unlock required.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

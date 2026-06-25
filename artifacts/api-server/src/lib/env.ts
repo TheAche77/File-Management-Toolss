@@ -1,7 +1,6 @@
 export interface ServerEnv {
   port: number;
   databaseUrl: string;
-  adminApiToken: string;
 }
 
 function requireNonEmptyEnv(name: string): string {
@@ -24,11 +23,5 @@ export function validateServerEnv(): ServerEnv {
   return {
     port,
     databaseUrl: requireNonEmptyEnv("DATABASE_URL"),
-    adminApiToken: requireNonEmptyEnv("ADMIN_API_TOKEN"),
   };
-}
-
-export function getConfiguredAdminToken(): string | null {
-  const token = process.env["ADMIN_API_TOKEN"]?.trim();
-  return token ? token : null;
 }

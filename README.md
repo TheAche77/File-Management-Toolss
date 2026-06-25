@@ -22,7 +22,7 @@ The current branch supports:
 - contact candidates with manual review actions
 - generic email extraction from official websites only
 - conservative Wikidata enrichment for external IDs, official URLs, and source provenance
-- minimal admin protection via `ADMIN_API_TOKEN`
+- public operational consoles without admin login
 - business detail pages with sources, contact candidates, and outreach editing
 - outreach KPI dashboard and follow-up pipeline board
 - outreach audit timeline per business
@@ -55,7 +55,6 @@ Required for the API:
 
 Recommended for production-like local use:
 
-- `ADMIN_API_TOKEN`
 - `LOG_LEVEL`
 
 Optional:
@@ -76,8 +75,7 @@ Optional for local frontend development:
 
 Notes:
 
-- `ADMIN_API_TOKEN` protects import, review queue, contact candidate review, and import history endpoints.
-- `ADMIN_API_TOKEN` is now required for API startup. The server fails fast if it is missing.
+- All application API routes are public to anyone who can access the deployed app. Put the app behind platform/network access controls if it should not be internet-public.
 - `BASE_PATH` must match the Vite base path expected by the frontend. In a simple local setup, `/` is usually fine.
 - `VITE_API_PROXY_TARGET` defaults to `http://localhost:8080` and lets the Vite dev server proxy `/api` calls to the local API.
 - `SLG_USER_AGENT` is used for Wikimedia/Wikidata requests. Keep it identifiable; Wikimedia may reject generic clients.
@@ -140,7 +138,6 @@ API shell:
 ```bash
 export PORT=8080
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/scopri_italia
-export ADMIN_API_TOKEN=change-me-to-a-long-random-string
 export LOG_LEVEL=info
 pnpm --filter @workspace/api-server run build
 pnpm --filter @workspace/api-server run start
@@ -159,7 +156,6 @@ Automated API smoke test after the API is running:
 
 ```bash
 export API_BASE_URL=http://localhost:8080/api
-export ADMIN_API_TOKEN=change-me-to-a-long-random-string
 pnpm run smoke:slg-runtime
 ```
 
@@ -353,16 +349,11 @@ Behavior:
 - stores `geonames_record` provenance with `source_license = CC BY 4.0` and `source_attribution = GeoNames`
 - repeated enrichment updates the same source record instead of duplicating it
 
-## Protected Admin Features
+## Public Operational Features
 
-When `ADMIN_API_TOKEN` is configured:
+All consoles and operational API routes are available without an application-level admin login. Limit access at the deployment/network layer if the app contains private working data.
 
-- open `/admin`
-- paste the token into the unlock form
-- the token is stored in `sessionStorage` for the current browser session only
-- protected API calls are sent with `Authorization: Bearer <token>`
-
-Protected capabilities currently include:
+Public capabilities currently include:
 
 - run imports
 - read import history
@@ -374,7 +365,7 @@ Protected capabilities currently include:
 
 ## Data Flow
 
-1. Admin queues an import.
+1. An operator queues an import.
 2. The API fetches raw business candidates from Overpass.
 3. Records are normalized and merged in bulk.
 4. `business_sources` are recorded for provenance.
@@ -424,7 +415,7 @@ pnpm --filter @workspace/gallery-map run typecheck
 
 Smoke test checklist:
 
-1. Unlock `/admin` with `ADMIN_API_TOKEN`.
+1. Open `/admin` and verify import controls and exports load without login.
 2. Open `/` and verify the outreach KPI dashboard loads.
 3. Open `/pipeline` and verify urgency buckets render.
 4. Open `/businesses/:id` from the directory and verify:

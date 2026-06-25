@@ -36,13 +36,13 @@ The biggest weaknesses are no longer basic architecture. They are:
 
 ### P0 - Security And Rollout Risk
 
-#### 1. Admin auth previously failed open
+#### 1. Admin auth removed by product decision
 
-Before this Phase 0 pass, protected routes became effectively public if `ADMIN_API_TOKEN` was missing.
+Application-level authentication has been removed. All routes are intentionally public to anyone who can access the app deployment.
 
 Affected area:
 
-- `artifacts/api-server/src/lib/adminAuth.ts`
+- formerly `artifacts/api-server/src/lib/adminAuth.ts`
 
 Impact:
 
@@ -55,14 +55,13 @@ Impact:
 
 Status:
 
-- fixed in this phase
+- intentionally public; protect the deployment with network/platform controls if needed
 
 #### 2. Critical env validation was incomplete
 
-The API startup previously validated `PORT` only. That was too weak for a system that now relies on:
+The API startup previously validated `PORT` only. It now validates:
 
 - `DATABASE_URL`
-- `ADMIN_API_TOKEN`
 
 Affected area:
 
@@ -286,17 +285,16 @@ Status:
 
 Goals:
 
-- fail closed on protected routes
+- remove application-level admin auth
 - validate critical env at startup
 - update documentation so runtime expectations match code
 
 Implementation in this phase:
 
-- admin auth now denies access if `ADMIN_API_TOKEN` is missing
+- application-level auth middleware and frontend unlock flow removed
 - API startup now validates:
   - `PORT`
   - `DATABASE_URL`
-  - `ADMIN_API_TOKEN`
 
 Remaining in Phase 0:
 

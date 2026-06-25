@@ -504,7 +504,7 @@ export function useGetBusinessById<
 }
 
 /**
- * @summary Get protected outreach fields for one business
+ * @summary Get outreach fields for one business
  */
 export const getGetBusinessOutreachUrl = (id: number) => {
   return `/api/businesses/${id}/outreach`;
@@ -564,7 +564,7 @@ export type GetBusinessOutreachQueryResult = NonNullable<
 export type GetBusinessOutreachQueryError = ErrorType<ErrorResponse>;
 
 /**
- * @summary Get protected outreach fields for one business
+ * @summary Get outreach fields for one business
  */
 
 export function useGetBusinessOutreach<
@@ -591,7 +591,7 @@ export function useGetBusinessOutreach<
 }
 
 /**
- * @summary Update protected outreach fields for one business
+ * @summary Update outreach fields for one business
  */
 export const getUpdateBusinessOutreachUrl = (id: number) => {
   return `/api/businesses/${id}/outreach`;
@@ -656,7 +656,7 @@ export type UpdateBusinessOutreachMutationBody =
 export type UpdateBusinessOutreachMutationError = ErrorType<ErrorResponse>;
 
 /**
- * @summary Update protected outreach fields for one business
+ * @summary Update outreach fields for one business
  */
 export const useUpdateBusinessOutreach = <
   TError = ErrorType<ErrorResponse>,

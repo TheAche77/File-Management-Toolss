@@ -7,7 +7,6 @@ Operational notes for the Street Levels Gallery growth engine after the `2026-05
 Required environment:
 
 - `DATABASE_URL`
-- `ADMIN_API_TOKEN`
 - `PORT`
 - optional `BASE_PATH`
 - optional `VITE_API_PROXY_TARGET` for frontend dev proxying; default is `http://localhost:8080`
@@ -118,11 +117,10 @@ With API and DB running, verify:
 
 ```bash
 export API_BASE_URL=http://localhost:8080/api
-export ADMIN_API_TOKEN=replace-with-a-long-random-admin-token
 pnpm run smoke:slg-runtime
 ```
 
-The smoke test covers admin auth, research endpoints, `/api/slg/*`, legacy SLG aliases, CSV exports, and expected default SLG reference data.
+The smoke test covers research endpoints, `/api/slg/*`, legacy SLG aliases, CSV exports, and expected default SLG reference data.
 
 Manual UI smoke test:
 
@@ -135,4 +133,4 @@ Manual UI smoke test:
 - `/businesses` is the canonical target directory with SLG scores and flags.
 - `/businesses/:id` is the full target dossier: research state, strategic fit, offer, narrative, proof, relationship path, content snippets, CTA, outreach editor, sources, candidates, and audit events.
 - `/research` is the machine console for scoring, queues, jobs, saved views, and advanced SLG filters.
-- `/admin` manages protected exports and admin unlock.
+- `/admin` manages imports, exports, and operational data tools without application-level login.

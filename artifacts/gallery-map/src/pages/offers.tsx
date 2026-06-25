@@ -1,27 +1,13 @@
 import { getGetOffersQueryKey, useGetOffers, type Offer } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getStoredAdminToken } from "@/lib/admin-auth";
 
 export default function OffersPage() {
-  const hasAdminToken = Boolean(getStoredAdminToken());
   const { data: offers = [] } = useGetOffers({
     query: {
       queryKey: getGetOffersQueryKey(),
-      enabled: hasAdminToken,
     },
   });
-
-  if (!hasAdminToken) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Offers Console</CardTitle>
-          <CardDescription>Admin unlock required.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

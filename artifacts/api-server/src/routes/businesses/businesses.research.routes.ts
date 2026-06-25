@@ -11,12 +11,11 @@ import { getReviewBuckets, getReviewQueue } from "../../services/reviewQueueServ
 import { enqueueResearchJob, listResearchJobs, RESEARCH_JOB_TYPES } from "../../services/researchJobService";
 import { runResearchAutomationTick } from "../../services/researchAutomationService";
 import { createResearchView, deleteResearchView, listResearchViews, updateResearchView } from "../../services/researchViewService";
-import { requireAdminAuth } from "../../lib/adminAuth";
 import { ASSIGNED_ARTISTS, ASSIGNED_ARTIST_SOURCES, AVATAR_TYPES, CONTACT_CANDIDATE_STATUSES, OUTREACH_STATUSES, RESEARCH_JOB_TYPES_SET, TARGET_MARKETS, buildBusinessFilters, buildCsv, buildOutreachPipelineItems, compareDateStrings, filterOutreachRows, getOutreachRows, getTodayDateString, normalizeNullableDateString, normalizeNullableString, parseOptionalBoolean, parseOptionalNumber, serializeBusiness, serializeBusinessOutreach, serializeContactCandidate, serializeImportRun } from "./businesses.shared";
 
 export const businessesResearchRouter = Router();
 
-businessesResearchRouter.get("/businesses/review-queue", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.get("/businesses/review-queue", async (req, res) => {
   const {
     categorySlug,
     city,
@@ -43,7 +42,7 @@ businessesResearchRouter.get("/businesses/review-queue", requireAdminAuth, async
   );
 });
 
-businessesResearchRouter.get("/research/feed", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.get("/research/feed", async (req, res) => {
   const {
     page = "1",
     pageSize = "25",
@@ -79,7 +78,7 @@ businessesResearchRouter.get("/research/feed", requireAdminAuth, async (req, res
   });
 });
 
-businessesResearchRouter.get("/research/metrics", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.get("/research/metrics", async (req, res) => {
   const {
     categorySlug,
     city,
@@ -109,7 +108,7 @@ businessesResearchRouter.get("/research/metrics", requireAdminAuth, async (req, 
   res.json(metrics);
 });
 
-businessesResearchRouter.get("/research/review-buckets", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.get("/research/review-buckets", async (req, res) => {
   const {
     categorySlug,
     city,
@@ -156,7 +155,7 @@ businessesResearchRouter.get("/research/review-buckets", requireAdminAuth, async
   );
 });
 
-businessesResearchRouter.get("/research/jobs", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.get("/research/jobs", async (req, res) => {
   const { status, limit = "50" } = req.query as Record<string, string | undefined>;
   const jobs = await listResearchJobs({
     status,
@@ -185,7 +184,7 @@ businessesResearchRouter.get("/research/jobs", requireAdminAuth, async (req, res
   );
 });
 
-businessesResearchRouter.post("/research/jobs", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.post("/research/jobs", async (req, res) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const jobType = normalizeNullableString(body["jobType"]);
   const businessId = Number(body["businessId"] ?? 0);
@@ -212,12 +211,12 @@ businessesResearchRouter.post("/research/jobs", requireAdminAuth, async (req, re
   res.status(201).json(job);
 });
 
-businessesResearchRouter.post("/research/jobs/run", requireAdminAuth, async (_req, res) => {
+businessesResearchRouter.post("/research/jobs/run", async (_req, res) => {
   await runResearchAutomationTick();
   res.json({ ok: true });
 });
 
-businessesResearchRouter.get("/research/views", requireAdminAuth, async (_req, res) => {
+businessesResearchRouter.get("/research/views", async (_req, res) => {
   const views = await listResearchViews();
   res.json(
     views.map((view) => ({
@@ -233,7 +232,7 @@ businessesResearchRouter.get("/research/views", requireAdminAuth, async (_req, r
   );
 });
 
-businessesResearchRouter.post("/research/views", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.post("/research/views", async (req, res) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const name = normalizeNullableString(body["name"]);
   if (!name) {
@@ -258,7 +257,7 @@ businessesResearchRouter.post("/research/views", requireAdminAuth, async (req, r
   res.status(201).json(created);
 });
 
-businessesResearchRouter.patch("/research/views/:id", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.patch("/research/views/:id", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid view identifier" });
@@ -288,7 +287,7 @@ businessesResearchRouter.patch("/research/views/:id", requireAdminAuth, async (r
   res.json(updated);
 });
 
-businessesResearchRouter.delete("/research/views/:id", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.delete("/research/views/:id", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || Number.isNaN(id)) {
     res.status(400).json({ error: "Invalid view identifier" });
@@ -304,7 +303,7 @@ businessesResearchRouter.delete("/research/views/:id", requireAdminAuth, async (
   res.status(204).end();
 });
 
-businessesResearchRouter.post("/businesses/:id/research/refresh", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.post("/businesses/:id/research/refresh", async (req, res) => {
   const businessId = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!businessId || isNaN(businessId)) {
     res.status(400).json({ error: "Invalid business identifier" });
@@ -320,7 +319,7 @@ businessesResearchRouter.post("/businesses/:id/research/refresh", requireAdminAu
   res.json(serializeBusiness(refreshed.business));
 });
 
-businessesResearchRouter.post("/research/refresh", requireAdminAuth, async (req, res) => {
+businessesResearchRouter.post("/research/refresh", async (req, res) => {
   const body = (req.body ?? {}) as { businessIds?: number[] };
 
   let businessIds = Array.isArray(body.businessIds)

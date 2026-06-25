@@ -11,30 +11,17 @@ import {
 } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getStoredAdminToken } from "@/lib/admin-auth";
 
 export default function ProofPage() {
-  const hasAdminToken = Boolean(getStoredAdminToken());
   const { data: assets = [] } = useGetCredibilityAssets({
-    query: { queryKey: getGetCredibilityAssetsQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetCredibilityAssetsQueryKey() },
   });
   const { data: caseStudies = [] } = useGetCaseStudies({
-    query: { queryKey: getGetCaseStudiesQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetCaseStudiesQueryKey() },
   });
   const { data: contentAssets = [] } = useGetContentAssets({
-    query: { queryKey: getGetContentAssetsQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetContentAssetsQueryKey() },
   });
-
-  if (!hasAdminToken) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Proof Library</CardTitle>
-          <CardDescription>Admin unlock required.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

@@ -1,12 +1,6 @@
 #!/usr/bin/env node
 
 const API_BASE_URL = (process.env.API_BASE_URL ?? "http://localhost:8080/api").replace(/\/$/, "");
-const ADMIN_API_TOKEN = process.env.ADMIN_API_TOKEN?.trim();
-
-if (!ADMIN_API_TOKEN) {
-  console.error("ADMIN_API_TOKEN is required for protected runtime smoke tests.");
-  process.exit(1);
-}
 
 const failures = [];
 
@@ -16,7 +10,6 @@ function recordFailure(label, message) {
 
 async function request(path, options = {}) {
   const headers = {
-    ...(options.admin ? { Authorization: `Bearer ${ADMIN_API_TOKEN}` } : {}),
     ...(options.headers ?? {}),
   };
   return fetch(`${API_BASE_URL}${path}`, {
@@ -91,7 +84,6 @@ function expectSlugs(label, rows, expectedSlugs) {
 }
 
 await expectStatus("health", "/healthz", 200);
-await expectStatus("admin auth fail-closed", "/research/metrics", [401, 403]);
 
 const publicJsonEndpoints = [
   ["/businesses", "businesses list"],
@@ -106,7 +98,7 @@ for (const [path, label] of publicJsonEndpoints) {
   expectObject(label, await expectJson(label, path));
 }
 
-const adminJsonEndpoints = [
+const operationalJsonEndpoints = [
   ["/research/metrics", "research metrics"],
   ["/research/feed", "research feed"],
   ["/research/feed?targetType=buyer&warmPathExists=true", "research feed advanced filters"],
@@ -116,8 +108,8 @@ const adminJsonEndpoints = [
   ["/slg/strategic-accounts", "slg strategic accounts"],
 ];
 
-for (const [path, label] of adminJsonEndpoints) {
-  const json = await expectJson(label, path, { admin: true });
+for (const [path, label] of operationalJsonEndpoints) {
+  const json = await expectJson(label, path);
   if (path.includes("feed") || path.includes("metrics")) {
     expectObject(label, json);
   } else {
@@ -125,9 +117,9 @@ for (const [path, label] of adminJsonEndpoints) {
   }
 }
 
-await expectStatus("run research jobs", "/research/jobs/run", 200, { admin: true, method: "POST" });
+await expectStatus("run research jobs", "/research/jobs/run", 200, { method: "POST" });
 
-const offers = expectArray("slg offers", await expectJson("slg offers", "/slg/offers", { admin: true }));
+const offers = expectArray("slg offers", await expectJson("slg offers", "/slg/offers"));
 expectSlugs("slg offers", offers, [
   "exhibition-partnership",
   "urban-art-commission",
@@ -139,7 +131,7 @@ expectSlugs("slg offers", offers, [
   "brand-culture-collaboration",
 ]);
 
-const narratives = expectArray("slg narratives", await expectJson("slg narratives", "/slg/narratives", { admin: true }));
+const narratives = expectArray("slg narratives", await expectJson("slg narratives", "/slg/narratives"));
 expectSlugs("slg narratives", narratives, [
   "urban-art-authority",
   "tuscany-uniqueness",
@@ -150,7 +142,7 @@ expectSlugs("slg narratives", narratives, [
   "labirinto-platform",
 ]);
 
-const contentAssets = expectArray("slg content assets", await expectJson("slg content assets", "/slg/content-assets", { admin: true }));
+const contentAssets = expectArray("slg content assets", await expectJson("slg content assets", "/slg/content-assets"));
 expectSlugs("slg content assets", contentAssets, [
   "hospitality-pitch-snippet",
   "institutional-pitch-snippet",
@@ -160,7 +152,7 @@ expectSlugs("slg content assets", contentAssets, [
   "authority-cta-suggestion",
 ]);
 
-const seasonalWindows = expectArray("slg seasonal windows", await expectJson("slg seasonal windows", "/slg/seasonal-windows", { admin: true }));
+const seasonalWindows = expectArray("slg seasonal windows", await expectJson("slg seasonal windows", "/slg/seasonal-windows"));
 expectSlugs("slg seasonal windows", seasonalWindows, [
   "hospitality-q1-q3",
   "institutional-q1-q4",
@@ -178,7 +170,7 @@ for (const [path, label] of [
   ["/credibility-assets", "legacy credibility assets"],
   ["/case-studies", "legacy case studies"],
 ]) {
-  expectArray(label, await expectJson(label, path, { admin: true }));
+  expectArray(label, await expectJson(label, path));
 }
 
 await expectCsv("businesses csv", "/export/businesses.csv");
@@ -193,7 +185,7 @@ for (const [path, label] of [
   ["/export/slg-labirinto-fit.csv", "slg labirinto csv"],
   ["/export/slg-hospitality-targets.csv", "slg hospitality csv"],
 ]) {
-  await expectCsv(label, path, { admin: true });
+  await expectCsv(label, path);
 }
 
 if (failures.length > 0) {

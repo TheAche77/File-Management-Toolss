@@ -357,7 +357,7 @@ export const GetBusinessByIdResponse = zod.object({
 });
 
 /**
- * @summary Get protected outreach fields for one business
+ * @summary Get outreach fields for one business
  */
 export const GetBusinessOutreachParams = zod.object({
   id: zod.coerce.number(),
@@ -385,7 +385,7 @@ export const GetBusinessOutreachResponse = zod.object({
 });
 
 /**
- * @summary Update protected outreach fields for one business
+ * @summary Update outreach fields for one business
  */
 export const UpdateBusinessOutreachParams = zod.object({
   id: zod.coerce.number(),

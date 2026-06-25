@@ -68,7 +68,6 @@ import {
   getArtistRecommendation,
   getAvatarTypeRecommendation,
 } from "@/lib/artist-recommendation";
-import { getStoredAdminToken } from "@/lib/admin-auth";
 import { formatPipelineValue } from "@/lib/outreach-formatting";
 
 function selectSuggestedContentAsset(
@@ -438,7 +437,6 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const businessId = Number(params.id);
-  const hasAdminToken = Boolean(getStoredAdminToken());
   const [outreachForm, setOutreachForm] = useState<OutreachFormState>(() => buildOutreachFormState());
   const [assignedArtistMode, setAssignedArtistMode] = useState<"auto" | "manual">("auto");
 
@@ -459,37 +457,37 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const outreachQuery = useGetBusinessOutreach(businessId, {
     query: {
       queryKey: getGetBusinessOutreachQueryKey(businessId),
-      enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
+      enabled: Number.isFinite(businessId) && businessId > 0,
     },
   });
 
   const contactCandidatesQuery = useGetBusinessContactCandidates(businessId, {
     query: {
       queryKey: getGetBusinessContactCandidatesQueryKey(businessId),
-      enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
+      enabled: Number.isFinite(businessId) && businessId > 0,
     },
   });
 
   const outreachEventsQuery = useGetBusinessOutreachEvents(businessId, {
     query: {
       queryKey: getGetBusinessOutreachEventsQueryKey(businessId),
-      enabled: hasAdminToken && Number.isFinite(businessId) && businessId > 0,
+      enabled: Number.isFinite(businessId) && businessId > 0,
     },
   });
   const offersQuery = useGetOffers({
-    query: { queryKey: getGetOffersQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetOffersQueryKey() },
   });
   const narrativesQuery = useGetNarratives({
-    query: { queryKey: getGetNarrativesQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetNarrativesQueryKey() },
   });
   const credibilityAssetsQuery = useGetCredibilityAssets({
-    query: { queryKey: getGetCredibilityAssetsQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetCredibilityAssetsQueryKey() },
   });
   const caseStudiesQuery = useGetCaseStudies({
-    query: { queryKey: getGetCaseStudiesQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetCaseStudiesQueryKey() },
   });
   const contentAssetsQuery = useGetContentAssets({
-    query: { queryKey: getGetContentAssetsQueryKey(), enabled: hasAdminToken },
+    query: { queryKey: getGetContentAssetsQueryKey() },
   });
 
   const [filterEventType, setFilterEventType] = useState("all");
@@ -1070,13 +1068,9 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                   <Skeleton className="h-16 w-full" />
                   <Skeleton className="h-48 w-full" />
                 </>
-              ) : !hasAdminToken ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Unlock admin in the <Link href="/admin" className="text-primary hover:underline">Administration</Link> page to manage outreach fields.
-                </div>
               ) : outreachQuery.isError ? (
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Outreach fields are unavailable with the current admin session.
+                  Outreach fields are unavailable.
                 </div>
               ) : (
                 <>
@@ -1381,13 +1375,9 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                   <Skeleton className="h-16 w-full" />
                   <Skeleton className="h-16 w-full" />
                 </>
-              ) : !hasAdminToken ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Unlock admin in the <Link href="/admin" className="text-primary hover:underline">Administration</Link> page to inspect the outreach history.
-                </div>
               ) : outreachEventsQuery.isError ? (
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Outreach history is unavailable with the current admin session.
+                  Outreach history is unavailable.
                 </div>
               ) : (outreachEventsQuery.data ?? []).length === 0 ? (
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
@@ -1532,13 +1522,9 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
                   <Skeleton className="h-20 w-full" />
                   <Skeleton className="h-20 w-full" />
                 </>
-              ) : !hasAdminToken ? (
-                <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Unlock admin in the <Link href="/admin" className="text-primary hover:underline">Administration</Link> page to review contact candidates.
-                </div>
               ) : contactCandidatesQuery.isError ? (
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  Contact candidates are unavailable with the current admin session.
+                  Contact candidates are unavailable.
                 </div>
               ) : contactCandidates.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">

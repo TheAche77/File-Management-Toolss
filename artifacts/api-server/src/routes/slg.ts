@@ -12,7 +12,6 @@ import {
   strategicAccountsTable,
 } from "@workspace/db";
 import { asc, eq } from "drizzle-orm";
-import { requireAdminAuth } from "../lib/adminAuth";
 import { ensureSlgReferenceData } from "../services/slgReferenceDataService";
 
 const router = Router();
@@ -54,8 +53,6 @@ function parseId(value: string | undefined) {
   const id = Number.parseInt(String(value ?? "0"), 10);
   return Number.isFinite(id) && id > 0 ? id : null;
 }
-
-router.use(requireAdminAuth);
 
 router.get("/offers", async (_req, res) => {
   await ensureSlgReferenceData();

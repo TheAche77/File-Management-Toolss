@@ -11,7 +11,6 @@ import { getReviewBuckets, getReviewQueue } from "../../services/reviewQueueServ
 import { enqueueResearchJob, listResearchJobs } from "../../services/researchJobService";
 import { runResearchAutomationTick } from "../../services/researchAutomationService";
 import { createResearchView, deleteResearchView, listResearchViews, updateResearchView } from "../../services/researchViewService";
-import { requireAdminAuth } from "../../lib/adminAuth";
 import { ASSIGNED_ARTISTS, ASSIGNED_ARTIST_SOURCES, AVATAR_TYPES, CONTACT_CANDIDATE_STATUSES, OUTREACH_STATUSES, RESEARCH_JOB_TYPES_SET, TARGET_MARKETS, buildBusinessFilters, buildCsv, buildOutreachPipelineItems, compareDateStrings, filterOutreachRows, getOutreachRows, getTodayDateString, normalizeNullableDateString, normalizeNullableString, parseOptionalNumber, serializeBusiness, serializeBusinessOutreach, serializeContactCandidate, serializeImportRun } from "./businesses.shared";
 
 export const businessesExportRouter = Router();
@@ -61,7 +60,7 @@ businessesExportRouter.get("/export/businesses.csv", async (req, res) => {
   );
 });
 
-businessesExportRouter.get("/export/business-research-summary.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/business-research-summary.csv", async (req, res) => {
   const where = buildBusinessFilters(req.query as Record<string, string | undefined>);
   const rows = await db
     .select()
@@ -136,7 +135,7 @@ businessesExportRouter.get("/export/business-research-summary.csv", requireAdmin
   res.send(buildCsv(headers, exportRows));
 });
 
-businessesExportRouter.get("/export/outreach-ready.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/outreach-ready.csv", async (req, res) => {
   const baseQuery = req.query as Record<string, string | undefined>;
   const where = buildBusinessFilters({
     ...baseQuery,
@@ -216,7 +215,7 @@ businessesExportRouter.get("/export/outreach-ready.csv", requireAdminAuth, async
   res.send(buildCsv(headers, exportRows));
 });
 
-businessesExportRouter.get("/export/review-queue.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/review-queue.csv", async (req, res) => {
   const baseQuery = req.query as Record<string, string | undefined>;
   const where = buildBusinessFilters({
     ...baseQuery,
@@ -394,45 +393,44 @@ async function exportSlgBusinessCsv(
   res.send(buildCsv(headers, exportRows));
 }
 
-businessesExportRouter.get("/export/slg-revenue-targets.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/slg-revenue-targets.csv", async (req, res) => {
   await exportSlgBusinessCsv(req, res, {
     filename: "slg_revenue_targets.csv",
     engineType: "revenue",
   });
 });
 
-businessesExportRouter.get("/export/slg-institutional-targets.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/slg-institutional-targets.csv", async (req, res) => {
   await exportSlgBusinessCsv(req, res, {
     filename: "slg_institutional_targets.csv",
     engineType: "institutional",
   });
 });
 
-businessesExportRouter.get("/export/slg-authority-targets.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/slg-authority-targets.csv", async (req, res) => {
   await exportSlgBusinessCsv(req, res, {
     filename: "slg_authority_targets.csv",
     engineType: "authority",
   });
 });
 
-businessesExportRouter.get("/export/slg-referral-paths.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/slg-referral-paths.csv", async (req, res) => {
   await exportSlgBusinessCsv(req, res, {
     filename: "slg_referral_paths.csv",
     extraWhere: eq(businessesTable.warmPathExists, true),
   });
 });
 
-businessesExportRouter.get("/export/slg-labirinto-fit.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/slg-labirinto-fit.csv", async (req, res) => {
   await exportSlgBusinessCsv(req, res, {
     filename: "slg_labirinto_fit.csv",
     targetCluster: "residency_exchange_diplomacy",
   });
 });
 
-businessesExportRouter.get("/export/slg-hospitality-targets.csv", requireAdminAuth, async (req, res) => {
+businessesExportRouter.get("/export/slg-hospitality-targets.csv", async (req, res) => {
   await exportSlgBusinessCsv(req, res, {
     filename: "slg_hospitality_targets.csv",
     targetCluster: "boutique_hotel_hospitality",
   });
 });
-

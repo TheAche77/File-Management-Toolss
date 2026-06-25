@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SharedBusinessFilters } from "@/components/shared-business-filters";
-import { getStoredAdminToken } from "@/lib/admin-auth";
 import {
   buildSearchParams,
   readSharedBusinessFilters,
@@ -118,7 +117,6 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const hasAdminToken = Boolean(getStoredAdminToken());
   const initialFilters = readSharedBusinessFilters(window.location.search);
   const [city, setCity] = useState(initialFilters.city);
   const [category, setCategory] = useState(initialFilters.categorySlug);
@@ -137,13 +135,11 @@ export default function Dashboard() {
   const { data, isLoading, isError } = useGetOutreachDashboard(dashboardParams, {
     query: {
       queryKey: getGetOutreachDashboardQueryKey(dashboardParams),
-      enabled: hasAdminToken,
     },
   });
   const { data: researchMetrics } = useGetResearchMetrics(dashboardParams, {
     query: {
       queryKey: getGetResearchMetricsQueryKey(dashboardParams),
-      enabled: hasAdminToken,
     },
   });
   const baseOpportunityParams = useMemo(
@@ -180,22 +176,22 @@ export default function Dashboard() {
     [baseOpportunityParams],
   );
   const topRevenueQuery = useGetResearchFeed(topRevenueParams, {
-    query: { queryKey: getGetResearchFeedQueryKey(topRevenueParams), enabled: hasAdminToken },
+    query: { queryKey: getGetResearchFeedQueryKey(topRevenueParams) },
   });
   const institutionalQuery = useGetResearchFeed(institutionalParams, {
-    query: { queryKey: getGetResearchFeedQueryKey(institutionalParams), enabled: hasAdminToken },
+    query: { queryKey: getGetResearchFeedQueryKey(institutionalParams) },
   });
   const prestigeQuery = useGetResearchFeed(prestigeParams, {
-    query: { queryKey: getGetResearchFeedQueryKey(prestigeParams), enabled: hasAdminToken },
+    query: { queryKey: getGetResearchFeedQueryKey(prestigeParams) },
   });
   const cultivationQuery = useGetResearchFeed(cultivationParams, {
-    query: { queryKey: getGetResearchFeedQueryKey(cultivationParams), enabled: hasAdminToken },
+    query: { queryKey: getGetResearchFeedQueryKey(cultivationParams) },
   });
   const referralQuery = useGetResearchFeed(referralParams, {
-    query: { queryKey: getGetResearchFeedQueryKey(referralParams), enabled: hasAdminToken },
+    query: { queryKey: getGetResearchFeedQueryKey(referralParams) },
   });
   const labirintoQuery = useGetResearchFeed(labirintoParams, {
-    query: { queryKey: getGetResearchFeedQueryKey(labirintoParams), enabled: hasAdminToken },
+    query: { queryKey: getGetResearchFeedQueryKey(labirintoParams) },
   });
 
   useEffect(() => {
@@ -213,32 +209,6 @@ export default function Dashboard() {
 
     syncSearchParams(nextSearch);
   }, [category, city, targetMarket]);
-
-  if (!hasAdminToken) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-serif text-foreground">Outreach Dashboard</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            KPI, priorità e follow-up della pipeline commerciale SLG.
-          </p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin unlock required</CardTitle>
-            <CardDescription>
-              Questa dashboard usa endpoint protetti perché espone dati operativi e contatti outreach.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/admin">Vai ad Admin</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return <DashboardSkeleton />;

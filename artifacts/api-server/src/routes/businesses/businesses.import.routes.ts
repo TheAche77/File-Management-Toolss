@@ -11,12 +11,11 @@ import { getReviewBuckets, getReviewQueue } from "../../services/reviewQueueServ
 import { enqueueResearchJob, listResearchJobs } from "../../services/researchJobService";
 import { runResearchAutomationTick } from "../../services/researchAutomationService";
 import { createResearchView, deleteResearchView, listResearchViews, updateResearchView } from "../../services/researchViewService";
-import { requireAdminAuth } from "../../lib/adminAuth";
 import { ASSIGNED_ARTISTS, ASSIGNED_ARTIST_SOURCES, AVATAR_TYPES, CONTACT_CANDIDATE_STATUSES, OUTREACH_STATUSES, RESEARCH_JOB_TYPES_SET, TARGET_MARKETS, buildBusinessFilters, buildCsv, buildOutreachPipelineItems, compareDateStrings, filterOutreachRows, getOutreachRows, getTodayDateString, normalizeNullableDateString, normalizeNullableString, parseOptionalNumber, serializeBusiness, serializeBusinessOutreach, serializeContactCandidate, serializeImportRun } from "./businesses.shared";
 
 export const businessesImportRouter = Router();
 
-businessesImportRouter.post("/imports/run", requireAdminAuth, async (req, res) => {
+businessesImportRouter.post("/imports/run", async (req, res) => {
   const { categorySlug, city } = req.body as { categorySlug?: string; city?: string };
   if (!categorySlug || !city) {
     res.status(400).json({ error: "categorySlug and city are required" });
@@ -56,7 +55,7 @@ businessesImportRouter.post("/imports/run", requireAdminAuth, async (req, res) =
   });
 });
 
-businessesImportRouter.get("/imports/runs", requireAdminAuth, async (_req, res) => {
+businessesImportRouter.get("/imports/runs", async (_req, res) => {
   const runs = await db
     .select()
     .from(importRunsTable)
@@ -66,7 +65,7 @@ businessesImportRouter.get("/imports/runs", requireAdminAuth, async (_req, res) 
   res.json(runs.map(serializeImportRun));
 });
 
-businessesImportRouter.get("/imports/runs/:id", requireAdminAuth, async (req, res) => {
+businessesImportRouter.get("/imports/runs/:id", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid run ID" });

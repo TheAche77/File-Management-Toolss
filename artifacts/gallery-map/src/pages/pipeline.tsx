@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getArtistRecommendation } from "@/lib/artist-recommendation";
-import { getStoredAdminToken } from "@/lib/admin-auth";
 import {
   buildSearchParams,
   readSharedBusinessFilters,
@@ -89,7 +88,6 @@ function PipelineSkeleton() {
 }
 
 export default function PipelinePage() {
-  const hasAdminToken = Boolean(getStoredAdminToken());
   const initialFilters = readSharedBusinessFilters(window.location.search);
   const [city, setCity] = useState(initialFilters.city);
   const [category, setCategory] = useState(initialFilters.categorySlug);
@@ -112,7 +110,6 @@ export default function PipelinePage() {
     {
       query: {
         queryKey: getGetOutreachPipelineQueryKey(params),
-        enabled: hasAdminToken,
       },
     },
   );
@@ -132,32 +129,6 @@ export default function PipelinePage() {
     });
     syncSearchParams(nextSearch);
   }, [category, city, targetMarket]);
-
-  if (!hasAdminToken) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-serif text-foreground">Follow-up Board</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            La board operativa per i contatti da muovere adesso.
-          </p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin unlock required</CardTitle>
-            <CardDescription>
-              La pipeline outreach usa endpoint protetti e richiede una sessione admin.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/admin">Vai ad Admin</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return <PipelineSkeleton />;

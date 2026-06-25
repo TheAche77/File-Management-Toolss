@@ -20,7 +20,6 @@ import { Download, RefreshCw, Database, ClipboardCheck, TriangleAlert, ExternalL
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { clearStoredAdminToken, getStoredAdminToken, setStoredAdminToken } from "@/lib/admin-auth";
 
 function formatReviewReason(reason: string) {
   return reason
@@ -37,26 +36,22 @@ export default function Admin() {
   const [category, setCategory] = useState("art_gallery");
   const [city, setCity] = useState("Rome");
   const [activeRunId, setActiveRunId] = useState<number | null>(null);
-  const [tokenInput, setTokenInput] = useState("");
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(Boolean(getStoredAdminToken()));
-  const [authError, setAuthError] = useState<string | null>(null);
 
   const { data: categories } = useGetCategories({
     query: { queryKey: getGetCategoriesQueryKey() }
   });
   
-  const { data: runs, isLoading: runsLoading, error: runsError } = useGetImportRuns({
+  const { data: runs, isLoading: runsLoading } = useGetImportRuns({
     query: { 
       queryKey: getGetImportRunsQueryKey(),
-      enabled: isAdminUnlocked,
       refetchInterval: activeRunId ? 5000 : false,
     }
   });
 
-  const { data: activeRun, error: activeRunError } = useGetImportRunById(activeRunId ?? 0, {
+  const { data: activeRun } = useGetImportRunById(activeRunId ?? 0, {
     query: {
       queryKey: getGetImportRunByIdQueryKey(activeRunId ?? 0),
-      enabled: isAdminUnlocked && !!activeRunId,
+      enabled: !!activeRunId,
       refetchInterval: activeRunId ? 2000 : false,
     }
   });
@@ -66,11 +61,9 @@ export default function Admin() {
   const {
     data: reviewQueue,
     isLoading: reviewQueueLoading,
-    error: reviewQueueError,
   } = useGetReviewQueue(reviewQueueParams, {
     query: {
       queryKey: getGetReviewQueueQueryKey(reviewQueueParams),
-      enabled: isAdminUnlocked,
       refetchInterval: activeRunId ? 5000 : 15000,
     }
   });
@@ -133,13 +126,6 @@ export default function Admin() {
     lastActiveRunStatus.current = currentRun.status;
   }, [currentRun, queryClient, reviewQueueParams, toast]);
 
-  const resetAdminAccess = (message?: string) => {
-    clearStoredAdminToken();
-    setIsAdminUnlocked(false);
-    setActiveRunId(null);
-    setAuthError(message ?? null);
-  };
-
   const importMutation = useRunImport({
     mutation: {
       onSuccess: (data) => {
@@ -155,9 +141,6 @@ export default function Admin() {
         });
       },
       onError: (error) => {
-        if ((error as { status?: number }).status === 401) {
-          resetAdminAccess("The admin token was rejected by the API.");
-        }
         toast({
           title: "Import Failed",
           description: (error as any)?.response?.data?.error || error.message || "An unknown error occurred",
@@ -172,55 +155,9 @@ export default function Admin() {
     importMutation.mutate({ data: { categorySlug: category, city } });
   };
 
-  useEffect(() => {
-    const unauthorized =
-      (importMutation.error as { status?: number } | null)?.status === 401;
-
-    if (unauthorized) {
-      resetAdminAccess("The admin token was rejected by the API.");
-    }
-  }, [importMutation.error]);
-
-  useEffect(() => {
-    const queryErrors = [runsError, activeRunError, reviewQueueError];
-    const hasUnauthorized = queryErrors.some(
-      (error) => (error as { status?: number } | null)?.status === 401,
-    );
-
-    if (hasUnauthorized) {
-      resetAdminAccess("The admin token was rejected by the API.");
-    }
-  }, [activeRunError, reviewQueueError, runsError]);
-
-  const handleUnlock = () => {
-    const trimmedToken = tokenInput.trim();
-    if (!trimmedToken) {
-      setAuthError("Enter the admin token before unlocking.");
-      return;
-    }
-
-    setStoredAdminToken(trimmedToken);
-    setIsAdminUnlocked(true);
-    setAuthError(null);
-    setTokenInput("");
-    queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
-    queryClient.invalidateQueries({ queryKey: getGetReviewQueueQueryKey(reviewQueueParams) });
-  };
-
-  const handleLogout = () => {
-    resetAdminAccess();
-    toast({
-      title: "Admin session cleared",
-      description: "The local admin token has been removed from this browser session.",
-    });
-  };
-
-  const downloadCsv = async (url: string, filename: string, requiresAdmin = false) => {
+  const downloadCsv = async (url: string, filename: string) => {
     try {
-      const token = getStoredAdminToken();
-      const response = await fetch(url, {
-        headers: requiresAdmin && token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error("Could not download the CSV export.");
@@ -244,51 +181,13 @@ export default function Admin() {
     }
   };
 
-  if (!isAdminUnlocked) {
-    return (
-      <div className="max-w-xl mx-auto">
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="font-serif text-2xl">Admin Access</CardTitle>
-            <CardDescription>
-              Enter the admin token configured on the API server to unlock imports and review workflows.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Admin Token</label>
-              <Input
-                type="password"
-                value={tokenInput}
-                onChange={(event) => setTokenInput(event.target.value)}
-                placeholder="Paste ADMIN_API_TOKEN"
-              />
-            </div>
-            {authError && (
-              <div className="text-sm text-destructive">{authError}</div>
-            )}
-            <Button className="w-full" onClick={handleUnlock}>
-              Unlock Admin
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              The token is stored only in this browser session and sent as a Bearer token to protected API routes.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
-      <div className="flex items-start justify-between gap-4">
+      <div>
         <div>
         <h1 className="text-4xl font-serif text-foreground font-bold tracking-tight">Administration</h1>
         <p className="text-muted-foreground mt-1">System controls and data management.</p>
         </div>
-        <Button variant="outline" onClick={handleLogout}>
-          Lock Admin
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -406,40 +305,40 @@ export default function Admin() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => downloadCsv(researchSummaryHref, "business_research_summary.csv", true)}
+              onClick={() => downloadCsv(researchSummaryHref, "business_research_summary.csv")}
             >
               <Download className="mr-2 h-4 w-4" /> Export Research Summary
             </Button>
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => downloadCsv(outreachReadyHref, "outreach_ready.csv", true)}
+              onClick={() => downloadCsv(outreachReadyHref, "outreach_ready.csv")}
             >
               <Download className="mr-2 h-4 w-4" /> Export Outreach Ready
             </Button>
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => downloadCsv(reviewQueueHref, "review_queue.csv", true)}
+              onClick={() => downloadCsv(reviewQueueHref, "review_queue.csv")}
             >
               <Download className="mr-2 h-4 w-4" /> Export Review Queue
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgRevenueHref, "slg_revenue_targets.csv", true)}>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgRevenueHref, "slg_revenue_targets.csv")}>
               <Download className="mr-2 h-4 w-4" /> Export SLG Revenue Targets
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgInstitutionalHref, "slg_institutional_targets.csv", true)}>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgInstitutionalHref, "slg_institutional_targets.csv")}>
               <Download className="mr-2 h-4 w-4" /> Export SLG Institutional Targets
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgAuthorityHref, "slg_authority_targets.csv", true)}>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgAuthorityHref, "slg_authority_targets.csv")}>
               <Download className="mr-2 h-4 w-4" /> Export SLG Authority Targets
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgReferralHref, "slg_referral_paths.csv", true)}>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgReferralHref, "slg_referral_paths.csv")}>
               <Download className="mr-2 h-4 w-4" /> Export SLG Referral Paths
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgHospitalityHref, "slg_hospitality_targets.csv", true)}>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgHospitalityHref, "slg_hospitality_targets.csv")}>
               <Download className="mr-2 h-4 w-4" /> Export SLG Hospitality Targets
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgLabirintoHref, "slg_labirinto_fit.csv", true)}>
+            <Button variant="outline" className="w-full" onClick={() => downloadCsv(slgLabirintoHref, "slg_labirinto_fit.csv")}>
               <Download className="mr-2 h-4 w-4" /> Export SLG LABirinto Fit
             </Button>
             <p className="text-xs text-muted-foreground mt-4">

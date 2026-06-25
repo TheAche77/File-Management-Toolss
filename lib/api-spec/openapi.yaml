@@ -213,7 +213,7 @@ paths:
     get:
       operationId: getBusinessOutreach
       tags: [businesses]
-      summary: Get protected outreach fields for one business
+      summary: Get outreach fields for one business
       parameters:
         - name: id
           in: path
@@ -236,7 +236,7 @@ paths:
     patch:
       operationId: updateBusinessOutreach
       tags: [businesses]
-      summary: Update protected outreach fields for one business
+      summary: Update outreach fields for one business
       parameters:
         - name: id
           in: path

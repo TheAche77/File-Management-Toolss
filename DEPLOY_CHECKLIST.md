@@ -7,7 +7,6 @@ Operational checklist for promoting `crea` after the outreach merge.
 Confirm these values are set before starting services:
 
 - `DATABASE_URL`
-- `ADMIN_API_TOKEN`
 - `PORT` for API
 - `PORT` and `BASE_PATH` for frontend
 - `VITE_API_PROXY_TARGET` for local frontend dev when API and Vite run on different ports
@@ -64,7 +63,6 @@ Run the repeatable API smoke suite with the API already started:
 
 ```bash
 export API_BASE_URL=http://localhost:8080/api
-export ADMIN_API_TOKEN=replace-with-a-long-random-admin-token
 pnpm run smoke:slg-runtime
 ```
 
@@ -73,7 +71,6 @@ pnpm run smoke:slg-runtime
 Check these flows manually:
 
 1. `/admin`
-   - unlock with `ADMIN_API_TOKEN`
    - queue an import
    - verify import history loads
 2. `/`
@@ -97,13 +94,13 @@ Check these flows manually:
 7. `/api/export/businesses.csv`
    - export still downloads
 8. `/api/export/slg-revenue-targets.csv`
-   - protected SLG export downloads with admin token
+   - SLG export downloads without application-level auth
 9. `/api/slg/offers` and `/api/offers`
    - both return the same seeded offer catalog shape
 
 ## 5. Known Constraints
 
 - `GOOGLE_MAPS_API_KEY` does not unlock a full Google Places enrichment flow yet; the connector remains a stub.
-- Admin-protected flows depend on `ADMIN_API_TOKEN`; the API now fails fast at startup if it is missing.
+- All application routes are public to anyone who can reach the deployment; use platform/network access controls when needed.
 - Versioned SQL migrations now live in `lib/db/migrations`, but they still need to be applied in the real environment before startup.
 - If Docker is unavailable on the host, provision any PostgreSQL 16-compatible database and use the same `DATABASE_URL` format from `.env.example`.

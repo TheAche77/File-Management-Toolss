@@ -11,12 +11,11 @@ import { getReviewBuckets, getReviewQueue } from "../../services/reviewQueueServ
 import { enqueueResearchJob, listResearchJobs } from "../../services/researchJobService";
 import { runResearchAutomationTick } from "../../services/researchAutomationService";
 import { createResearchView, deleteResearchView, listResearchViews, updateResearchView } from "../../services/researchViewService";
-import { requireAdminAuth } from "../../lib/adminAuth";
 import { ASSIGNED_ARTISTS, ASSIGNED_ARTIST_SOURCES, AVATAR_TYPES, CONTACT_CANDIDATE_STATUSES, OUTREACH_STATUSES, RESEARCH_JOB_TYPES_SET, TARGET_MARKETS, buildBusinessFilters, buildCsv, buildOutreachPipelineItems, compareDateStrings, filterOutreachRows, getOutreachRows, getTodayDateString, isClosedOutreachStatus, normalizeNullableDateString, normalizeNullableString, parseOptionalNumber, serializeBusiness, serializeBusinessOutreach, serializeContactCandidate, serializeImportRun } from "./businesses.shared";
 
 export const businessesOutreachRouter = Router();
 
-businessesOutreachRouter.get("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
+businessesOutreachRouter.get("/businesses/:id/outreach", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -37,7 +36,7 @@ businessesOutreachRouter.get("/businesses/:id/outreach", requireAdminAuth, async
   res.json(serializeBusinessOutreach(rows[0]!));
 });
 
-businessesOutreachRouter.patch("/businesses/:id/outreach", requireAdminAuth, async (req, res) => {
+businessesOutreachRouter.patch("/businesses/:id/outreach", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -150,7 +149,7 @@ businessesOutreachRouter.patch("/businesses/:id/outreach", requireAdminAuth, asy
   res.json(serializeBusinessOutreach(refreshed?.business ?? updated));
 });
 
-businessesOutreachRouter.get("/businesses/:id/outreach-events", requireAdminAuth, async (req, res) => {
+businessesOutreachRouter.get("/businesses/:id/outreach-events", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -185,7 +184,7 @@ businessesOutreachRouter.get("/businesses/:id/outreach-events", requireAdminAuth
   );
 });
 
-businessesOutreachRouter.get("/businesses/:id/contact-candidates", requireAdminAuth, async (req, res) => {
+businessesOutreachRouter.get("/businesses/:id/contact-candidates", async (req, res) => {
   const id = parseInt(String(req.params["id"] ?? "0"), 10);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
@@ -209,7 +208,7 @@ businessesOutreachRouter.get("/businesses/:id/contact-candidates", requireAdminA
   );
 });
 
-businessesOutreachRouter.patch("/businesses/:id/contact-candidates/:candidateId", requireAdminAuth, async (req, res) => {
+businessesOutreachRouter.patch("/businesses/:id/contact-candidates/:candidateId", async (req, res) => {
   const businessId = parseInt(String(req.params["id"] ?? "0"), 10);
   const candidateId = parseInt(String(req.params["candidateId"] ?? "0"), 10);
 
@@ -296,7 +295,7 @@ businessesOutreachRouter.patch("/businesses/:id/contact-candidates/:candidateId"
   res.json(serializeContactCandidate(updated));
 });
 
-businessesOutreachRouter.get("/outreach/dashboard", requireAdminAuth, async (req, res) => {
+businessesOutreachRouter.get("/outreach/dashboard", async (req, res) => {
   const today = getTodayDateString();
   const { categorySlug, city, targetMarket } = req.query as Record<string, string | undefined>;
   const rows = filterOutreachRows(await getOutreachRows(), {
@@ -337,7 +336,7 @@ businessesOutreachRouter.get("/outreach/dashboard", requireAdminAuth, async (req
   });
 });
 
-businessesOutreachRouter.get("/outreach/pipeline", requireAdminAuth, async (req, res) => {
+businessesOutreachRouter.get("/outreach/pipeline", async (req, res) => {
   const {
     horizonDays = "7",
     limit = "50",
