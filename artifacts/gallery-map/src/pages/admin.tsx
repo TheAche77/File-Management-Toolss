@@ -16,11 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, RefreshCw, Database, ClipboardCheck, TriangleAlert, ExternalLink } from "lucide-react";
+import { Download, RefreshCw, Database, ClipboardCheck, TriangleAlert, ExternalLink, Lock, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { clearStoredAdminToken, getStoredAdminToken, setStoredAdminToken } from "@/lib/admin-auth";
+import { checkAdminSession, loginAdmin, logoutAdmin } from "@/lib/admin-auth";
 
 function formatReviewReason(reason: string) {
   return reason
@@ -37,9 +37,18 @@ export default function Admin() {
   const [category, setCategory] = useState("art_gallery");
   const [city, setCity] = useState("Rome");
   const [activeRunId, setActiveRunId] = useState<number | null>(null);
-  const [tokenInput, setTokenInput] = useState("");
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(Boolean(getStoredAdminToken()));
+  const [passwordInput, setPasswordInput] = useState("");
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkAdminSession().then((authenticated) => {
+      setIsAdminUnlocked(authenticated);
+      setIsCheckingSession(false);
+    });
+  }, []);
 
   const { data: categories } = useGetCategories({
     query: { queryKey: getGetCategoriesQueryKey() }
@@ -124,7 +133,6 @@ export default function Admin() {
   }, [currentRun, queryClient, reviewQueueParams, toast]);
 
   const resetAdminAccess = (message?: string) => {
-    clearStoredAdminToken();
     setIsAdminUnlocked(false);
     setActiveRunId(null);
     setAuthError(message ?? null);
@@ -146,7 +154,7 @@ export default function Admin() {
       },
       onError: (error) => {
         if ((error as { status?: number }).status === 401) {
-          resetAdminAccess("The admin token was rejected by the API.");
+          resetAdminAccess("Your session has expired. Please log in again.");
         }
         toast({
           title: "Import Failed",
@@ -163,76 +171,100 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    const unauthorized =
-      (importMutation.error as { status?: number } | null)?.status === 401;
-
-    if (unauthorized) {
-      resetAdminAccess("The admin token was rejected by the API.");
-    }
-  }, [importMutation.error]);
-
-  useEffect(() => {
     const queryErrors = [runsError, activeRunError, reviewQueueError];
     const hasUnauthorized = queryErrors.some(
       (error) => (error as { status?: number } | null)?.status === 401,
     );
 
     if (hasUnauthorized) {
-      resetAdminAccess("The admin token was rejected by the API.");
+      resetAdminAccess("Your session has expired. Please log in again.");
     }
   }, [activeRunError, reviewQueueError, runsError]);
 
-  const handleUnlock = () => {
-    const trimmedToken = tokenInput.trim();
-    if (!trimmedToken) {
-      setAuthError("Enter the admin token before unlocking.");
+  const handleLogin = async () => {
+    const trimmedPassword = passwordInput.trim();
+    if (!trimmedPassword) {
+      setAuthError("Enter the admin password before logging in.");
       return;
     }
 
-    setStoredAdminToken(trimmedToken);
-    setIsAdminUnlocked(true);
+    setIsLoggingIn(true);
     setAuthError(null);
-    setTokenInput("");
+
+    const result = await loginAdmin(trimmedPassword);
+    setIsLoggingIn(false);
+
+    if (!result.ok) {
+      setAuthError(result.error ?? "Login failed.");
+      return;
+    }
+
+    setIsAdminUnlocked(true);
+    setPasswordInput("");
     queryClient.invalidateQueries({ queryKey: getGetImportRunsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetReviewQueueQueryKey(reviewQueueParams) });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutAdmin();
     resetAdminAccess();
     toast({
-      title: "Admin session cleared",
-      description: "The local admin token has been removed from this browser session.",
+      title: "Logged out",
+      description: "Your admin session has been ended.",
     });
   };
+
+  if (isCheckingSession) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!isAdminUnlocked) {
     return (
       <div className="max-w-xl mx-auto">
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="font-serif text-2xl">Admin Access</CardTitle>
+            <CardTitle className="font-serif text-2xl flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Admin Login
+            </CardTitle>
             <CardDescription>
-              Enter the admin token configured on the API server to unlock imports and review workflows.
+              Enter the admin password to access imports, the review queue, and data management tools. Your session will be remembered for 7 days.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Admin Token</label>
-              <Input
-                type="password"
-                value={tokenInput}
-                onChange={(event) => setTokenInput(event.target.value)}
-                placeholder="Paste ADMIN_API_TOKEN"
-              />
-            </div>
-            {authError && (
-              <div className="text-sm text-destructive">{authError}</div>
-            )}
-            <Button className="w-full" onClick={handleUnlock}>
-              Unlock Admin
-            </Button>
+            <form
+              onSubmit={(e) => { e.preventDefault(); void handleLogin(); }}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="admin-password">Password</label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={passwordInput}
+                  onChange={(event) => setPasswordInput(event.target.value)}
+                  placeholder="Admin password"
+                  autoFocus
+                  autoComplete="current-password"
+                />
+              </div>
+              {authError && (
+                <div className="text-sm text-destructive">{authError}</div>
+              )}
+              <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                {isLoggingIn ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
+                ) : (
+                  "Log In"
+                )}
+              </Button>
+            </form>
             <p className="text-xs text-muted-foreground">
-              The token is stored only in this browser session and sent as a Bearer token to protected API routes.
+              Your session is stored in a secure cookie and expires automatically after 7 days.
             </p>
           </CardContent>
         </Card>
@@ -247,8 +279,8 @@ export default function Admin() {
         <h1 className="text-4xl font-serif text-foreground font-bold tracking-tight">Administration</h1>
         <p className="text-muted-foreground mt-1">System controls and data management.</p>
         </div>
-        <Button variant="outline" onClick={handleLogout}>
-          Lock Admin
+        <Button variant="outline" onClick={() => void handleLogout()}>
+          Log Out
         </Button>
       </div>
 

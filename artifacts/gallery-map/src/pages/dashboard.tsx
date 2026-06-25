@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getStoredAdminToken } from "@/lib/admin-auth";
+import { useAdminSession } from "@/hooks/use-admin-session";
 import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function formatPercent(value: number) {
@@ -58,7 +58,7 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const hasAdminToken = Boolean(getStoredAdminToken());
+  const { isAdminAuthenticated: hasAdminToken } = useAdminSession();
   const { data, isLoading, isError } = useGetOutreachDashboard({
     query: {
       queryKey: getGetOutreachDashboardQueryKey(),

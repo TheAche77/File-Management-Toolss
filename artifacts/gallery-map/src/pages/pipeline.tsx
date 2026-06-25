@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getArtistRecommendation } from "@/lib/artist-recommendation";
-import { getStoredAdminToken } from "@/lib/admin-auth";
+import { useAdminSession } from "@/hooks/use-admin-session";
 import { formatDueLabel, formatPipelineValue } from "@/lib/outreach-formatting";
 
 function getUrgencyTone(bucket: string) {
@@ -80,7 +80,7 @@ function PipelineSkeleton() {
 }
 
 export default function PipelinePage() {
-  const hasAdminToken = Boolean(getStoredAdminToken());
+  const { isAdminAuthenticated: hasAdminToken } = useAdminSession();
   const { data, isLoading, isError } = useGetOutreachPipeline(
     { horizonDays: 7, limit: 60 },
     {

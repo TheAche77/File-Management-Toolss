@@ -56,7 +56,7 @@ import {
   getArtistRecommendation,
   getAvatarTypeRecommendation,
 } from "@/lib/artist-recommendation";
-import { getStoredAdminToken } from "@/lib/admin-auth";
+import { useAdminSession } from "@/hooks/use-admin-session";
 import { formatPipelineValue } from "@/lib/outreach-formatting";
 
 const OUTREACH_STATUS_OPTIONS = [
@@ -279,7 +279,7 @@ export default function BusinessDetail({ params }: { params: { id: string } }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const businessId = Number(params.id);
-  const hasAdminToken = Boolean(getStoredAdminToken());
+  const { isAdminAuthenticated: hasAdminToken } = useAdminSession();
   const [outreachForm, setOutreachForm] = useState<OutreachFormState>(() => buildOutreachFormState());
   const [assignedArtistMode, setAssignedArtistMode] = useState<"auto" | "manual">("auto");
 

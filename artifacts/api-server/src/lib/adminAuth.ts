@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import { logger } from "./logger";
 import { getConfiguredAdminToken } from "./env";
 
+export const ADMIN_SESSION_COOKIE = "scopri_admin_session";
+
 let warnedAboutMissingToken = false;
 
 function extractBearerToken(req: Request): string | null {
@@ -12,6 +14,11 @@ function extractBearerToken(req: Request): string | null {
 
   const fallbackHeader = req.header("x-admin-token");
   return fallbackHeader?.trim() || null;
+}
+
+function extractSessionCookieToken(req: Request): string | null {
+  const cookieValue: unknown = req.cookies?.[ADMIN_SESSION_COOKIE];
+  return typeof cookieValue === "string" ? cookieValue.trim() || null : null;
 }
 
 export function requireAdminAuth(
@@ -32,7 +39,9 @@ export function requireAdminAuth(
     return;
   }
 
-  const providedToken = extractBearerToken(req);
+  const providedToken =
+    extractBearerToken(req) ?? extractSessionCookieToken(req);
+
   if (providedToken !== configuredToken) {
     res.status(401).json({ error: "Unauthorized" });
     return;

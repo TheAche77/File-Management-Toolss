@@ -1,24 +1,43 @@
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
-const ADMIN_TOKEN_STORAGE_KEY = "scopri-italia-admin-token";
-
-export function getStoredAdminToken(): string | null {
-  if (typeof window === "undefined") return null;
-
-  const token = window.sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)?.trim();
-  return token ? token : null;
+export async function checkAdminSession(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/admin/session`, {
+      credentials: "include",
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { authenticated?: boolean };
+    return data.authenticated === true;
+  } catch {
+    return false;
+  }
 }
 
-export function setStoredAdminToken(token: string) {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token.trim());
+export async function loginAdmin(password: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ password }),
+    });
+    const data = (await res.json()) as { ok?: boolean; error?: string };
+    if (!res.ok) {
+      return { ok: false, error: data.error ?? "Login failed." };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Network error. Could not reach the API server." };
+  }
 }
 
-export function clearStoredAdminToken() {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-}
-
-export function configureAdminAuthFromStorage() {
-  setAuthTokenGetter(() => getStoredAdminToken());
+export async function logoutAdmin(): Promise<void> {
+  try {
+    await fetch(`${BASE_URL}/api/admin/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // best-effort
+  }
 }
