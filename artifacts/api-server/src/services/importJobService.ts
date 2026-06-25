@@ -95,16 +95,28 @@ export async function queueImportRun(categorySlug: string, city: string): Promis
 }
 
 export async function resumePendingImportRuns(): Promise<void> {
-  const pendingRuns = await db
-    .select({
-      id: importRunsTable.id,
-      categorySlug: importRunsTable.categorySlug,
-      city: importRunsTable.city,
-      status: importRunsTable.status,
-    })
-    .from(importRunsTable)
-    .where(inArray(importRunsTable.status, [...ACTIVE_STATUSES]))
-    .orderBy(importRunsTable.startedAt);
+  let pendingRuns: Array<{
+    id: number;
+    categorySlug: string;
+    city: string;
+    status: string;
+  }>;
+
+  try {
+    pendingRuns = await db
+      .select({
+        id: importRunsTable.id,
+        categorySlug: importRunsTable.categorySlug,
+        city: importRunsTable.city,
+        status: importRunsTable.status,
+      })
+      .from(importRunsTable)
+      .where(inArray(importRunsTable.status, [...ACTIVE_STATUSES]))
+      .orderBy(importRunsTable.startedAt);
+  } catch (err) {
+    logger.warn({ err }, "resumePendingImportRuns: failed to query pending runs at startup; skipping resume");
+    return;
+  }
 
   for (const run of pendingRuns) {
     const targetKey = getTargetKey(run.categorySlug, run.city);
